@@ -37,7 +37,7 @@ ratio inventé.
 | | Source législative | Source jurisprudentielle |
 |---|---|---|
 | Texte intégral | **Oui**, verbatim, à la consolidation courante | **Non.** Jamais |
-| Recherche par le contenu | **Oui**, plein texte | **Non** |
+| Recherche par le contenu | **Oui**, hybride (lexicale et sémantique) | **Non** |
 | Repérage par matière | Oui, taxonomie de matières | Aucun mécanisme fiable |
 | Versions antérieures | **Non** | Sans objet |
 | Ce qu'elle fait bien | Donner le texte officiel et sa place dans la loi | Authentifier une citation, parcourir le graphe |
@@ -58,7 +58,7 @@ la téléverser**, sans contourner en recopiant un corpus.
 fournis par l'utilisateur et marquer *toute* proposition de droit comme non vérifiée, sans jamais
 réciter un article de mémoire.
 
-*Les deux rôles sont tenus par des connecteurs distincts, que ce plugin déclare : « Legislation »
+*Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur de calcul « pratique-civile-outils » : « Legislation »
 (`legislation_*`) pour le texte officiel des lois et des règlements du Québec et du fédéral,
 « Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions. Ce dernier porte aussi
 `greffe_*` et `palais_*`, qui n'appellent rien : ils lisent des tables locales du 15 juillet 2026,
@@ -95,7 +95,7 @@ recherche part dans le vide.
   écrire intégralement la grille à quatre rubriques, même quand une rubrique est vide.
 
 **5. Établir le texte législatif.** Cadrer par matière, situer dans la structure de la loi, puis
-lire l'article. Chercher en plein texte quand on cherche une notion sans savoir où elle loge.
+lire l'article. Chercher par le contenu (recherche hybride lexicale et sémantique) quand on cherche une notion sans savoir où elle loge.
 **Toujours relever la date de consolidation** et la reporter dans le livrable.
 
 **6. Lire la doctrine.** Recherche web restreinte aux sources de

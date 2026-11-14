@@ -107,7 +107,7 @@ Ce plugin déclare les connecteurs de **sources de droit** et de **calcul déter
     (`https://jurisprudence.poirierlavoie.ca/mcp` — page publique
     <https://jurisprudence.poirierlavoie.ca/>, fiche SEP-2127
     <https://jurisprudence.poirierlavoie.ca/mcp/server-card>, dépôt source
-    <https://github.com/jpoirierlavoie/MCP-Jurisprudence-Quebec>) avec authentification par en-tête
+    <https://github.com/jpoirierlavoie/MCP-Jurisprudence>) avec authentification par en-tête
     `Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}` (aucun secret n'est déposé ici);
   - le point d'entrée public et sans état « `pratique-civile-outils` »
     (`https://outils.poirierlavoie.ca/mcp`, sans secret requis), qui expose trois outils déterministes
@@ -196,14 +196,19 @@ et **Gemini CLI** : chaque plateforme lit son propre manifeste et ignore les aut
     (`https://legislation.poirierlavoie.ca/mcp`), `jurisprudence`
     (`https://jurisprudence.poirierlavoie.ca/mcp`) et `pratique-civile-outils`
     (`https://outils.poirierlavoie.ca/mcp`, sans secret) : renseigner `MCP_LEGISLATION_SECRET` et
-    `MCP_JURISPRUDENCE_SECRET` sur la page du plugin puis l'activer.
+    `MCP_JURISPRUDENCE_SECRET` sur la page du plugin puis l'activer;
+  - les noms de serveurs MCP partageant un espace global unique, ce greffon remplace les greffons
+    autonomes `mcp-legislation` et `mcp-jurisprudence` ainsi que toute entrée manuelle équivalente
+    dans `~/.gemini/config/mcp_config.json` (ne pas activer les deux simultanément).
 - **Gemini CLI** — `gemini-extension.json` :
   - installer via `gemini extensions install https://github.com/jpoirierlavoie/pratique-civile-quebecoise`
-    — `gemini-extension.json` préconfigure `legislation`
+    — `gemini-extension.json` (`"contextFileName": []`) préconfigure `legislation`
     (`https://legislation.poirierlavoie.ca/mcp`) et `jurisprudence`
     (`https://jurisprudence.poirierlavoie.ca/mcp`), demande de manière sécurisée (`sensitive: true`)
     les secrets `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`, et câble
-    `pratique-civile-outils` (`https://outils.poirierlavoie.ca/mcp`) sans secret requis.
+    `pratique-civile-outils` (`https://outils.poirierlavoie.ca/mcp`) sans secret requis (sans installer
+    en parallèle les extensions autonomes `mcp-legislation` ou `mcp-jurisprudence`, qui déclarent les
+    mêmes clés de serveurs MCP).
 - **Contrôle** — exécuter `python verifier.py` depuis la racine du dépôt; le script valide les
   manifestes, les en-têtes YAML, les sept invariants structurels, les renvois aux fichiers de
   référence et l'étanchéité du contrat d'information, et ne retourne rien lorsque tout est conforme.

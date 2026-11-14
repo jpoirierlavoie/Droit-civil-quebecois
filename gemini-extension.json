@@ -2,6 +2,7 @@
   "name": "pratique-civile-quebecoise",
   "version": "1.4.0",
   "description": "Recherche, rédaction, analyse documentaire, calendrier procédural et déontologie en droit civil et commercial québécois. Câble les connecteurs « Legislation », « Jurisprudence » et « pratique-civile-outils ».",
+  "contextFileName": [],
   "settings": [
     {
       "name": "Secret partagé MCP Législation",

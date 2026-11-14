@@ -1,7 +1,8 @@
 # Méthode : interroger les sources primaires
 
-*Les deux connecteurs que ce plugin déclare : « Legislation » (`legislation_*`) pour le texte
-officiel des lois et des règlements du Québec **et du fédéral**, « Jurisprudence »
+*Les deux connecteurs de sources primaires que ce plugin déclare (aux côtés de
+« pratique-civile-outils » pour le calcul déterministe) : « Legislation » (`legislation_*`) pour le
+texte officiel des lois et des règlements du Québec **et du fédéral**, « Jurisprudence »
 (`jurisprudence_*`) pour l'authentification des décisions et le parcours du graphe. Tout connecteur
 remplissant les mêmes rôles convient — ce sont les capacités qui comptent. Sans connecteur, la
 méthode reste la grille de lecture, et tout résultat obtenu par le web seul est marqué « à
@@ -49,9 +50,15 @@ seuls les numéros d'articles importent.
 **Extraire.** `legislation_get_article` pour un article, `legislation_get_articles` pour une plage ou une
 liste. Préférer une liste explicite à une plage large : on ne charge que ce qu'on va lire.
 
-**Chercher par le contenu.** `legislation_search_text` fait de la recherche plein texte sur les
-articles. Ne pas restreindre à une loi sans raison — une recherche restreinte qui échoue est
-élargie automatiquement, mais une recherche mal restreinte donne un faux négatif silencieux.
+**Chercher par le contenu.** `legislation_search_text` combine recherche lexicale (FTS5 avec
+échelle de relaxation explicite) et recherche sémantique (plongements multilingues fusionnés par
+RRF, qui franchissent les écarts de vocabulaire ou de langue et marquent « (repérage sémantique) »
+les résultats issus de ce seul chemin). Dans l'en-tête, `total` ne compte que les appariements
+lexicaux du corpus tandis que `returned` et `sources` détaillent la page rendue : un `total`
+inférieur à `returned` est donc normal, et tout rapprochement sémantique se vérifie en lisant
+l'article via `legislation_get_article`. Ne pas restreindre à une loi sans raison — une recherche
+restreinte totalement vide est élargie automatiquement au corpus, mais une restriction mal ciblée
+qui ramène un faux ami bloque cet élargissement et crée un faux négatif silencieux.
 
 **Résoudre une citation.** `legislation_resolve_reference` accepte les formes libres (« art. 1457
 C.c.Q. », « RLRQ, c. T-16, art. 12 »).
@@ -150,10 +157,10 @@ CanLII à la datation et à la vérification d'abrogation — et lire sa date av
 « régime de dates ENTRY_INTO_FORCE » y désigne la version codifiée en vigueur, **non l'entrée en
 vigueur du texte** (le C.c.Q. y est daté de 2026, non de 1994).
 
-`jurisprudence_browse_legislation` est **en panne** — échec reproductible, rendu sous un libellé
-« erreur 200 » qui n'a pas de sens en HTTP. L'enchaînement documenté *browse → get* est donc rompu.
-Contournement éprouvé : prendre le `legislation_id` dans la sortie de `jurisprudence_citator` avec
-`rel=legislation`.
+`jurisprudence_browse_legislation` liste les lois et règlements d'une base législative de CanLII
+(p. ex. `qcs`, avec filtre `query`, `limit` et `offset`) pour en obtenir le `legislationId` avant
+d'appeler `jurisprudence_get_legislation`; lorsqu'on part déjà d'une décision, ce `legislationId`
+se lit aussi directement dans la sortie de `jurisprudence_citator` avec `rel='legislation'`.
 
 ## 3. La boule de neige, en pratique
 
@@ -211,10 +218,10 @@ livrable doit le dire.
 **Un connecteur ne répond pas.** Le dire et s'arrêter sur ce volet. Ne pas basculer
 silencieusement sur le web pour combler.
 
-**Un outil rend une erreur incohérente.** « Erreur 200 » n'a pas de sens en HTTP et masque la cause
-réelle — le même libellé sert pour une panne, pour un balayage interrompu et pour un dépassement de
-quota. Ne pas l'interpréter : rapporter que l'appel a échoué, et essayer le contournement
-documenté s'il en existe un.
+**Un appel échoue ou revient interrompu.** Étranglement en amont (`429`), expiration, budget
+d'appels épuisé, verdict `INDÉTERMINÉE` ou balayage annoncé `INTERROMPU` dès l'en-tête : rapporter
+la cause nommée par l'outil telle quelle. « Ne pas avoir pu chercher » n'est jamais « n'avoir rien
+trouvé » — ne jamais convertir un échec ou une interruption en absence (`INTROUVABLE`).
 
 **Une recherche ne donne rien.** L'absence de résultat est un résultat, et il se rapporte :
 quelles bases, quels termes, quelles bornes de dates. Ne pas conclure à l'inexistence, ne pas

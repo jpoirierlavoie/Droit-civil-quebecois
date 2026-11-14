@@ -64,6 +64,7 @@ EXPECTED_REPO_URL = "https://github.com/jpoirierlavoie/pratique-civile-quebecois
 RETIRED_REPO_SLUGS = (
     "competence-litige-civil",
     "competence-pratique-civile-quebecoise",
+    "MCP-Jurisprudence-Quebec",
 )
 EXPECTED_LICENSE = "CC0-1.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
@@ -485,6 +486,8 @@ def verifier(racine: Path) -> list[str]:
             erreurs.append("gemini-extension.json : 'version' semver invalide")
         else:
             versions["gemini-extension.json"] = ver
+        if gemini_ext.get("contextFileName") != []:
+            erreurs.append("gemini-extension.json : 'contextFileName' doit valoir []")
         g_servers = gemini_ext.get("mcpServers")
         expected_gemini_keys = set(EXPECTED_GOOGLE_SERVERS) | {"pratique-civile-outils"}
         if not isinstance(g_servers, dict) or set(g_servers.keys()) != expected_gemini_keys:
