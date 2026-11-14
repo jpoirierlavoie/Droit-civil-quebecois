@@ -1,17 +1,18 @@
 # Méthode : interroger les sources primaires
 
 *Les deux connecteurs de sources primaires que ce plugin déclare (aux côtés de
-« pratique-civile-outils » pour le calcul déterministe) : « Legislation » (`legislation_*`) pour le
-texte officiel des lois et des règlements du Québec **et du fédéral**, « Jurisprudence »
-(`jurisprudence_*`) pour l'authentification des décisions et le parcours du graphe. Tout connecteur
+« pratique-civile-outils » pour le calcul et les utilitaires de greffe déterministes) :
+« Legislation » (`legislation_*`) pour le texte officiel des lois et des règlements du Québec
+**et du fédéral**, « Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions et
+le parcours du graphe. Tout connecteur
 remplissant les mêmes rôles convient — ce sont les capacités qui comptent. Sans connecteur, la
 méthode reste la grille de lecture, et tout résultat obtenu par le web seul est marqué « à
 vérifier ».*
 
 *Le préfixe n'annonce plus la source. Sous `jurisprudence_*`, neuf outils interrogent CanLII et un
-seul, `jurisprudence_parse_citation`, n'appelle rien. Les outils `greffe_*` et `palais_*` vivent
-dans le même connecteur mais lisent des tables locales. C'est la description de chaque outil qui
-nomme sa source, jamais son nom.*
+seul, `jurisprudence_parse_citation`, n'appelle rien. Les outils `greffe_*` et `palais_*` relèvent
+désormais de « pratique-civile-outils » et lisent des tables locales, tout comme `calendrier_*` et
+`interets_compute_1619`. C'est la description de chaque outil qui nomme sa source, jamais son nom.*
 
 
 ## Table des matières
@@ -141,9 +142,9 @@ des droits de la personne, Tribunal des professions, arbitrages, conseils de dis
 identifiants les plus employés : `csc-scc` (Cour suprême), `csc-scc-al` (demandes d'autorisation
 d'appel), `qcca`, `qccs`.
 
-**Situer un dossier de cour.** `greffe_parse_court_file_number` tire d'un numéro québécois le
-greffe — palais de justice et district — puis le tribunal et le type de greffe. `palais_list` et
-`palais_get` renseignent sur les palais de justice et points de service.
+**Situer un dossier de cour (« pratique-civile-outils »).** `greffe_parse_court_file_number` tire
+d'un numéro québécois le greffe — palais de justice et district — puis le tribunal et le type de
+greffe. `palais_list` et `palais_get` renseignent sur les palais de justice et points de service.
 
 Ces trois outils **n'appellent rien** : ils lisent des tables relevées auprès du ministère de la
 Justice le **15 juillet 2026**. Ils n'interrogent ni registre ni plumitif, et n'établissent donc

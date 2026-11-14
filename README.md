@@ -71,7 +71,7 @@ commun de douze besoins :
 | **ÉCHÉANCES** | Protocole, audiences, tâches, portrait de prescription |
 | **CORRESPONDANCE** | Les échanges — courriels, lettres, pièces jointes |
 | **CALCUL** | Le calcul d'un délai de procédure ou d'intérêts légaux — servi par le connecteur « pratique-civile-outils » (`calendrier_*`, `interets_compute_1619`), à défaut par `scripts/calcul_delai.py` pour les délais, autant que par un gestionnaire de dossiers |
-| **GREFFE** | La décomposition d'un numéro de dossier de cour — servi par le connecteur « Jurisprudence » (`greffe_*`, `palais_*`) autant que par un gestionnaire de dossiers |
+| **GREFFE** | La décomposition d'un numéro de dossier de cour et les palais de justice — servis par le connecteur « pratique-civile-outils » (`greffe_*`, `palais_*`) autant que par un gestionnaire de dossiers |
 | **VOCABULAIRE** | Les codes qu'un système accepte en écriture |
 | **INSCRIPTION** | Verser un résultat au dossier |
 
@@ -110,9 +110,10 @@ Ce plugin déclare les connecteurs de **sources de droit** et de **calcul déter
     <https://github.com/jpoirierlavoie/MCP-Jurisprudence>) avec authentification par en-tête
     `Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}` (aucun secret n'est déposé ici);
   - le point d'entrée public et sans état « `pratique-civile-outils` »
-    (`https://outils.poirierlavoie.ca/mcp`, sans secret requis), qui expose trois outils déterministes
-    sans journalisation des charges utiles ni persistance : `calendrier_list_holidays`,
-    `calendrier_compute_deadlines` et `interets_compute_1619`.
+    (`https://outils.poirierlavoie.ca/mcp`, sans secret requis), qui expose six outils déterministes
+    hors ligne sans journalisation des charges utiles ni persistance : `calendrier_list_holidays`,
+    `calendrier_compute_deadlines`, `interets_compute_1619`, `greffe_parse_court_file_number`,
+    `palais_list` et `palais_get`.
 
 Aucun **gestionnaire de dossiers** n'y est déclaré, ni nommé nulle part dans les compétences. C'est
 la seule frontière, et c'est elle qui rend ce plugin installable chez quelqu'un d'autre.

@@ -58,12 +58,12 @@ la téléverser**, sans contourner en recopiant un corpus.
 fournis par l'utilisateur et marquer *toute* proposition de droit comme non vérifiée, sans jamais
 réciter un article de mémoire.
 
-*Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur de calcul « pratique-civile-outils » : « Legislation »
+*Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur « pratique-civile-outils » : « Legislation »
 (`legislation_*`) pour le texte officiel des lois et des règlements du Québec et du fédéral,
-« Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions. Ce dernier porte aussi
-`greffe_*` et `palais_*`, qui n'appellent rien : ils lisent des tables locales du 15 juillet 2026,
-à revérifier auprès du Ministère avant toute signification ou tout dépôt. Leur usage détaillé est
-dans `references/methode-sources.md`.*
+« Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions. Le connecteur
+« pratique-civile-outils » porte aussi `greffe_*` et `palais_*`, qui n'appellent rien : ils lisent
+des tables locales du 15 juillet 2026, à revérifier auprès du Ministère avant toute signification ou
+tout dépôt. Leur usage détaillé est dans `references/methode-sources.md`.*
 
 ## La méthode
 
