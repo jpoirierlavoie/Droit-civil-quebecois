@@ -9,13 +9,22 @@ Usage:
 import os
 import sys
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
-BASE_CACHE = Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "antigravity" / "mcp"
-REPO_LEGISLATION = Path(r"C:\Users\MeJasonPoirierLavoie\MCP-Legislation")
-REPO_JURISPRUDENCE = Path(r"C:\Users\MeJasonPoirierLavoie\MCP-Jurisprudence")
-REPO_OUTILS = Path(r"C:\Users\MeJasonPoirierLavoie\pratique-civile-outils")
+BASE_CACHE = Path(
+    os.environ.get(
+        "ANTIGRAVITY_MCP_CACHE_DIR",
+        Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "antigravity" / "mcp",
+    )
+)
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_PARENT = PLUGIN_ROOT.parent
+REPO_LEGISLATION = Path(os.environ.get("MCP_LEGISLATION_REPO", WORKSPACE_PARENT / "MCP-Legislation"))
+REPO_JURISPRUDENCE = Path(os.environ.get("MCP_JURISPRUDENCE_REPO", WORKSPACE_PARENT / "MCP-Jurisprudence"))
+REPO_OUTILS = Path(os.environ.get("MCP_OUTILS_REPO", WORKSPACE_PARENT / "pratique-civile-outils"))
+NPX_BIN = shutil.which("npx.cmd" if os.name == "nt" else "npx") or ("npx.cmd" if os.name == "nt" else "npx")
 
 def load_legislation():
     ref_path = REPO_LEGISLATION / "fixtures" / "tools-list.reference.json"
@@ -24,11 +33,13 @@ def load_legislation():
     
     script = "import { INSTRUCTIONS } from './src/serveur.ts'; console.log(JSON.stringify(INSTRUCTIONS));"
     res = subprocess.run(
-        ["npx.cmd", "tsx", "-e", script],
+        [NPX_BIN, "--yes", "tsx", "-e", script],
         cwd=REPO_LEGISLATION,
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        encoding="utf-8"
+        encoding="utf-8",
+        timeout=30,
     )
     if res.returncode != 0:
         raise RuntimeError(f"Legislation INSTRUCTIONS extraction failed:\n{res.stderr}")
@@ -47,11 +58,13 @@ def load_legislation():
 def load_jurisprudence():
     script = "import { listToolDescriptors, INSTRUCTIONS } from './src/mcp/registry.ts'; console.log(JSON.stringify({ tools: listToolDescriptors(), instructions: INSTRUCTIONS }));"
     res = subprocess.run(
-        ["npx.cmd", "tsx", "-e", script],
+        [NPX_BIN, "--yes", "tsx", "-e", script],
         cwd=REPO_JURISPRUDENCE,
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        encoding="utf-8"
+        encoding="utf-8",
+        timeout=30,
     )
     if res.returncode != 0:
         raise RuntimeError(f"Jurisprudence extraction failed:\n{res.stderr}")
@@ -70,11 +83,13 @@ def load_jurisprudence():
 def load_outils():
     script = "import { listToolDescriptors, INSTRUCTIONS } from './src/mcp/server.ts'; console.log(JSON.stringify({ tools: listToolDescriptors(), instructions: INSTRUCTIONS }));"
     res = subprocess.run(
-        ["npx.cmd", "tsx", "-e", script],
+        [NPX_BIN, "--yes", "tsx", "-e", script],
         cwd=REPO_OUTILS,
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
-        encoding="utf-8"
+        encoding="utf-8",
+        timeout=30,
     )
     if res.returncode != 0:
         raise RuntimeError(f"Outils extraction failed:\n{res.stderr}")
@@ -104,7 +119,8 @@ def main():
         
         if apply_mode:
             target_dir.mkdir(parents=True, exist_ok=True)
-            (target_dir / "instructions.md").write_text(instructions.strip() + "\n", encoding="utf-8")
+            with open(target_dir / "instructions.md", "w", encoding="utf-8", newline="\n") as f:
+                f.write(instructions.strip() + "\n")
             
         for name, tool_data in sorted(tools.items()):
             # Vérifications d'intégrité
@@ -120,7 +136,8 @@ def main():
             
             if apply_mode:
                 out_path = target_dir / f"{name}.json"
-                out_path.write_text(json.dumps(tool_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                with open(out_path, "w", encoding="utf-8", newline="\n") as f:
+                    f.write(json.dumps(tool_data, indent=2, ensure_ascii=False) + "\n")
             print(f"    - {name}.json (desc: {len(tool_data['description'])} car., {len(props)} props)")
 
     print(f"\n[OK] {total_tools}/26 outils vérifiés avec succès.")

@@ -11,8 +11,13 @@ import shutil
 import filecmp
 from pathlib import Path
 
-SRC_DIR = Path(r"c:\Users\MeJasonPoirierLavoie\pratique-civile-quebecoise")
-DST_DIR = Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "config" / "plugins" / "pratique-civile-quebecoise"
+SRC_DIR = Path(os.environ.get("PCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1]))
+DST_DIR = Path(
+    os.environ.get(
+        "GEMINI_PLUGIN_DST_DIR",
+        Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "config" / "plugins" / "pratique-civile-quebecoise",
+    )
+)
 
 BUNDLE_ROOT_FILES = [
     Path("plugin.json"),

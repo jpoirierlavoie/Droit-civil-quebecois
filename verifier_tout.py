@@ -1016,18 +1016,25 @@ class MockMcpServer:
 
         elif tool_name == "legislation_search_text":
             query = args.get("query", "")
+            hits = []
+            if "corporel" in query.lower():
+                hits.append({
+                    "law": args.get("law", "ccq"),
+                    "article": "2930",
+                    "snippet": f"Correspondance avec '{query}' : l'action fondée sur l'obligation de réparer un préjudice corporel se prescrit par trois ans.",
+                    "score": 0.94,
+                })
+            hits.append({
+                "law": args.get("law", "ccq"),
+                "article": "2925",
+                "snippet": f"Correspondance avec '{query}' : action personnelle se prescrit par trois ans.",
+                "score": 0.88,
+            })
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps([
-                            {
-                                "law": args.get("law", "ccq"),
-                                "article": "2925",
-                                "snippet": f"Correspondance avec '{query}' : action personnelle se prescrit par trois ans.",
-                                "score": 0.88,
-                            }
-                        ], ensure_ascii=False),
+                        "text": json.dumps(hits, ensure_ascii=False),
                     }
                 ]
             }
@@ -1041,7 +1048,18 @@ class MockMcpServer:
                 res = {"law": "ccq", "article": "1619", "titre": "Indemnité additionnelle"}
             else:
                 res = {"law": "ccq", "article": "1726", "titre": "Garantie légale de qualité"}
-            return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}
+            return {
+                "content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}],
+                "structuredContent": {
+                    "input": cit,
+                    "resolved": {
+                        "kind": "article",
+                        "law": res["law"],
+                        "number": res["article"],
+                        "title": res["titre"],
+                    },
+                },
+            }
 
         # --- Jurisprudence ---
         elif tool_name == "jurisprudence_verify_citations":
@@ -1049,20 +1067,33 @@ class MockMcpServer:
             rapports = []
             for item in citations:
                 cit_str = item.get("citation", "")
+                exp_title = (item.get("expected_title") or "").strip()
                 if "2020 QCCA 495" in cit_str:
+                    real_title = "SNC-Lavalin inc. (Terratech inc. et SNC-Lavalin Environnement inc.) c. Deguise"
+                    verdict = (
+                        "DISCORDANTE"
+                        if exp_title and exp_title.lower() not in real_title.lower()
+                        else "CONFIRMÉE"
+                    )
                     rapports.append({
                         "citation": cit_str,
-                        "verdict": "CONFIRMÉE",
-                        "title": "Droit de la famille - 20495",
+                        "verdict": verdict,
+                        "title": real_title,
                         "database_id": "qcca",
                         "case_id": "2020qcca495",
                         "url": "https://www.canlii.org/fr/qc/qcca/doc/2020/2020qcca495/2020qcca495.html",
                     })
                 elif "2015 QCCA 1526" in cit_str:
+                    real_title = "Droit de la famille — 152325"
+                    verdict = (
+                        "DISCORDANTE"
+                        if exp_title and exp_title.lower() not in real_title.lower()
+                        else "CONFIRMÉE"
+                    )
                     rapports.append({
                         "citation": cit_str,
-                        "verdict": "CONFIRMÉE",
-                        "title": "St-Louis c. Morin",
+                        "verdict": verdict,
+                        "title": real_title,
                         "database_id": "qcca",
                         "case_id": "2015qcca1526",
                         "url": "https://www.canlii.org/fr/qc/qcca/doc/2015/2015qcca1526/2015qcca1526.html",
@@ -1095,19 +1126,29 @@ class MockMcpServer:
 
         elif tool_name == "jurisprudence_get_case":
             cit = args.get("citation") or f"{args.get('database_id')} {args.get('case_id')}"
+            if "2015" in str(cit):
+                fiche = (
+                    "**Droit de la famille — 152325**\n"
+                    "- Référence : 2015 QCCA 1526 (qcca/2015qcca1526)\n"
+                    "- Tribunal : Cour d'appel du Québec\n"
+                    "- Date : 22 septembre 2015\n"
+                    "- N° de dossier : 500-09-024761-140\n"
+                    "- URL : https://www.canlii.org/fr/qc/qcca/doc/2015/2015qcca1526/2015qcca1526.html"
+                )
+            else:
+                fiche = (
+                    "**SNC-Lavalin inc. (Terratech inc. et SNC-Lavalin Environnement inc.) c. Deguise**\n"
+                    "- Référence : 2020 QCCA 495 (qcca/2020qcca495)\n"
+                    "- Tribunal : Cour d'appel du Québec\n"
+                    "- Date : 6 avril 2020\n"
+                    "- N° de dossier : 200-09-008788-140\n"
+                    "- URL : https://www.canlii.org/fr/qc/qcca/doc/2020/2020qcca495/2020qcca495.html"
+                )
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps({
-                            "citation": cit,
-                            "title": "Droit de la famille - 20495",
-                            "court": "Cour d'appel du Québec",
-                            "date": "2020-04-15",
-                            "judges": ["Bich", "Mainville", "Racicot"],
-                            "court_file": "500-09-028456-193",
-                            "url": "https://www.canlii.org/fr/qc/qcca/doc/2020/2020qcca495/2020qcca495.html",
-                        }, ensure_ascii=False),
+                        "text": fiche,
                     }
                 ]
             }
@@ -1267,23 +1308,33 @@ class MockMcpServer:
                     shifted_start += datetime.timedelta(days=1)
 
             results = []
-            for item in args.get("deadlines", []):
+            for idx, item in enumerate(args.get("deadlines", [])):
                 amt = item.get("amount", 15)
                 due = shifted_start + datetime.timedelta(days=amt)
                 # Art. 83 C.p.c. : si samedi ou dimanche, reporte au lundi
                 while due.weekday() >= 5:
                     due += datetime.timedelta(days=1)
                 results.append({
+                    "index": idx,
                     "label": item.get("label", "Délai"),
                     "amount": amt,
-                    "anchor_date": shifted_start.isoformat(),
-                    "due_date": due.isoformat(),
-                    "day_of_week": due.strftime("%A"),
-                    "anchor_shifted_art_111": shifted_start != d_date,
+                    "input_anchor_date": d_date.isoformat(),
                     "effective_anchor_date": shifted_start.isoformat(),
+                    "anchor_shifted_art_111": shifted_start != d_date,
+                    "effective_date": due.isoformat(),
                 })
 
-            return {"content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}]}
+            summary_lines = [
+                f"- {r['label']} : échéance effective {r['effective_date']} (ancre {r['effective_anchor_date']})"
+                for r in results
+            ]
+            return {
+                "content": [{"type": "text", "text": "\n".join(summary_lines)}],
+                "structuredContent": {
+                    "regime": args.get("regime", "qc_cpc"),
+                    "results": results,
+                },
+            }
 
         elif tool_name == "interets_compute_1619":
             tranches = args.get("tranches", [])
@@ -1293,21 +1344,28 @@ class MockMcpServer:
             taux_indemnite = 0.04
             interet_legal_cents = int(total_principal * taux_legal)
             indemnite_cents = int(total_principal * taux_indemnite)
-            grand_total_cents = total_principal + interet_legal_cents + indemnite_cents
+            total_interest_cents = interet_legal_cents + indemnite_cents
+            grand_total_cents = total_principal + total_interest_cents
 
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps({
-                            "principal_total_cents": total_principal,
-                            "legal_interest_cents": interet_legal_cents,
-                            "additional_indemnity_cents": indemnite_cents,
-                            "grand_total_cents": grand_total_cents,
-                            "end_date": args.get("end_date"),
-                        }, ensure_ascii=False),
+                        "text": (
+                            f"Calcul art. 1619 C.c.Q. jusqu'au {args.get('end_date')} — "
+                            f"Capital : {total_principal} cents, Intérêt légal : {interet_legal_cents} cents, "
+                            f"Indemnité additionnelle : {indemnite_cents} cents, Total général : {grand_total_cents} cents."
+                        ),
                     }
-                ]
+                ],
+                "structuredContent": {
+                    "total_principal_cents": total_principal,
+                    "total_legal_interest_cents": interet_legal_cents,
+                    "total_additional_indemnity_cents": indemnite_cents,
+                    "total_interest_cents": total_interest_cents,
+                    "grand_total_cents": grand_total_cents,
+                    "end_date": args.get("end_date"),
+                },
             }
 
         elif tool_name == "greffe_parse_court_file_number":
@@ -1316,20 +1374,24 @@ class MockMcpServer:
             parts = num.split("-")
             greffe = parts[0] if len(parts) >= 1 else "500"
             court_code = parts[1] if len(parts) >= 2 else "17"
-            districts = {"500": "Montréal", "200": "Québec", "150": "Trois-Rivières"}
+            districts = {"500": "Montréal", "200": "Québec", "400": "Trois-Rivières"}
+            district = districts.get(greffe, "District québécois")
+            court = "Cour supérieure" if court_code == "17" else "Cour d'appel" if court_code == "09" else "Cour du Québec"
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps({
-                            "court_file_number": num,
-                            "greffe_number": greffe,
-                            "district": districts.get(greffe, "District québécois"),
-                            "court": "Cour supérieure" if court_code == "17" else "Cour du Québec",
-                            "matter": "civil",
-                        }, ensure_ascii=False),
+                        "text": f"Dossier {num} — Greffe {greffe} ({district}), {court}.",
                     }
-                ]
+                ],
+                "structuredContent": {
+                    "outcome": "judicial",
+                    "court_file_number": num,
+                    "greffe_number": greffe,
+                    "district": district,
+                    "court": court,
+                    "matter": "civil",
+                },
             }
 
         elif tool_name == "palais_list":
@@ -1350,19 +1412,27 @@ class MockMcpServer:
             palais = args.get("palais")
             if greffe == "500" or (palais and "montr" in palais.lower()):
                 info = {
-                    "palais": "Palais de justice de Montréal",
+                    "name": "Montréal",
                     "greffe_number": "500",
                     "district": "Montréal",
-                    "address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                    "street_address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
                 }
             else:
                 info = {
-                    "palais": "Palais de justice de Québec",
+                    "name": "Québec",
                     "greffe_number": "200",
                     "district": "Québec",
-                    "address": "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6",
+                    "street_address": "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6",
                 }
-            return {"content": [{"type": "text", "text": json.dumps(info, ensure_ascii=False)}]}
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Palais de justice de {info['name']} (greffe {info['greffe_number']}) — {info['street_address']}.",
+                    }
+                ],
+                "structuredContent": {"palais": info},
+            }
 
         return {"content": [{"type": "text", "text": "OK"}]}
 
@@ -1494,7 +1564,7 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "probe"}},
+            "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "probe", "version": "1.5.0"}},
         }).encode("utf-8")
         headers_leg = dict(headers_base)
         headers_leg["Authorization"] = f"Bearer {leg_sec}"
@@ -1870,7 +1940,7 @@ def run_tier_1_tests(
             init_res = client.call_rpc(
                 srv_key,
                 "initialize",
-                {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "test"}},
+                {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verifier-tout", "version": "1.5.0"}},
             )
             result = init_res.get("result", {})
             has_proto = bool(result.get("protocolVersion"))
@@ -2297,7 +2367,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "pratique-civile-outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.5.0"}}}',
                 auth_token="OMIT",
             )
             ok = status == 200
@@ -3119,16 +3189,15 @@ def run_tier_3_tests(
             "greffe_parse_court_file_number",
             {"court_file_number": "500-17-000001-261"},
         )
-        content_txt = greffe_res.get("content", [{}])[0].get("text", "")
-        greffe_info = json.loads(content_txt)
-        greffe_num = greffe_info.get("greffe_number")
+        greffe_sc = greffe_res.get("structuredContent") or {}
+        greffe_num = greffe_sc.get("greffe_number")
 
         palais_res = client.call_tool(
             "pratique-civile-outils", "palais_get", {"greffe_number": greffe_num}
         )
-        palais_txt = palais_res.get("content", [{}])[0].get("text", "")
-        palais_info = json.loads(palais_txt)
-        is_mtl = "Montréal" in palais_info.get("palais", "")
+        palais_sc = palais_res.get("structuredContent") or {}
+        palais_obj = palais_sc.get("palais") or {}
+        is_mtl = greffe_num == "500" and "Montréal" in palais_obj.get("name", "")
 
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
@@ -3137,7 +3206,7 @@ def run_tier_3_tests(
             "pratique-civile-outils",
             is_mtl,
             elapsed,
-            None if is_mtl else f"Greffe : {greffe_info}, Palais : {palais_info}",
+            None if is_mtl else f"Greffe : {greffe_sc}, Palais : {palais_sc}",
         )
     except ConnectionError:
         raise
@@ -3151,9 +3220,8 @@ def run_tier_3_tests(
         leg_res = client.call_tool(
             "legislation", "legislation_resolve_reference", {"citation": "art. 1619 C.c.Q."}
         )
-        leg_txt = leg_res.get("content", [{}])[0].get("text", "")
-        leg_info = json.loads(leg_txt)
-        art_num = leg_info.get("article")
+        leg_sc = leg_res.get("structuredContent") or {}
+        art_num = (leg_sc.get("resolved") or {}).get("number")
 
         calc_res = client.call_tool(
             "pratique-civile-outils",
@@ -3163,9 +3231,8 @@ def run_tier_3_tests(
                 "tranches": [{"principal_cents": 10000000, "start_date": "2024-01-01"}],
             },
         )
-        calc_txt = calc_res.get("content", [{}])[0].get("text", "")
-        calc_info = json.loads(calc_txt)
-        has_indemnity = calc_info.get("additional_indemnity_cents", 0) > 0
+        calc_sc = calc_res.get("structuredContent") or {}
+        has_indemnity = calc_sc.get("total_additional_indemnity_cents", 0) > 0
 
         ok = art_num == "1619" and has_indemnity
         elapsed = (time.perf_counter() - t0) * 1000
@@ -3175,7 +3242,7 @@ def run_tier_3_tests(
             "all",
             ok,
             elapsed,
-            None if ok else f"Art : {art_num}, Calcul : {calc_info}",
+            None if ok else f"Art : {art_num}, Calcul : {calc_sc}",
         )
     except ConnectionError:
         raise
@@ -3186,17 +3253,20 @@ def run_tier_3_tests(
     # T3.3.3 : Contrat Jurisprudence -> Greffe
     t0 = time.perf_counter()
     try:
-        case_res = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2020 QCCA 495"})
+        case_res = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2015 QCCA 1526"})
         case_txt = case_res.get("content", [{}])[0].get("text", "")
-        case_info = json.loads(case_txt)
-        court_file = case_info.get("court_file", "500-09-028456-193")
+        m_dossier = re.search(r"\b(\d{3}-\d{2}-\d{6}-\d{3})\b", case_txt)
+        court_file = m_dossier.group(1) if m_dossier else ""
 
-        parse_res = client.call_tool(
-            "pratique-civile-outils", "greffe_parse_court_file_number", {"court_file_number": court_file}
+        parse_res = (
+            client.call_tool(
+                "pratique-civile-outils", "greffe_parse_court_file_number", {"court_file_number": court_file}
+            )
+            if court_file
+            else {}
         )
-        parse_txt = parse_res.get("content", [{}])[0].get("text", "")
-        parse_info = json.loads(parse_txt)
-        ok = parse_info.get("greffe_number") == "500"
+        parse_sc = parse_res.get("structuredContent") or {}
+        ok = bool(court_file) and parse_sc.get("greffe_number") == "500"
 
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
@@ -3205,7 +3275,7 @@ def run_tier_3_tests(
             "all",
             ok,
             elapsed,
-            None if ok else f"Dossier {court_file}, analyse : {parse_info}",
+            None if ok else f"Dossier '{court_file}', analyse : {parse_sc}",
         )
     except ConnectionError:
         raise
@@ -3228,9 +3298,8 @@ def run_tier_3_tests(
                 "deadlines": [{"amount": 15, "label": "Réponse art. 145"}],
             },
         )
-        cal_txt = cal_res.get("content", [{}])[0].get("text", "")
-        cal_info = json.loads(cal_txt)
-        due_date = cal_info[0].get("due_date")
+        cal_results = (cal_res.get("structuredContent") or {}).get("results") or [{}]
+        due_date = cal_results[0].get("effective_date")
         ok = has_15 and due_date == "2026-09-16"
 
         elapsed = (time.perf_counter() - t0) * 1000
@@ -3331,15 +3400,22 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         # Étape 3 : Extraction en lot 1726-1731
         r3 = client.call_tool("legislation", "legislation_get_articles", {"law": "ccq", "from": "1726", "to": "1731"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
-        # Étape 4 : Vérification d'autorité 2015 QCCA 1526
+        # Étape 4 : Vérification d'autorité 2020 QCCA 495 (SNC-Lavalin inc. ... c. Deguise)
         r4 = client.call_tool(
             "jurisprudence",
             "jurisprudence_verify_citations",
-            {"citations": [{"citation": "2015 QCCA 1526", "expected_title": "St-Louis c. Morin"}]},
+            {
+                "citations": [
+                    {
+                        "citation": "2020 QCCA 495",
+                        "expected_title": "SNC-Lavalin inc. (Terratech inc. et SNC-Lavalin Environnement inc.) c. Deguise",
+                    }
+                ]
+            },
         )
         txt4 = r4.get("content", [{}])[0].get("text", "")
         # Étape 5 : Citateur CanLII
-        r5 = client.call_tool("jurisprudence", "jurisprudence_citator", {"citation": "2015 QCCA 1526", "rel": "citing", "limit": 5})
+        r5 = client.call_tool("jurisprudence", "jurisprudence_citator", {"citation": "2020 QCCA 495", "rel": "citing", "limit": 5})
         txt5 = r5.get("content", [{}])[0].get("text", "")
         # Étape 6 : Analyse numéro de greffe
         r6 = client.call_tool("pratique-civile-outils", "greffe_parse_court_file_number", {"court_file_number": "500-17-012345-211"})
@@ -3353,9 +3429,9 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
                 "tranches": [{"principal_cents": 5000000, "start_date": "2024-05-01", "label": "Réparations"}],
             },
         )
-        txt7 = r7.get("content", [{}])[0].get("text", "")
+        sc7 = r7.get("structuredContent") or {}
 
-        ok = "1726" in txt2 and "CONFIRMÉE" in txt4 and "Montréal" in txt6 and "grand_total_cents" in txt7
+        ok = "1726" in txt2 and "CONFIRMÉE" in txt4 and "Montréal" in txt6 and sc7.get("grand_total_cents", 0) > 0
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.1",
@@ -3429,7 +3505,7 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         r4 = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2020 QCCA 495"})
         txt4 = r4.get("content", [{}])[0].get("text", "")
 
-        ok = "qcca" in txt1.lower() and "confirmée" in txt2.lower() and "famille" in txt4.lower()
+        ok = "qcca" in txt1.lower() and "confirmée" in txt2.lower() and "deguise" in txt4.lower()
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.3",
@@ -3455,16 +3531,16 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
             {"query": "prescription dommage corporel", "law": "ccq", "limit": 3},
         )
         txt1 = r1.get("content", [{}])[0].get("text", "")
-        # Étape 2 : Texte complet de la division
+        # Étape 2 : Texte complet de la division (Livre VIII — De la prescription)
         r2 = client.call_tool(
-            "legislation", "legislation_get_division", {"law": "ccq", "path": "ga:l_dixieme-gb:l_premier"}
+            "legislation", "legislation_get_division", {"law": "ccq", "path": "ga:l_huitieme-gb:l_troisieme"}
         )
         txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Exploration des règlements pris en application du CPC
         r3 = client.call_tool("legislation", "legislation_related_laws", {"law": "cpc", "rel_type": "reglement-de"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
 
-        ok = "2925" in txt1 and "prescription" in txt2.lower() and "honoraires" in txt3.lower()
+        ok = "2930" in txt1 and "prescription" in txt2.lower() and "cour supérieure" in txt3.lower()
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.4",
@@ -3609,11 +3685,16 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     if target_server in ("all", "legislation", "pratique-civile-outils"):
         t0 = time.perf_counter()
         try:
+            cors_headers = {
+                "Origin": "https://claude.ai",
+                "Access-Control-Request-Method": "POST",
+            }
             status_leg, hdrs_leg, _ = client.send_http(
                 "legislation",
                 path="/mcp",
                 method="OPTIONS",
                 body_data=b"",
+                extra_headers=cors_headers,
                 auth_token="OMIT",
             )
             status_out, hdrs_out, _ = client.send_http(
@@ -3621,9 +3702,12 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 path="/mcp",
                 method="OPTIONS",
                 body_data=b"",
+                extra_headers=cors_headers,
             )
-            ok_leg = status_leg == 204 and "POST, OPTIONS" in hdrs_leg.get("Access-Control-Allow-Methods", "")
-            ok_out = status_out == 204 and "POST, OPTIONS" in hdrs_out.get("Access-Control-Allow-Methods", "")
+            hdrs_leg_l = {k.lower(): v for k, v in hdrs_leg.items()}
+            hdrs_out_l = {k.lower(): v for k, v in hdrs_out.items()}
+            ok_leg = status_leg == 204 and "POST, OPTIONS" in hdrs_leg_l.get("access-control-allow-methods", "")
+            ok_out = status_out == 204 and "POST, OPTIONS" in hdrs_out_l.get("access-control-allow-methods", "")
             ok = ok_leg and ok_out
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -3656,10 +3740,8 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                     "deadlines": [{"label": "Seuil 17h00", "amount": 1, "unit": "days"}],
                 },
             )
-            txt_1700 = r_1700.get("content", [{}])[0].get("text", "")
-            data_1700 = json.loads(txt_1700)
-            item_1700 = data_1700[0] if isinstance(data_1700, list) else data_1700.get("results", [{}])[0]
-            anchor_1700 = item_1700.get("anchor_date") or item_1700.get("effective_anchor_date")
+            item_1700 = ((r_1700.get("structuredContent") or {}).get("results") or [{}])[0]
+            anchor_1700 = item_1700.get("effective_anchor_date") or item_1700.get("anchor_date")
             not_shifted_1700 = anchor_1700 == "2026-07-03" and not bool(item_1700.get("anchor_shifted_art_111", False))
 
             # 17:01 un vendredi -> DOIT basculer au lundi suivant (2026-07-06)
@@ -3674,10 +3756,8 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                     "deadlines": [{"label": "Après 17h00", "amount": 1, "unit": "days"}],
                 },
             )
-            txt_1701 = r_1701.get("content", [{}])[0].get("text", "")
-            data_1701 = json.loads(txt_1701)
-            item_1701 = data_1701[0] if isinstance(data_1701, list) else data_1701.get("results", [{}])[0]
-            anchor_1701 = item_1701.get("anchor_date") or item_1701.get("effective_anchor_date")
+            item_1701 = ((r_1701.get("structuredContent") or {}).get("results") or [{}])[0]
+            anchor_1701 = item_1701.get("effective_anchor_date") or item_1701.get("anchor_date")
             shifted_1701 = anchor_1701 == "2026-07-06" and bool(item_1701.get("anchor_shifted_art_111", False))
 
             # 16:59 un vendredi -> NE DOIT PAS basculer (ancre reste 2026-07-03)
@@ -3692,10 +3772,8 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                     "deadlines": [{"label": "Avant 17h00", "amount": 1, "unit": "days"}],
                 },
             )
-            txt_1659 = r_1659.get("content", [{}])[0].get("text", "")
-            data_1659 = json.loads(txt_1659)
-            item_1659 = data_1659[0] if isinstance(data_1659, list) else data_1659.get("results", [{}])[0]
-            anchor_1659 = item_1659.get("anchor_date") or item_1659.get("effective_anchor_date")
+            item_1659 = ((r_1659.get("structuredContent") or {}).get("results") or [{}])[0]
+            anchor_1659 = item_1659.get("effective_anchor_date") or item_1659.get("anchor_date")
             not_shifted_1659 = anchor_1659 == "2026-07-03" and not bool(item_1659.get("anchor_shifted_art_111", False))
 
             ok = not_shifted_1700 and shifted_1701 and not_shifted_1659
