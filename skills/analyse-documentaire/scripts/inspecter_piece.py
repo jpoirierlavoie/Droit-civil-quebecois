@@ -488,6 +488,7 @@ def _try_optional_pdf_lib(path: Path) -> dict[str, object] | None:
                     acro = resolved_root["/AcroForm"].get_object()
                     has_sig = "/SigFlags" in acro
             except Exception:
+                # AcroForm malformé ou référence indirecte illisible : traiter comme absence de signature.
                 pass
             return {
                 "analyseur": "pypdf",
@@ -563,6 +564,7 @@ def _inspect_pdf(path: Path) -> dict[str, object]:
             try:
                 candidates.append(zlib.decompress(chunk))
             except zlib.error:
+                # Flux PDF non compressé en Flate/zlib : s'en tenir à l'inspection des octets bruts.
                 pass
             for cand in candidates:
                 if _PDF_TEXT_OP_RE.search(cand):

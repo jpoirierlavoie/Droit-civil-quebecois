@@ -16,7 +16,7 @@ Paliers de vérification :
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import datetime
 import http.client
 import json
@@ -26,7 +26,7 @@ import re
 import socket
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -120,7 +120,6 @@ class MockMcpServer:
         self.tool_definitions = self._build_tool_definitions()
 
     def _build_tool_definitions(self) -> Dict[str, Dict[str, Any]]:
-        expected_names = NOMS_OUTILS_ATTENDUS.get(self.server_name, [])
         tools: Dict[str, Dict[str, Any]] = {}
 
         if self.server_name == "legislation":
@@ -1477,6 +1476,7 @@ def parse_mcp_response(resp_bytes: bytes, server_key: str = "") -> Dict[str, Any
             if isinstance(parsed, dict):
                 return parsed
         except json.JSONDecodeError:
+            # Pas un objet JSON unique : poursuivre le découpage par événements SSE.
             pass
 
     # 2. Découpage par blocs d'événements SSE (séparés par double saut de ligne)
@@ -2615,6 +2615,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         )
     except ConnectionError:
         raise
+    except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T2.3.3", "JSON-RPC -32600 Missing version", "pratique-civile-outils", False, elapsed, str(ex))
 
@@ -3431,7 +3432,17 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         )
         sc7 = r7.get("structuredContent") or {}
 
-        ok = "1726" in txt2 and "CONFIRMÉE" in txt4 and "Montréal" in txt6 and sc7.get("grand_total_cents", 0) > 0
+        ok = (
+            not r1.get("isError")
+            and "ccq" in txt1.lower()
+            and "1726" in txt2
+            and "1731" in txt3
+            and "CONFIRMÉE" in txt4
+            and not r5.get("isError")
+            and len(txt5) > 0
+            and "Montréal" in txt6
+            and sc7.get("grand_total_cents", 0) > 0
+        )
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.1",
@@ -3452,8 +3463,10 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
     try:
         # Étape 1 : Résolution référence art. 145 C.p.c.
         r1 = client.call_tool("legislation", "legislation_resolve_reference", {"citation": "art. 145 C.p.c."})
+        txt1 = r1.get("content", [{}])[0].get("text", "")
         # Étape 2 : Jours fériés 2026
         r2 = client.call_tool("pratique-civile-outils", "calendrier_list_holidays", {"year": 2026, "regime": "qc_cpc"})
+        txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Calcul arithmétique avec bascule art. 111 al. 2 C.p.c. (17h35 un vendredi)
         r3 = client.call_tool(
             "pratique-civile-outils",
@@ -3471,7 +3484,14 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         r4 = client.call_tool("pratique-civile-outils", "palais_get", {"greffe_number": "500"})
         txt4 = r4.get("content", [{}])[0].get("text", "")
 
-        ok = "2026-07-21" in txt3 and "Notre-Dame" in txt4
+        ok = (
+            not r1.get("isError")
+            and "145" in txt1
+            and not r2.get("isError")
+            and "2026-01-01" in txt2
+            and "2026-07-21" in txt3
+            and "Notre-Dame" in txt4
+        )
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.2",
@@ -3505,7 +3525,13 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         r4 = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2020 QCCA 495"})
         txt4 = r4.get("content", [{}])[0].get("text", "")
 
-        ok = "qcca" in txt1.lower() and "confirmée" in txt2.lower() and "deguise" in txt4.lower()
+        ok = (
+            "qcca" in txt1.lower()
+            and "confirmée" in txt2.lower()
+            and not r3.get("isError")
+            and len(txt3) > 0
+            and "deguise" in txt4.lower()
+        )
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.3",
@@ -3841,7 +3867,6 @@ def format_report_terminal(
 
     total_count = len(results)
     passed_count = sum(1 for r in results if r.passed)
-    failed_count = total_count - passed_count
     succ_rate = (passed_count / total_count * 100) if total_count else 0.0
 
     lines.append("\n" + "=" * 80)
