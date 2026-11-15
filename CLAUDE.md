@@ -28,7 +28,7 @@ Directives de développement, architecture du cadre global et règles anti-déri
          └──────────┬──────────┘ └──────────┬──────────┘ └──────────────────────────┘
                     │                       │
                     └───────────┬───────────┘
-                                ▼ (dépendance de dev `#v0.6.0`, zéro runtime dep)
+                                ▼ (dépendance de dev `#v0.6.2`, zéro runtime dep)
                  ┌─────────────────────────────┐
                  │    MCP-Socle-Juridique      │
                  │  Transport JSON-RPC 2.0     │
