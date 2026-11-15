@@ -7,7 +7,7 @@ Jurisprudence, Outils) pour Claude et Gemini, en mode simulation locale (Mock) o
 réseau en direct (Live).
 
 Paliers de vérification :
-- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 26 outils)
+- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 32 outils)
 - Palier 2 : Conditions aux limites & cas négatifs (auth 401/404, schémas, JSON-RPC)
 - Palier 3 : Compatibilité inter-plateformes (parité Claude/Gemini, cache Antigravity)
 - Palier 4 : Scénarios réels de pratique juridique québécoise (4 workflows complets)
@@ -32,7 +32,7 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "1.5.0"
+VERSION_ATTENDUE = "1.6.0"
 USER_AGENT_VERIFICATEUR = (
     "PratiqueCivileQuebecoise-Verifier/1.0 (Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
@@ -78,6 +78,12 @@ NOMS_OUTILS_ATTENDUS = {
         "greffe_parse_court_file_number",
         "palais_list",
         "palais_get",
+        "registre_search_entities",
+        "registre_get_entity",
+        "adresse_verify",
+        "terminologie_lookup",
+        "terminologie_attestations",
+        "terminologie_scan_text",
     ],
 }
 
@@ -527,6 +533,95 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
+            tools["registre_search_entities"] = {
+                "name": "registre_search_entities",
+                "description": "Recherche hors ligne dans les instantanés locaux du REQ (RBQ/OPC/RENA) et de Corporations Canada.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "jurisdiction": {"type": "string", "enum": ["qc", "ca", "all"]},
+                        "active_only": {"type": "boolean"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+            }
+            tools["registre_get_entity"] = {
+                "name": "registre_get_entity",
+                "description": "Fiche détaillée hors ligne d'une entreprise par NEQ, numéro fédéral ou NE.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "neq": {"type": "string"},
+                        "corporation_number": {"type": "string"},
+                        "bn_ne": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+            }
+            tools["adresse_verify"] = {
+                "name": "adresse_verify",
+                "description": "Vérification et normalisation hors ligne d'une adresse québécoise selon le RQA (MRNF).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "address": {"type": "string"},
+                        "civic_number": {"type": "string"},
+                        "street": {"type": "string"},
+                        "unit": {"type": "string"},
+                        "municipality": {"type": "string"},
+                        "postal_code": {"type": "string"},
+                        "max_candidates": {"type": "integer"},
+                    },
+                    "additionalProperties": False,
+                },
+            }
+            tools["terminologie_lookup"] = {
+                "name": "terminologie_lookup",
+                "description": "Recherche bilingue FR/EN dans la base terminologique juridique hiérarchisée (rangs 1 à 4).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "source_lang": {"type": "string", "enum": ["fr", "en", "auto"]},
+                        "domain_filter": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+            }
+            tools["terminologie_attestations"] = {
+                "name": "terminologie_attestations",
+                "description": "Attestations statutaires bilingues FR/EN alignées dans le corpus législatif consolidé.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string"},
+                        "lang": {"type": "string", "enum": ["fr", "en"]},
+                        "law_filter": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["term", "lang"],
+                    "additionalProperties": False,
+                },
+            }
+            tools["terminologie_scan_text"] = {
+                "name": "terminologie_scan_text",
+                "description": "Détection en lecture seule des contaminations de droit français, de common law et d'archaïsmes.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string"},
+                        "lang": {"type": "string", "enum": ["fr", "en"]},
+                        "context_system": {"type": "string", "enum": ["droit_civil_qc", "bijuridique_federal"]},
+                    },
+                    "required": ["text", "lang"],
+                    "additionalProperties": False,
+                },
+            }
 
         return tools
 
@@ -839,6 +934,17 @@ class MockMcpServer:
                 return "Exclusion mutuelle (XOR) violée : fournir soit greffe_number soit palais, pas les deux."
             if not has_greffe and not has_palais:
                 return "Exclusion mutuelle (XOR) violée : fournir au moins greffe_number ou palais."
+
+        # Règle XOR pour registre_get_entity (exactement l'un de neq, corporation_number, bn_ne)
+        if tool_name == "registre_get_entity":
+            provided = [k for k in ("neq", "corporation_number", "bn_ne") if bool(str(args.get(k, "")).strip())]
+            if len(provided) != 1:
+                return "Exclusion mutuelle (XOR) violée : fournir exactement l'un des identifiants neq, corporation_number ou bn_ne."
+
+        # Règle d'au moins un champ significatif pour adresse_verify
+        if tool_name == "adresse_verify":
+            if not any(bool(str(args.get(k, "")).strip()) for k in ("address", "street", "postal_code")):
+                return "Paramètre requis manquant : fournir address ou street."
 
         # Règle XOR pour jurisprudence_get_case, citator et subsequent_history
         if tool_name in ("jurisprudence_get_case", "jurisprudence_citator", "jurisprudence_subsequent_history"):
@@ -1434,6 +1540,172 @@ class MockMcpServer:
                 "structuredContent": {"palais": info},
             }
 
+        elif tool_name == "registre_search_entities":
+            q = args.get("query", "")
+            cand = {
+                "jurisdiction": "qc",
+                "neq": "1172345678",
+                "corporation_number": None,
+                "bn_ne": None,
+                "nom_officiel": "9123-4567 QUÉBEC INC.",
+                "autres_noms": ["Construction Boréale"],
+                "forme_juridique": "Société par actions ou compagnie",
+                "statut": "Immatriculée",
+                "is_active": True,
+                "faillite_declaree": False,
+                "date_constitution": "2018-04-12",
+                "ville": "Montréal",
+                "has_rbq_licence": True,
+                "has_opc_permit": False,
+                "in_rena": False,
+            }
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Recherche d'entreprises pour « {q} » : 1 candidat (NEQ 1172345678 — 9123-4567 QUÉBEC INC., Montréal).",
+                    }
+                ],
+                "structuredContent": {
+                    "query": q,
+                    "jurisdiction": args.get("jurisdiction", "all"),
+                    "active_only": bool(args.get("active_only", False)),
+                    "count": 1,
+                    "snapshots": {"req": "2026-11-01"},
+                    "entities": [cand],
+                    "provenance": {"source": "Instantané REQ / Corporations Canada", "verified_at": "2026-11-01"},
+                    "gardes": [
+                        {"code": "REGISTRE_SNAPSHOT_SANS_VALEUR_OFFICIELLE", "message": "Instantané local sans valeur de certificat."},
+                        {"code": "REQ_SANS_DIRIGEANTS_PERSONNES_PHYSIQUES", "message": "Les administrateurs personnes physiques sont exclus du jeu ouvert."},
+                    ],
+                },
+            }
+
+        elif tool_name == "registre_get_entity":
+            neq = args.get("neq") or "1172345678"
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Fiche REQ NEQ {neq} — 9123-4567 QUÉBEC INC. (Immatriculée, domicile élu : 1, rue Notre-Dame Est, Montréal).",
+                    }
+                ],
+                "structuredContent": {
+                    "found": True,
+                    "jurisdiction": "qc",
+                    "entity": {
+                        "neq": neq,
+                        "nom_officiel": "9123-4567 QUÉBEC INC.",
+                        "statut": "Immatriculée",
+                        "adresse_domicile": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                    },
+                    "provenance": {"source": "Instantané REQ", "verified_at": "2026-11-01"},
+                    "gardes": [
+                        {"code": "REGISTRE_SNAPSHOT_SANS_VALEUR_OFFICIELLE", "message": "Instantané local sans valeur de certificat."},
+                        {"code": "REQ_SANS_DIRIGEANTS_PERSONNES_PHYSIQUES", "message": "Les administrateurs personnes physiques sont exclus du jeu ouvert."},
+                    ],
+                },
+            }
+
+        elif tool_name == "adresse_verify":
+            raw_addr = args.get("address") or f"{args.get('civic_number', '1')} {args.get('street', 'rue Notre-Dame Est')}, {args.get('municipality', 'Montréal')}"
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Adresse RQA vérifiée (civic_confirmed) : 1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6 — district judiciaire probable : Montréal (500).",
+                    }
+                ],
+                "structuredContent": {
+                    "status": "civic_confirmed",
+                    "input_summary": raw_addr,
+                    "normalized_address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                    "probable_judicial_district": {"greffe_number": "500", "district": "Montréal"},
+                    "provenance": {"source": "Référentiel québécois des adresses (RQA, MRNF)", "verified_at": "2026-11-15"},
+                    "gardes": [
+                        {"code": "ADRESSE_EXISTENCE_MUNICIPALE_NON_DOMICILE", "message": "Confirme l'existence municipale sans établir le domicile d'une partie."},
+                    ],
+                },
+            }
+
+        elif tool_name == "terminologie_lookup":
+            q = args.get("query", "mortgage")
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Recherche terminologique pour « {q} » : FR « hypothèque » ↔ EN « hypothec » (à éviter en droit civil québécois : « mortgage »).",
+                    }
+                ],
+                "structuredContent": {
+                    "query": q,
+                    "count": 1,
+                    "fiches": [
+                        {
+                            "rang_source": 1,
+                            "terme_fr": "hypothèque",
+                            "terme_en": "hypothec",
+                            "systeme_juridique": "droit_civil_qc",
+                            "base_legale": "art. 2660 C.c.Q.",
+                        }
+                    ],
+                    "provenance": {"source": "Glossaire bijuridique québécois", "verified_at": "2026-11-15"},
+                    "gardes": [
+                        {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
+                    ],
+                },
+            }
+
+        elif tool_name == "terminologie_attestations":
+            term = args.get("term", "hypothec")
+            lang = args.get("lang", "en")
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Attestations statutaires pour « {term} » ({lang}) : 142 articles dans le C.c.Q. (art. 2660 : hypothèque / hypothec).",
+                    }
+                ],
+                "structuredContent": {
+                    "term": term,
+                    "lang": lang,
+                    "total_matching_articles": 142,
+                    "by_law": [{"law_id": "ccq", "official_cite": "RLRQ, c. CCQ-1991", "article_count": 142}],
+                    "provenance": {"source": "Concordancier législatif bilingue", "verified_at": "2026-11-15"},
+                    "gardes": [
+                        {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
+                    ],
+                },
+            }
+
+        elif tool_name == "terminologie_scan_text":
+            txt = args.get("text", "")
+            lang = args.get("lang", "fr")
+            occurrences = []
+            if "mortgage" in txt.lower() or "assignation" in txt.lower():
+                occurrences.append({
+                    "matched_text": "mortgage" if "mortgage" in txt.lower() else "assignation",
+                    "risk_category": "common_law_en" if "mortgage" in txt.lower() else "francisme_france",
+                    "suggested_replacement": "hypothec" if "mortgage" in txt.lower() else "demande introductive d'instance",
+                })
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Contrôle de contamination ({lang}) : {len(occurrences)} signalement(s) repéré(s) sans réécriture du texte.",
+                    }
+                ],
+                "structuredContent": {
+                    "lang": lang,
+                    "total_occurrences": len(occurrences),
+                    "occurrences": occurrences,
+                    "provenance": {"source": "Règles de contrôle bijuridique", "verified_at": "2026-11-15"},
+                    "gardes": [
+                        {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
+                    ],
+                },
+            }
+
         return {"content": [{"type": "text", "text": "OK"}]}
 
 
@@ -1549,11 +1821,11 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
             data = json.loads(resp.read().decode("utf-8"))
             tools = data.get("tools", [])
             version = data.get("version", "0.0.0")
-            # Le build de l'itération requiert 6 outils (version 0.2.0+)
-            if len(tools) < 6:
+            # Le build de l'itération requiert 12 outils (version 0.3.0+)
+            if len(tools) < 12:
                 return False, (
                     f"Serveur pratique-civile-outils distant en retard de synchronisation : "
-                    f"version {version} exposant {len(tools)} outils (attendu >= 6 outils pour v0.2.0+)."
+                    f"version {version} exposant {len(tools)} outils (attendu >= 12 outils pour v0.3.0+)."
                 )
     except Exception as exc:
         return False, f"pratique-civile-outils injoignable : {exc}"
@@ -2029,7 +2301,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # --- 1.3 26-Tool Enumeration & Schema Inspection ---
+    # --- 1.3 32-Tool Enumeration & Schema Inspection ---
     discovered_tools: Dict[str, List[Dict[str, Any]]] = {}
     for srv_key in ("legislation", "jurisprudence", "pratique-civile-outils"):
         if target_server not in ("all", srv_key):
@@ -2039,7 +2311,7 @@ def run_tier_1_tests(
             res = client.call_rpc(srv_key, "tools/list")
             tools = res.get("result", {}).get("tools", [])
             discovered_tools[srv_key] = tools
-            exp_count = 10 if srv_key in ("legislation", "jurisprudence") else 6
+            exp_count = 10 if srv_key in ("legislation", "jurisprudence") else 12
             cnt_ok = len(tools) == exp_count
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -2063,7 +2335,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # T1.3.total_tools_26 : Total de 26 outils sans doublons
+    # T1.3.total_tools_32 : Total de 32 outils sans doublons
     if target_server == "all":
         t0 = time.perf_counter()
         all_tools_set: Set[str] = set()
@@ -2074,15 +2346,15 @@ def run_tier_1_tests(
                 if t_name in all_tools_set:
                     duplicates.append(t_name)
                 all_tools_set.add(t_name)
-        total_ok = len(all_tools_set) == 26 and len(duplicates) == 0
+        total_ok = len(all_tools_set) == 32 and len(duplicates) == 0
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
-            "T1.3.total_26_tools",
-            "Catalogue total de exactement 26 outils distincts",
+            "T1.3.total_32_tools",
+            "Catalogue total de exactement 32 outils distincts",
             "all",
             total_ok,
             elapsed,
-            f"Total {len(all_tools_set)}/26, doublons : {duplicates}" if not total_ok else None,
+            f"Total {len(all_tools_set)}/32, doublons : {duplicates}" if not total_ok else None,
         )
 
     # T1.3.schema_completeness : Présence description et inputSchema type object
@@ -2141,9 +2413,17 @@ def run_tier_1_tests(
         f"Noms sans préfixe : {jur_bad_prefix}" if jur_bad_prefix else None,
     )
 
-    # T1.3.prefix_outils : Préfixes autorisés sur les 6 outils de pratique-civile-outils
+    # T1.3.prefix_outils : Préfixes autorisés sur les 12 outils de pratique-civile-outils
     t0 = time.perf_counter()
-    outils_allowed = ("calendrier_", "interets_", "greffe_", "palais_")
+    outils_allowed = (
+        "calendrier_",
+        "interets_",
+        "greffe_",
+        "palais_",
+        "registre_",
+        "adresse_",
+        "terminologie_",
+    )
     outils_bad_prefix = [
         t.get("name", "") for t in discovered_tools.get("pratique-civile-outils", [])
         if not any(t.get("name", "").startswith(p) for p in outils_allowed)
@@ -2151,7 +2431,7 @@ def run_tier_1_tests(
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.3.prefix_outils",
-        "Préfixes sectoriels autorisés sur les 6 outils Outils",
+        "Préfixes sectoriels autorisés sur les 12 outils Outils",
         "pratique-civile-outils",
         len(outils_bad_prefix) == 0,
         elapsed,
@@ -2937,6 +3217,39 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T2.4.10", "Type invalide interets tranches", "pratique-civile-outils", False, elapsed, str(ex))
 
+    # T2.4.11 : Violation exclusion mutuelle (XOR) sur registre_get_entity (aucun identifiant / deux fournis)
+    if target_server in ("all", "pratique-civile-outils"):
+        t0 = time.perf_counter()
+        try:
+            res_empty = client.call_rpc(
+                "pratique-civile-outils",
+                "tools/call",
+                {"name": "registre_get_entity", "arguments": {}},
+            )
+            res_both = client.call_rpc(
+                "pratique-civile-outils",
+                "tools/call",
+                {"name": "registre_get_entity", "arguments": {"neq": "1172345678", "corporation_number": "8284083"}},
+            )
+            ok = (
+                res_empty.get("result", {}).get("isError") is True
+                and res_both.get("result", {}).get("isError") is True
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.11",
+                "Violation contrainte XOR registre_get_entity (aucun ou plusieurs identifiants)",
+                "pratique-civile-outils",
+                ok,
+                elapsed,
+                None if ok else f"empty={res_empty}, both={res_both}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.11", "XOR registre_get_entity", "pratique-civile-outils", False, elapsed, str(ex))
+
     return results
 
 
@@ -3044,8 +3357,8 @@ def run_tier_3_tests(
             for tid, name, srv in [
                 ("T3.2.1", "Partition du cache Législation sur disque (10 outils)", "legislation"),
                 ("T3.2.2", "Partition du cache Jurisprudence sur disque (10 outils)", "jurisprudence"),
-                ("T3.2.3", "Partition du cache Outils sur disque (6 outils)", "pratique-civile-outils"),
-                ("T3.2.4", "Intégrité approfondie des 26 schémas d'outils sur disque", "all"),
+                ("T3.2.3", "Partition du cache Outils sur disque (12 outils)", "pratique-civile-outils"),
+                ("T3.2.4", "Intégrité approfondie des 32 schémas d'outils sur disque", "all"),
                 ("T3.2.5", "Présence et conformité de instructions.md sur disque", "all"),
             ]:
                 add_result(tid, name, srv, False, 0.0, f"Cache absent dans {antigravity_mcp_base}")
@@ -3054,7 +3367,7 @@ def run_tier_3_tests(
                 ("T3.2.1", "Partition du cache Législation sur disque (ignoré : cache Antigravity absent hors local)", "legislation"),
                 ("T3.2.2", "Partition du cache Jurisprudence sur disque (ignoré : cache Antigravity absent hors local)", "jurisprudence"),
                 ("T3.2.3", "Partition du cache Outils sur disque (ignoré : cache Antigravity absent hors local)", "pratique-civile-outils"),
-                ("T3.2.4", "Intégrité approfondie des 26 schémas (ignoré : cache Antigravity absent hors local)", "all"),
+                ("T3.2.4", "Intégrité approfondie des 32 schémas (ignoré : cache Antigravity absent hors local)", "all"),
                 ("T3.2.5", "Présence instructions.md (ignoré : cache Antigravity absent hors local)", "all"),
             ]:
                 add_result(tid, name, srv, True, 0.0, None)
@@ -3090,22 +3403,22 @@ def run_tier_3_tests(
             f"Trouvé {len(jur_tools)} fichiers (stale: {stale_in_jur}) au lieu de 10 dans {jur_dir}" if not c_jur_ok else None,
         )
 
-        # T3.2.3 : Partition Outils sur disque (6 outils avec greffe et palais)
+        # T3.2.3 : Partition Outils sur disque (12 outils sur 5 familles)
         t0 = time.perf_counter()
         out_tools = list(out_dir.glob("*.json")) if out_dir.is_dir() else []
         out_names = {f.stem for f in out_tools}
-        c_out_ok = (len(out_tools) == 6) and (out_names == set(NOMS_OUTILS_ATTENDUS["pratique-civile-outils"]))
+        c_out_ok = (len(out_tools) == 12) and (out_names == set(NOMS_OUTILS_ATTENDUS["pratique-civile-outils"]))
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.3",
-            "Partition du cache Outils sur disque (exactement 6 outils avec greffe et palais)",
+            "Partition du cache Outils sur disque (exactement 12 outils sur 5 familles)",
             "pratique-civile-outils",
             c_out_ok,
             elapsed,
-            f"Trouvé {len(out_tools)} fichiers au lieu de 6 dans {out_dir}" if not c_out_ok else None,
+            f"Trouvé {len(out_tools)} fichiers au lieu de 12 dans {out_dir}" if not c_out_ok else None,
         )
 
-        # T3.2.4 : Intégrité approfondie des 26 schémas d'outils sur disque (descriptions et items)
+        # T3.2.4 : Intégrité approfondie des 32 schémas d'outils sur disque (descriptions et items)
         t0 = time.perf_counter()
         schema_errs = []
         total_inspected = 0
@@ -3150,15 +3463,15 @@ def run_tier_3_tests(
                 except Exception as ex:
                     schema_errs.append(f"{srv_name}/{json_file.name} erreur JSON: {ex}")
 
-        t324_ok = (total_inspected == 26) and (len(schema_errs) == 0)
+        t324_ok = (total_inspected == 32) and (len(schema_errs) == 0)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.4",
-            "Intégrité approfondie des 26 schémas d'outils sur disque (descriptions et items)",
+            "Intégrité approfondie des 32 schémas d'outils sur disque (descriptions et items)",
             "all",
             t324_ok,
             elapsed,
-            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 26 else f"Inspecté {total_inspected}/26 schémas"),
+            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 32 else f"Inspecté {total_inspected}/32 schémas"),
         )
 
         # T3.2.5 : Présence et conformité de instructions.md dans les 3 serveurs sur disque
@@ -3316,6 +3629,55 @@ def run_tier_3_tests(
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T3.3.4", "Contrat CPC -> Calendrier", "all", False, elapsed, str(ex))
+
+    # T3.3.5 : Contrat Registres -> Adresses -> Terminologie (v0.3.0)
+    if target_server in ("all", "pratique-civile-outils"):
+        t0 = time.perf_counter()
+        try:
+            reg_res = client.call_tool(
+                "pratique-civile-outils",
+                "registre_search_entities",
+                {"query": "9123-4567"},
+            )
+            reg_sc = reg_res.get("structuredContent") or {}
+            first_neq = ((reg_sc.get("entities") or [{}])[0]).get("neq")
+            ent_res = client.call_tool(
+                "pratique-civile-outils",
+                "registre_get_entity",
+                {"neq": first_neq or "1172345678"},
+            )
+            ent_addr = ((ent_res.get("structuredContent") or {}).get("entity") or {}).get("adresse_domicile", "")
+            addr_res = client.call_tool(
+                "pratique-civile-outils",
+                "adresse_verify",
+                {"address": ent_addr or "1, rue Notre-Dame Est, Montréal"},
+            )
+            addr_sc = addr_res.get("structuredContent") or {}
+            scan_res = client.call_tool(
+                "pratique-civile-outils",
+                "terminologie_scan_text",
+                {"text": "The debtor granted a mortgage on the immovable.", "lang": "en"},
+            )
+            scan_sc = scan_res.get("structuredContent") or {}
+            ok = (
+                bool(reg_sc.get("gardes"))
+                and bool(addr_sc.get("gardes"))
+                and scan_sc.get("total_occurrences", 0) >= 1
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T3.3.5",
+                "Contrat croisé Registres -> Adresses RQA -> Terminologie (gardes obligatoires)",
+                "pratique-civile-outils",
+                ok,
+                elapsed,
+                None if ok else f"reg={reg_sc}, addr={addr_sc}, scan={scan_sc}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T3.3.5", "Contrat Registres -> Adresses -> Terminologie", "pratique-civile-outils", False, elapsed, str(ex))
 
     # --- 3.4 Static Verifier Alignment ---
     # T3.4.1 : Présence de verifier_tout.py dans ROOT_ALLOWLIST de verifier.py
@@ -3816,7 +4178,7 @@ def format_report_terminal(
         by_tier.setdefault(r.tier, []).append(r)
 
     tier_names = {
-        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 26 outils)",
+        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 32 outils)",
         2: "Palier 2 : Limites & Négatifs (Auth 401/404, Headers, JSON-RPC, Schémas)",
         3: "Palier 3 : Compatibilité inter-plateformes (Claude, Gemini, Antigravity)",
         4: "Palier 4 : Scénarios réels de litige civil québécois (Workflows)",

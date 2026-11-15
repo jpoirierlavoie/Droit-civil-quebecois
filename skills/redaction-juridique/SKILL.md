@@ -164,7 +164,11 @@ québécoises rédigées en anglais sont pleinement applicables. Rédiger en ang
 québécois est normal — avec la terminologie officielle, non traduite.
 
 Tables complètes, faux amis et mécanismes : `references/contamination.md` — **obligatoire** pour
-réviser un texte dont on soupçonne l'origine, et pour toute rédaction en anglais.
+réviser un texte dont on soupçonne l'origine, et pour toute rédaction en anglais. Lorsque le
+connecteur « pratique-civile-outils » est disponible, `terminologie_scan_text` repère en lecture
+seule dans le projet fini (jusqu'à 32 000 caractères) les francismes de France, calques de common
+law et archaïsmes d'avant 2016 sans jamais réécrire le texte, tandis que `terminologie_lookup` et
+`terminologie_attestations` vérifient les équivalents bilingues et leurs occurrences statutaires.
 
 ## Ce qu'il faut du dossier
 
@@ -174,7 +178,7 @@ fichier de famille précise, à sa section 0, lesquels lui sont indispensables.
 | Besoin | Ce qu'il apporte à la rédaction |
 |---|---|
 | **FICHE** | L'ancrage : qualification, matière, recours, forum, délais, renvois. Une qualification marquée à confirmer est à vérifier aux sources, pas à reprendre telle quelle |
-| **PARTIES** | Désignations exactes, forme juridique, identifiants, qualités, coordonnées. Indispensable à LES PARTIES d'un acte de procédure et à l'identification des parties d'un acte juridique |
+| **PARTIES** | Désignations exactes, forme juridique, identifiants, qualités, coordonnées. Indispensable à LES PARTIES d'un acte de procédure et à l'identification des parties d'un acte juridique. Pour une personne morale ou entreprise immatriculée, recouper au besoin la dénomination, le NEQ ou numéro fédéral et le statut via `registre_search_entities` et `registre_get_entity` (instantanés hors ligne sans administrateurs personnes physiques ni valeur de certificat — vérifier au REQ avant signification), et contrôler l'existence municipale et le code postal d'une adresse québécoise via `adresse_verify` (qui n'établit ni le domicile d'une partie ni la propriété foncière, laquelle relève du Registre foncier) |
 | **THÉORIE** | La théorie de la cause : c'est précisément ce qu'un acte de procédure doit servir. **Lecture seule; ne jamais chercher à y écrire** |
 | **NOTES** | La substance déjà écrite, et le doublon à éviter |
 | **INVENTAIRE** | Ce qui existe comme document — donc la cote et la formule de pièce, et le téléversement à demander |
@@ -207,7 +211,8 @@ constaté », « a fait défaut de donner suite »). Ne pas répéter un point s
 
 **Bilinguisme.** Suivre la langue du dossier, non celle de la demande. En anglais, **ne jamais
 traduire un terme de procédure ou de droit civil : le prendre dans la version anglaise officielle
-du texte**, par `legislation_get_article(lang="en")` — *originating application*, *case protocol*,
+du texte**, par `legislation_get_article(lang="en")`, `terminologie_lookup` ou
+`terminologie_attestations` — *originating application*, *case protocol*,
 *exhibit*, *extrajudicial demand*, *private writing*. Certains termes que la table de contamination
 proscrit en français sont le mot officiel en anglais — *affidavit* pour la déclaration sous
 serment, *specific performance* pour l'exécution en nature. Voir la section « Terminologie

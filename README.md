@@ -62,7 +62,7 @@ commun de douze besoins :
 | Besoin | Ce qu'il recouvre |
 |---|---|
 | **FICHE** | Qualification du recours, forum, rôle du client, délai inscrit et sa nature |
-| **PARTIES** | Désignations exactes, forme juridique, qualité, coordonnées |
+| **PARTIES** | Désignations exactes, forme juridique, qualité, coordonnées — recoupement hors ligne des entreprises et adresses québécoises servi au besoin par « pratique-civile-outils » (`registre_*`, `adresse_verify`) |
 | **THÉORIE** | La théorie de la cause telle que l'avocat l'a arrêtée |
 | **NOTES** | Ce qui a déjà été écrit au dossier sur la question |
 | **INVENTAIRE** | Quels documents le dossier contient, sous quelle catégorie |
@@ -94,8 +94,8 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
         │                        │                               │
 ┌───────▼────────────────┐┌──────▼───────────────────────┐┌──────▼───────────────────────┐
 │     MCP-Legislation    ││   MCP-Jurisprudence          ││ pratique-civile-outils       │
-│  Lois du Québec & Can. ││   Vérification CanLII        ││ Calcul déterministe & greffe │
-│  (10 outils, D1/Vect.) ││   (10 outils, D1/CanLII)     ││ (6 outils, public sans état) │
+│  Lois du Québec & Can. ││   Vérification CanLII        ││ Calcul, greffe, registres,   │
+│  (10 outils, D1/Vect.) ││   (10 outils, D1/CanLII)     ││ RQA & terminologie (12 out.) │
 └───────┬────────────────┘└──────┬───────────────────────┘└──────────────────────────────┘
         │                        │
         └───────────┬────────────┘
@@ -110,12 +110,12 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 
 1. **`MCP-Legislation`** (`https://legislation.poirierlavoie.ca/mcp`) : 10 outils en lecture seule sur le corpus législatif et réglementaire consolidé du Québec (LégisQuébec) et fédéral (Justice Canada). Recherche hybride (lexicale FTS5 et sémantique Vectorize).
 2. **`MCP-Jurisprudence`** (`https://jurisprudence.poirierlavoie.ca/mcp`) : 10 outils de vérification déterministe et de consultation de citations contre l'API et la collection CanLII (métadonnées officielles, 6 verdicts d'intégrité).
-3. **`pratique-civile-outils`** (`https://outils.poirierlavoie.ca/mcp`) : 6 outils de calcul déterministe arithmétique et d'annuaire judiciaire québécois (délais procéduraux art. 83 C.p.c., intérêts légaux art. 1619 C.c.Q., numéros de greffe et palais de justice MJQ). Point d'accès public, sans état, sans secret, acceptant à la fois `application/json` et `text/event-stream`.
+3. **`pratique-civile-outils`** (`https://outils.poirierlavoie.ca/mcp`) : 12 outils hors ligne répartis en 5 familles — calcul déterministe arithmétique (délais art. 83 C.p.c., intérêts art. 1619 C.c.Q.), annuaire judiciaire MJQ (numéros de greffe et palais de justice), registres d'entreprises (instantanés REQ/RBQ/OPC/RENA et Corporations Canada), référentiel québécois des adresses (RQA, MRNF) et terminologie juridique bilingue et bijuridique. Point d'accès public, sans secret, zéro appel sortant et journalisation zéro, adossé à 3 bases D1 strictement en lecture seule à la requête.
 4. **`MCP-Socle-Juridique`** (`@poirierlavoie/socle-juridique`) : bibliothèque de protocole partagée garantissant la conformité SEP-2127, le routage JSON-RPC 2.0 sans état, la vérification constante des jetons Bearer (`timingSafeEqual` sur empreintes SHA-256) et l'étanchéité CORS/DNS rebinding.
 
 ---
 
-## Répertoire exhaustif des 26 outils MCP
+## Répertoire exhaustif des 32 outils MCP
 
 ### 1. Législation (10 outils — `https://legislation.poirierlavoie.ca/mcp`)
 | Outil | Catégorie | Entrées principales | Sorties & Rôle |
@@ -145,7 +145,7 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 | `jurisprudence_get_legislation` | CanLII Légis | `database_id`, `legislation_id` | Fiche CanLII d'une loi consolidée (dates de version de CanLII). |
 | `jurisprudence_parse_citation` | Hors ligne | `citation` | Analyse syntaxique pure hors ligne d'une citation canadienne. |
 
-### 3. Pratique civile outils (6 outils — `https://outils.poirierlavoie.ca/mcp`)
+### 3. Pratique civile outils (12 outils — `https://outils.poirierlavoie.ca/mcp`)
 | Outil | Catégorie | Entrées principales | Sorties & Rôle |
 |---|---|---|---|
 | `calendrier_list_holidays` | Calcul | `year` (1970..2100), `regime` | Jours fériés et non juridiques (C.p.c., L.I. Québec, L.I. fédérale). |
@@ -154,6 +154,12 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 | `greffe_parse_court_file_number` | Annuaire | `court_file_number` | Décomposition d'un numéro de dossier de cour (palais, district, tribunal). |
 | `palais_list` | Annuaire | `district`, `type`, `query` | Répertoire des palais de justice et points de service du Québec (MJQ). |
 | `palais_get` | Annuaire | `greffe_number` (3 chiffres) OU `palais` | Fiche détaillée d'un lieu de justice (adresses municipale et postale). |
+| `registre_search_entities` | Registres | `query`, `jurisdiction`, `active_only`, `limit` | Recherche hors ligne dans les instantanés REQ (RBQ/OPC/RENA) et Corporations Canada. |
+| `registre_get_entity` | Registres | `neq` OU `corporation_number` OU `bn_ne` | Fiche détaillée d'une entreprise par NEQ ou identifiant fédéral (sans dirigeants physiques). |
+| `adresse_verify` | Adresses | `address` ou champs structurés (`street`, `municipality`...) | Vérification et normalisation RQA (MRNF), unités, lots indicatifs et district probable. |
+| `terminologie_lookup` | Terminologie | `query`, `source_lang`, `domain_filter`, `limit` | Recherche bilingue FR/EN et bijuridique hiérarchisée (glossaire, lois, TERMIUM, OQLF). |
+| `terminologie_attestations` | Terminologie | `term`, `lang` (`fr`/`en`), `law_filter` | Occurrences exactes et extraits bilingues alignés dans le corpus législatif consolidé. |
+| `terminologie_scan_text` | Terminologie | `text` (≤ 32 000 car.), `lang`, `context_system` | Détection en lecture seule des francismes, calques de common law et archaïsmes d'avant 2016. |
 
 ---
 
