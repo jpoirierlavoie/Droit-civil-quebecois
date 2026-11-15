@@ -1,7 +1,19 @@
 {
   "mcpServers": {
-    "Legislation": {},
-    "Jurisprudence": {},
+    "legislation": {
+      "type": "http",
+      "url": "https://legislation.poirierlavoie.ca/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
+      }
+    },
+    "jurisprudence": {
+      "type": "http",
+      "url": "https://jurisprudence.poirierlavoie.ca/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
+      }
+    },
     "pratique-civile-outils": {
       "type": "http",
       "url": "https://outils.poirierlavoie.ca/mcp"

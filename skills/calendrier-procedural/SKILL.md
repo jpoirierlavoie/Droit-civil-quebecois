@@ -75,7 +75,7 @@ qui déplacent une notification ou un dépôt au jour ouvrable suivant (art. 107
 sont dans `references/jours-non-juridiques.md`. Quand le besoin **CALCUL** est servi par un outil
 connecté (`calendrier_compute_deadlines`, et `calendrier_list_holidays` pour lister les jours non
 juridiques), s'en servir et rapporter son résultat; sinon, lorsque l'exécution Python locale est
-disponible, exécuter `scripts/calcul_delai.py` (`python scripts/calcul_delai.py <AAAA-MM-JJ> --jours <N>`)
+disponible, exécuter `scripts/calcul_delai.py` (`python skills/calendrier-procedural/scripts/calcul_delai.py <AAAA-MM-JJ> --jours <N>` depuis la racine du dépôt, ou `python scripts/calcul_delai.py <AAAA-MM-JJ> --jours <N>` depuis le dossier de la compétence)
 plutôt que de compter mentalement, et dans tous les cas montrer le compte visible étape par étape
 (ancrage, déplacement éventuel selon l'art. 111 al. 2, jour 1, date brute, report selon l'art. 83,
 date effective).

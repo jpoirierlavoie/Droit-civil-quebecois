@@ -25,3 +25,5 @@ jobs:
           fi
       - name: Auto-test de la suite d'évaluation
         run: python evals/executer_evals.py --auto-test
+      - name: Vérification E2E multi-paliers (mock)
+        run: python verifier_tout.py --mode mock

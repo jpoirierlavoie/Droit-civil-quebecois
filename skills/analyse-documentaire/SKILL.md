@@ -87,7 +87,7 @@ des provenances ne rendent qu'un nom et des métadonnées.
 
 **Inspection technique locale et page sans texte.** Rien n'est océrisé automatiquement. Sur toute
 pièce locale (`.docx`, `.xlsx`, `.eml`, `.pdf`, image), exécuter d'abord `scripts/inspecter_piece.py`
-(`python scripts/inspecter_piece.py <fichier>`) pour révéler commentaires Word, révisions, formules
+(`python skills/analyse-documentaire/scripts/inspecter_piece.py <fichier>` depuis la racine du dépôt, ou `python scripts/inspecter_piece.py <fichier>` depuis le dossier de la compétence) pour révéler commentaires Word, révisions, formules
 et onglets cachés, `Bcc`/`X-Unsent`, chiffrement, `AUCUNE_COUCHE_TEXTE_DETECTEE` ou EXIF. Sur
 PDF sans texte, rasteriser et regarder; sinon, signaler l'impasse.
 

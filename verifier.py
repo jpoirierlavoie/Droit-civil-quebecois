@@ -31,6 +31,9 @@ ROOT_ALLOWLIST = frozenset(
         "LICENSE",
         "README.md",
         "verifier.py",
+        "verifier_tout.py",
+        "scripts/regenerer_cache_mcp.py",
+        "scripts/synchroniser_plugin_gemini.py",
     }
 )
 
@@ -68,15 +71,23 @@ RETIRED_REPO_SLUGS = (
 )
 EXPECTED_LICENSE = "CC0-1.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
-EXPECTED_MCP_SERVERS = {
-    "Legislation": {},
-    "Jurisprudence": {},
-    "pratique-civile-outils": {"type": "http", "url": EXPECTED_OUTILS_URL},
-}
 EXPECTED_LEGISLATION_URL = "https://legislation.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_AUTH = "Bearer $" + "{MCP_LEGISLATION_SECRET}"
 EXPECTED_JURISPRUDENCE_URL = "https://jurisprudence.poirierlavoie.ca/mcp"
 EXPECTED_JURISPRUDENCE_AUTH = "Bearer $" + "{MCP_JURISPRUDENCE_SECRET}"
+EXPECTED_MCP_SERVERS = {
+    "legislation": {
+        "type": "http",
+        "url": EXPECTED_LEGISLATION_URL,
+        "headers": {"Authorization": EXPECTED_LEGISLATION_AUTH},
+    },
+    "jurisprudence": {
+        "type": "http",
+        "url": EXPECTED_JURISPRUDENCE_URL,
+        "headers": {"Authorization": EXPECTED_JURISPRUDENCE_AUTH},
+    },
+    "pratique-civile-outils": {"type": "http", "url": EXPECTED_OUTILS_URL},
+}
 EXPECTED_GOOGLE_SERVERS = {
     "legislation": (
         EXPECTED_LEGISLATION_URL,
@@ -555,8 +566,8 @@ def verifier(racine: Path) -> list[str]:
     if mcp_json is not None:
         if mcp_json.get("mcpServers") != EXPECTED_MCP_SERVERS:
             erreurs.append(
-                ".mcp.json : 'mcpServers' doit déclarer exactement Legislation: {}, "
-                "Jurisprudence: {} et pratique-civile-outils"
+                ".mcp.json : 'mcpServers' doit déclarer exactement legislation, "
+                "jurisprudence et pratique-civile-outils avec configuration http"
             )
 
     # 4. Skills & references
