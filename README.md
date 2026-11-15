@@ -309,3 +309,10 @@ python evals/executer_evals.py --auto-test
 # 3. Vérification de bout en bout multi-serveurs (M3)
 python verifier_tout.py
 ```
+
+---
+
+## Sécurité, confidentialité et licence
+
+- **Sécurité, vie privée et secret professionnel :** Consulter [`SECURITY.md`](SECURITY.md) pour la politique de signalement privé et coordonné auprès de Jason Poirier Lavoie (`jason@poirierlavoie.ca`), applicable tant aux vulnérabilités techniques qu'à toute question de confidentialité, de vie privée ou de secret professionnel de l'avocat.
+- **Licence :** Les compétences, manifestes, scénarios d'évaluation, scripts et la documentation sont mis à disposition sous licence **Creative Commons Attribution - Pas d'Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International (`CC-BY-NC-SA-4.0`)** — voir [`LICENSE`](LICENSE). Aucun conseil juridique.

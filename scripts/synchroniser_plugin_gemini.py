@@ -23,6 +23,7 @@ BUNDLE_ROOT_FILES = [
     Path("plugin.json"),
     Path("mcp_config.json"),
     Path("LICENSE"),
+    Path("SECURITY.md"),
     Path("README.md"),
 ]
 

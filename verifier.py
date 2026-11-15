@@ -29,7 +29,10 @@ ROOT_ALLOWLIST = frozenset(
         ".mcp.json",
         "assets/logo.svg",
         "LICENSE",
+        "SECURITY.md",
         "README.md",
+        "CLAUDE.md",
+        "GEMINI.md",
         "verifier.py",
         "verifier_tout.py",
         "scripts/regenerer_cache_mcp.py",
@@ -69,7 +72,7 @@ RETIRED_REPO_SLUGS = (
     "competence-pratique-civile-quebecoise",
     "MCP-Jurisprudence-Quebec",
 )
-EXPECTED_LICENSE = "CC0-1.0"
+EXPECTED_LICENSE = "CC-BY-NC-SA-4.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_URL = "https://legislation.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_AUTH = "Bearer $" + "{MCP_LEGISLATION_SECRET}"
