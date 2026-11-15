@@ -9,13 +9,20 @@ updates:
       time: "06:00"
       timezone: "America/Montreal"
     open-pull-requests-limit: 5
+    assignees:
+      - "jpoirierlavoie"
     commit-message:
       prefix: "ci"
       include: "scope"
     labels:
       - "dependencies"
       - "github-actions"
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
