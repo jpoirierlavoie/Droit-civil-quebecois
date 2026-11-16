@@ -1,6 +1,6 @@
 # pratique-civile-quebecoise — Architecture, principes et consignes de travail
 
-Directives de développement, architecture du cadre global et règles anti-dérive pour le greffon **Pratique civile québécoise** (`v1.6.0`). Ce document s'applique de façon identique à Claude et à Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` sont identiques octet pour octet et restent sous 24 000 octets UTF-8).
+Directives de développement, architecture du cadre global et règles anti-dérive pour le greffon **Pratique civile québécoise** (`v1.6.1`). Ce document s'applique de façon identique à Claude et à Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` sont identiques octet pour octet et restent sous 24 000 octets UTF-8).
 
 > **Note sur Gemini CLI (`gemini-extension.json`) :** La racine déclare `"contextFileName": []` afin que `GEMINI.md` ne soit **jamais** injecté comme contexte système dans les sessions d'usage juridique normal des utilisateurs finaux. Il gouverne exclusivement les agents qui modifient ce dépôt.
 
@@ -67,7 +67,7 @@ Toute modification doit continuer à passer `python verifier.py` sans affaiblir 
 
 1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`)** : Aucun fichier orphelin à la racine ni sous `skills/`. Tout nouveau fichier racine autorisé doit être justifié et inscrit dans `ROOT_ALLOWLIST` (`verifier.py`).
 2. **Parité exacte des manifestes et licence** :
-   - Version semver identique partout (`1.6.0`) : `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json`, `verifier_tout.py`.
+   - Version semver identique partout (`1.6.1`) : `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `gemini-extension.json`, `verifier_tout.py`.
    - Licence SPDX identique : `CC-BY-NC-SA-4.0` dans `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `LICENSE` et `verifier.py` (`EXPECTED_LICENSE`). Ne jamais ajouter de clé non reconnue dans `plugin.json` (`ANTIGRAVITY_PLUGIN_KEYS`).
    - `"contextFileName": []` dans `gemini-extension.json` reste vide.
 3. **Configuration MCP et hygiène des secrets** :
@@ -86,9 +86,12 @@ Toute modification doit continuer à passer `python verifier.py` sans affaiblir 
 ## 4. Commandes de synchronisation et de vérification
 
 ```powershell
-# 1. Resynchroniser le cache MCP d'Antigravity et le répertoire d'extension Gemini local
-python scripts/regenerer_cache_mcp.py --apply
+# 1. Resynchroniser le répertoire d'extension Antigravity / Gemini AVANT le cache MCP
+#    (modifier mcp_config.json déclenche l'observateur d'Antigravity, qui écrase avec
+#    parameters: null les outils dont l'identifiant composé dépasse 64 caractères)
 python scripts/synchroniser_plugin_gemini.py --apply
+python scripts/regenerer_cache_mcp.py --apply
+# gemini.cmd extensions update pratique-civile-quebecoise   # si installé dans Gemini CLI
 
 # 2. Contrôles statiques et scénarios d'évaluation locaux
 python verifier.py
