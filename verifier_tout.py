@@ -1574,8 +1574,8 @@ class MockMcpServer:
                     "entities": [cand],
                     "provenance": {"source": "Instantané REQ / Corporations Canada", "verified_at": "2026-11-01"},
                     "gardes": [
-                        {"code": "REGISTRE_SNAPSHOT_SANS_VALEUR_OFFICIELLE", "message": "Instantané local sans valeur de certificat."},
-                        {"code": "REQ_SANS_DIRIGEANTS_PERSONNES_PHYSIQUES", "message": "Les administrateurs personnes physiques sont exclus du jeu ouvert."},
+                        {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
+                        {"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."},
                     ],
                 },
             }
@@ -1586,43 +1586,56 @@ class MockMcpServer:
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Fiche REQ NEQ {neq} — 9123-4567 QUÉBEC INC. (Immatriculée, domicile élu : 1, rue Notre-Dame Est, Montréal).",
+                        "text": f"Fiche REQ NEQ {neq} — 9123-4567 QUÉBEC INC. (Immatriculée, domicile déclaré : 1, rue Notre-Dame Est, Montréal).",
                     }
                 ],
                 "structuredContent": {
-                    "found": True,
-                    "jurisdiction": "qc",
-                    "entity": {
+                    "lookup_by": "neq",
+                    "lookup_value": neq,
+                    "snapshots": {"req": "2026-11-01"},
+                    "quebec": {
                         "neq": neq,
                         "nom_officiel": "9123-4567 QUÉBEC INC.",
-                        "statut": "Immatriculée",
-                        "adresse_domicile": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                        "is_active": True,
+                        "domicile_declare": {
+                            "dispense_adresse": False,
+                            "adresse": "1, rue Notre-Dame Est, Montréal (Québec)",
+                            "ville": "Montréal",
+                            "code_postal": "H2Y1B6",
+                        },
                     },
+                    "federal": None,
                     "provenance": {"source": "Instantané REQ", "verified_at": "2026-11-01"},
                     "gardes": [
-                        {"code": "REGISTRE_SNAPSHOT_SANS_VALEUR_OFFICIELLE", "message": "Instantané local sans valeur de certificat."},
-                        {"code": "REQ_SANS_DIRIGEANTS_PERSONNES_PHYSIQUES", "message": "Les administrateurs personnes physiques sont exclus du jeu ouvert."},
+                        {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
+                        {"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."},
                     ],
                 },
             }
 
         elif tool_name == "adresse_verify":
-            raw_addr = args.get("address") or f"{args.get('civic_number', '1')} {args.get('street', 'rue Notre-Dame Est')}, {args.get('municipality', 'Montréal')}"
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Adresse RQA vérifiée (civic_confirmed) : 1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6 — district judiciaire probable : Montréal (500).",
+                        "text": "Adresse RQA vérifiée (exact_civic) : 1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6 — district judiciaire probable : Montréal (500).",
                     }
                 ],
                 "structuredContent": {
-                    "status": "civic_confirmed",
-                    "input_summary": raw_addr,
-                    "normalized_address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
-                    "probable_judicial_district": {"greffe_number": "500", "district": "Montréal"},
-                    "provenance": {"source": "Référentiel québécois des adresses (RQA, MRNF)", "verified_at": "2026-11-15"},
+                    "status": "exact_civic",
+                    "adresse_normalisee": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                    "corrections_appliquees": [],
+                    "candidates": [
+                        {
+                            "adresse_normalisee": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                            "etat_rqa": "Certifiée",
+                            "district_judiciaire_probable": {"district": "Montréal", "greffes": ["500"]},
+                        }
+                    ],
+                    "provenance": {"source": "Référentiel québécois des adresses (RQA, MRNF)", "verified_at": "2026-11-01"},
                     "gardes": [
-                        {"code": "ADRESSE_EXISTENCE_MUNICIPALE_NON_DOMICILE", "message": "Confirme l'existence municipale sans établir le domicile d'une partie."},
+                        {"code": "ADRESSE_EXISTENCE_CIVIQUE_NON_DOMICILE", "message": "Confirme l'existence municipale sans établir le domicile d'une partie."},
+                        {"code": "ADRESSE_LOT_ET_MATRICULE_SANS_VALEUR_LEGALE", "message": "Les numéros de lot et le matricule sont indicatifs et sans valeur légale."},
                     ],
                 },
             }
@@ -1684,7 +1697,7 @@ class MockMcpServer:
             if "mortgage" in txt.lower() or "assignation" in txt.lower():
                 occurrences.append({
                     "matched_text": "mortgage" if "mortgage" in txt.lower() else "assignation",
-                    "risk_category": "common_law_en" if "mortgage" in txt.lower() else "francisme_france",
+                    "risk_category": "anglicisme_ou_common_law" if "mortgage" in txt.lower() else "francisme_france",
                     "suggested_replacement": "hypothec" if "mortgage" in txt.lower() else "demande introductive d'instance",
                 })
             return {
@@ -1696,7 +1709,8 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "lang": lang,
-                    "total_occurrences": len(occurrences),
+                    "scanned_length": len(txt),
+                    "flagged_count": len(occurrences),
                     "occurrences": occurrences,
                     "provenance": {"source": "Règles de contrôle bijuridique", "verified_at": "2026-11-15"},
                     "gardes": [
@@ -3647,7 +3661,11 @@ def run_tier_3_tests(
                 "registre_get_entity",
                 {"neq": first_neq or "1172345678"},
             )
-            ent_addr = ((ent_res.get("structuredContent") or {}).get("entity") or {}).get("adresse_domicile", "")
+            ent_sc = ent_res.get("structuredContent") or {}
+            ent_addr = (
+                ((ent_sc.get("quebec") or {}).get("domicile_declare") or {}).get("adresse")
+                or ""
+            )
             addr_res = client.call_tool(
                 "pratique-civile-outils",
                 "adresse_verify",
@@ -3662,8 +3680,10 @@ def run_tier_3_tests(
             scan_sc = scan_res.get("structuredContent") or {}
             ok = (
                 bool(reg_sc.get("gardes"))
+                and bool(ent_sc.get("gardes"))
                 and bool(addr_sc.get("gardes"))
-                and scan_sc.get("total_occurrences", 0) >= 1
+                and bool(addr_sc.get("adresse_normalisee"))
+                and scan_sc.get("flagged_count", 0) >= 1
             )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -3672,7 +3692,7 @@ def run_tier_3_tests(
                 "pratique-civile-outils",
                 ok,
                 elapsed,
-                None if ok else f"reg={reg_sc}, addr={addr_sc}, scan={scan_sc}",
+                None if ok else f"reg={reg_sc}, ent={ent_sc}, addr={addr_sc}, scan={scan_sc}",
             )
         except ConnectionError:
             raise
