@@ -233,6 +233,31 @@ def auto_test() -> int:
         if bad["reussi"]:
             erreurs.append("Auto-test négatif RJ-01 aurait dû détecter art. 1641 / Cour de cassation.")
 
+    sc_rd06 = next((s for s in scenarios if s["id"] == "RD-06"), None)
+    if sc_rd06 is not None:
+        ok_rd06 = evaluer_reponse(
+            sc_rd06,
+            "L'avis d'assignation indique 15 jours, ou 30 jours selon l'art. 490 C.p.c. "
+            "En vertu de l'art. 101 al. 1 C.p.c., préavis d'au moins 3 jours, sous réserve des "
+            "délais particuliers (art. 527 : 5 jours) ; serment requis seulement si la preuve "
+            "n'est pas déjà au dossier.",
+        )
+        if not ok_rd06["reussi"]:
+            erreurs.append(f"Auto-test positif RD-06 a échoué : {ok_rd06}")
+        for variante_fautive in (
+            "Avis d'assignation : 15 jours ou 30 jours (art. 490 C.p.c.). "
+            "Selon l'art. 101 C.p.c. : notification au moins 5 jours à l'avance (3 jours si urgence), "
+            "serment si la preuve n'est pas au dossier.",
+            "Avis d'assignation : 15 jours ou 30 jours (art. 490 C.p.c.). "
+            "Selon l'art. 101 C.p.c., notification au moins 5 jours à l'avance (3 jours si urgence), "
+            "serment si la preuve n'est pas au dossier.",
+        ):
+            bad_rd06 = evaluer_reponse(sc_rd06, variante_fautive)
+            if bad_rd06["reussi"]:
+                erreurs.append(
+                    "Auto-test négatif RD-06 aurait dû détecter l'attribution de 5 jours à l'art. 101."
+                )
+
     if erreurs:
         for err in erreurs:
             print(err, file=sys.stderr)
