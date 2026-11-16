@@ -110,7 +110,8 @@ def main():
                 try:
                     d.rmdir()
                 except OSError:
-                    pass
+                    # Répertoire non vide : conservé car il contient des fichiers synchronisés.
+                    continue
 
     legacy_removed = False
     if legacy_dst_dir != dst_dir and legacy_dst_dir.is_dir():
