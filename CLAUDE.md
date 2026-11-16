@@ -22,16 +22,16 @@ Directives de développement, architecture du cadre global et règles anti-déri
                     │                       │            `adresse_*`, `terminologie_*`)
                     ▼                       ▼                  ▼
          ┌─────────────────────┐ ┌─────────────────────┐ ┌──────────────────────────┐
-         │   MCP-Legislation   │ │  MCP-Jurisprudence  │ │  pratique-civile-outils  │
+         │   MCP-Legislation   │ │  MCP-Jurisprudence  │ │        MCP-Outils        │
          │  (Worker Cloudflare │ │ (Worker Cloudflare  │ │    (Worker Cloudflare    │
          │  D1 + Vectorize +   │ │  D1 cache CanLII    │ │   public, D1 lecture     │
          │    Workers AI)      │ │  authentifié Bearer │ │   seule, zéro secret)    │
          └──────────┬──────────┘ └──────────┬──────────┘ └──────────────────────────┘
                     │                       │
                     └───────────┬───────────┘
-                                ▼ (dépendance de dev `#v0.6.2`, zéro runtime dep)
+                                ▼ (dépendance de dev `#v0.7.0`, zéro runtime dep)
                  ┌─────────────────────────────┐
-                 │    MCP-Socle-Juridique      │
+                 │          MCP-Socle          │
                  │  Transport JSON-RPC 2.0     │
                  │  Streamable HTTP sans état  │
                  │  Auth SHA-256 temps constant│
@@ -56,8 +56,8 @@ Directives de développement, architecture du cadre global et règles anti-déri
 |---|---|---|---|
 | 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `verifier.py` | Toute évolution d'outil MCP, de flux juridique, de contrat d'information ou de scénario d'évaluation |
 | 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0`), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` | Tout changement de version (parité semver stricte), de licence (`EXPECTED_LICENSE`), d'authentification (`MCP_LEGISLATION_SECRET`, `MCP_JURISPRUDENCE_SECRET`), de liste d'outils ou de politique de confidentialité |
-| 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP liés** | `src/site.ts` (+ `src/site.i18n.ts` / `catalogue.json`) et `/mcp/server-card` dans `MCP-Legislation`, `MCP-Jurisprudence` et `pratique-civile-outils` | Ce greffon ne sert pas de page HTTP propre ; toutefois, tout changement touchant les URL de connexion, la description du greffon, la forme des secrets ou la posture de confidentialité/licence doit être confronté aux **pages publiques HTML (`GET /`)** et aux **`README.md`** des trois serveurs MCP afin d'éviter toute contradiction entre ce que le plugin configure et ce que les pages HTML documentent |
-| 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Legislation`**, **`MCP-Jurisprudence`**, **`pratique-civile-outils`** et **`MCP-Socle-Juridique`** (noms exacts des 32 outils, schémas, porteurs Bearer/`?key=`, sécurité/privilège, synchronisation du cache Antigravity et du répertoire d'installation Gemini) | Vérifier l'alignement réel sur les serveurs cibles et leurs suites de tests |
+| 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP liés** | `src/site.ts` (+ `src/site.i18n.ts` / `catalogue.json`) et `/mcp/server-card` dans `MCP-Legislation`, `MCP-Jurisprudence` et `MCP-Outils` | Ce greffon ne sert pas de page HTTP propre ; toutefois, tout changement touchant les URL de connexion, la description du greffon, la forme des secrets ou la posture de confidentialité/licence doit être confronté aux **pages publiques HTML (`GET /`)** et aux **`README.md`** des trois serveurs MCP afin d'éviter toute contradiction entre ce que le plugin configure et ce que les pages HTML documentent |
+| 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Legislation`**, **`MCP-Jurisprudence`**, **`MCP-Outils`** et **`MCP-Socle`** (noms exacts des 32 outils, schémas, porteurs Bearer/`?key=`, sécurité/privilège, synchronisation du cache Antigravity et du répertoire d'installation Gemini) | Vérifier l'alignement réel sur les serveurs cibles et leurs suites de tests |
 
 ---
 
@@ -71,7 +71,7 @@ Toute modification doit continuer à passer `python verifier.py` sans affaiblir 
    - Licence SPDX identique : `CC-BY-NC-SA-4.0` dans `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `LICENSE` et `verifier.py` (`EXPECTED_LICENSE`). Ne jamais ajouter de clé non reconnue dans `plugin.json` (`ANTIGRAVITY_PLUGIN_KEYS`).
    - `"contextFileName": []` dans `gemini-extension.json` reste vide.
 3. **Configuration MCP et hygiène des secrets** :
-   - `.mcp.json`, `mcp_config.json` et `gemini-extension.json` doivent déclarer exactement `legislation`, `jurisprudence` et `pratique-civile-outils` (`https://legislation.poirierlavoie.ca/mcp`, `https://jurisprudence.poirierlavoie.ca/mcp`, `https://outils.poirierlavoie.ca/mcp`).
+   - `.mcp.json`, `mcp_config.json` et `gemini-extension.json` doivent déclarer exactement `legislation`, `jurisprudence` et `outils` (`https://legislation.poirierlavoie.ca/mcp`, `https://jurisprudence.poirierlavoie.ca/mcp`, `https://outils.poirierlavoie.ca/mcp`).
    - `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` référencés uniquement par variable d'environnement ; `sensitive: true` sous Gemini CLI ; aucune propriété `eager` dans `mcp_config.json`.
    - **Zéro fuite** : aucun secret hexadécimal (`≥ 32` car.), aucun chemin personnel local, aucun identifiant de dépôt retiré (`RETIRED_REPO_SLUGS` dans `verifier.py`).
 4. **Architecture des compétences (`skills/*/SKILL.md`)** :

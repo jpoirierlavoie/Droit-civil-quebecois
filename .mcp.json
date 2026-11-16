@@ -14,7 +14,7 @@
         "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
       }
     },
-    "pratique-civile-outils": {
+    "outils": {
       "type": "http",
       "url": "https://outils.poirierlavoie.ca/mcp"
     }

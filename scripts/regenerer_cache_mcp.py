@@ -23,7 +23,27 @@ PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_PARENT = PLUGIN_ROOT.parent
 REPO_LEGISLATION = Path(os.environ.get("MCP_LEGISLATION_REPO", WORKSPACE_PARENT / "MCP-Legislation"))
 REPO_JURISPRUDENCE = Path(os.environ.get("MCP_JURISPRUDENCE_REPO", WORKSPACE_PARENT / "MCP-Jurisprudence"))
-REPO_OUTILS = Path(os.environ.get("MCP_OUTILS_REPO", WORKSPACE_PARENT / "pratique-civile-outils"))
+
+
+def _resolve_outils_repo(workspace_parent: Path) -> Path:
+    env_override = os.environ.get("MCP_OUTILS_REPO")
+    if env_override:
+        return Path(env_override)
+    preferred = workspace_parent / "MCP-Outils"
+    if preferred.is_dir():
+        return preferred
+    for candidate in sorted(workspace_parent.iterdir()):
+        pkg = candidate / "package.json"
+        if candidate.is_dir() and pkg.is_file():
+            try:
+                if json.loads(pkg.read_text(encoding="utf-8")).get("name") == "mcp-outils":
+                    return candidate
+            except Exception:
+                continue
+    return preferred
+
+
+REPO_OUTILS = _resolve_outils_repo(WORKSPACE_PARENT)
 NPX_BIN = shutil.which("npx.cmd" if os.name == "nt" else "npx") or ("npx.cmd" if os.name == "nt" else "npx")
 
 def load_legislation():
@@ -103,7 +123,7 @@ def load_outils():
             "description": t["description"],
             "parameters": t["inputSchemaJson"]
         }
-    return "pratique-civile-quebecoise_pratique-civile-outils", tool_dict, data["instructions"]
+    return "pratique-civile-quebecoise_outils", tool_dict, data["instructions"]
 
 def main():
     apply_mode = "--apply" in sys.argv
@@ -111,6 +131,17 @@ def main():
     
     servers = [load_legislation(), load_jurisprudence(), load_outils()]
     total_tools = 0
+
+    if apply_mode and BASE_CACHE.is_dir():
+        active_folders = {srv_folder for srv_folder, _, _ in servers}
+        for existing in sorted(BASE_CACHE.iterdir()):
+            if (
+                existing.is_dir()
+                and existing.name.startswith("pratique-civile-quebecoise_")
+                and existing.name not in active_folders
+            ):
+                shutil.rmtree(existing)
+                print(f"\n[-] Ancien répertoire de cache retiré : {existing.name}")
     
     for srv_folder, tools, instructions in servers:
         target_dir = BASE_CACHE / srv_folder

@@ -165,7 +165,7 @@ québécois est normal — avec la terminologie officielle, non traduite.
 
 Tables complètes, faux amis et mécanismes : `references/contamination.md` — **obligatoire** pour
 réviser un texte dont on soupçonne l'origine, et pour toute rédaction en anglais. Lorsque le
-connecteur « pratique-civile-outils » est disponible, `terminologie_scan_text` repère en lecture
+connecteur « Outils » est disponible, `terminologie_scan_text` repère en lecture
 seule dans le projet fini (jusqu'à 32 000 caractères) les francismes de France, calques de common
 law et archaïsmes d'avant 2016 sans jamais réécrire le texte, tandis que `terminologie_lookup` et
 `terminologie_attestations` vérifient les équivalents bilingues et leurs occurrences statutaires.

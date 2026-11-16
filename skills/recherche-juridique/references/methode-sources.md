@@ -1,7 +1,7 @@
 # Méthode : interroger les sources primaires
 
 *Les deux connecteurs de sources primaires que ce plugin déclare (aux côtés de
-« pratique-civile-outils » pour le calcul et les utilitaires de greffe déterministes) :
+« Outils » pour le calcul et les utilitaires de greffe déterministes) :
 « Legislation » (`legislation_*`) pour le texte officiel des lois et des règlements du Québec
 **et du fédéral**, « Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions et
 le parcours du graphe. Tout connecteur
@@ -10,7 +10,7 @@ méthode reste la grille de lecture, et tout résultat obtenu par le web seul es
 vérifier ».*
 
 *Le préfixe n'annonce plus la source. Sous `jurisprudence_*`, neuf outils interrogent CanLII et un
-seul, `jurisprudence_parse_citation`, n'appelle rien. Les douze outils de « pratique-civile-outils »
+seul, `jurisprudence_parse_citation`, n'appelle rien. Les douze outils de « Outils »
 (`calendrier_*`, `interets_compute_1619`, `greffe_*`, `palais_*`, `registre_*`, `adresse_verify`,
 `terminologie_*`) s'exécutent tous hors ligne sur des tables ou instantanés D1 en lecture seule, sans
 aucun appel sortant. C'est la description de chaque outil qui nomme sa source, jamais son nom.*
@@ -143,7 +143,7 @@ des droits de la personne, Tribunal des professions, arbitrages, conseils de dis
 identifiants les plus employés : `csc-scc` (Cour suprême), `csc-scc-al` (demandes d'autorisation
 d'appel), `qcca`, `qccs`.
 
-**Situer un dossier de cour (« pratique-civile-outils »).** `greffe_parse_court_file_number` tire
+**Situer un dossier de cour (« Outils »).** `greffe_parse_court_file_number` tire
 d'un numéro québécois le greffe — palais de justice et district — puis le tribunal et le type de
 greffe. `palais_list` et `palais_get` renseignent sur les palais de justice et points de service.
 
@@ -153,7 +153,7 @@ Justice le **15 juillet 2026**. Ils n'interrogent ni registre ni plumitif, et n'
 coordonnée téléphonique : **les revérifier auprès du Ministère avant toute signification ou tout
 dépôt**, et le dire chaque fois qu'on en rapporte une.
 
-**Recouper une entreprise, une adresse ou un terme (« pratique-civile-outils »).**
+**Recouper une entreprise, une adresse ou un terme (« Outils »).**
 `registre_search_entities` et `registre_get_entity` interrogent en lecture seule les instantanés de
 données ouvertes du Registraire des entreprises du Québec (enrichi des licences RBQ, permis OPC et
 inscriptions RENA) et de Corporations Canada : conformément à la *Loi sur la publicité légale des
