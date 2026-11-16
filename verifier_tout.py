@@ -32,7 +32,7 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "1.6.0"
+VERSION_ATTENDUE = "1.6.1"
 USER_AGENT_VERIFICATEUR = (
     "PratiqueCivileQuebecoise-Verifier/1.0 (Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
@@ -111,7 +111,7 @@ class TestResult:
 
 
 class MockMcpServer:
-    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 26 outils."""
+    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 32 outils."""
 
     def __init__(self, server_name: str, secret_token: Optional[str] = None):
         self.server_name = server_name
@@ -670,12 +670,13 @@ class MockMcpServer:
 
         # 3. Endpoint healthz / health
         if path in ("/health", "/healthz") and method == "GET":
+            svc_name = "mcp-outils" if self.server_name == "outils" else self.server_name
             return (
                 200,
                 {"Content-Type": "application/json"},
                 json.dumps({
                     "status": "ok",
-                    "service": self.server_name,
+                    "service": svc_name,
                     "version": VERSION_ATTENDUE,
                     "tools": list(self.tool_definitions.keys()),
                 }).encode("utf-8"),
@@ -683,6 +684,23 @@ class MockMcpServer:
 
         # 4. Endpoint server card SEP-2127
         if path == "/mcp/server-card" and method == "GET":
+            repo_slugs = {
+                "legislation": "MCP-Legislation",
+                "jurisprudence": "MCP-Jurisprudence",
+                "outils": "MCP-Outils",
+            }
+            card_headers = (
+                []
+                if self.server_name == "outils"
+                else [
+                    {
+                        "name": "Authorization",
+                        "description": "Secret partagé (« Bearer <secret> »).",
+                        "isRequired": True,
+                        "isSecret": True,
+                    }
+                ]
+            )
             return (
                 200,
                 {"Content-Type": "application/mcp-server-card+json; charset=utf-8"},
@@ -692,8 +710,18 @@ class MockMcpServer:
                     "title": f"MCP {self.server_name.capitalize()}",
                     "description": f"MCP Server {self.server_name} pour pratique civile québécoise",
                     "version": VERSION_ATTENDUE,
-                    "remotes": [{"type": "streamable-http", "url": URL_SERVEURS[self.server_name]}],
-                    "capabilities": {"tools": {"listChanged": False}},
+                    "repository": {
+                        "url": f"https://github.com/jpoirierlavoie/{repo_slugs[self.server_name]}",
+                        "source": "github",
+                    },
+                    "remotes": [
+                        {
+                            "type": "streamable-http",
+                            "url": URL_SERVEURS[self.server_name],
+                            "supportedProtocolVersions": ["2025-11-25", "2025-06-18", "2025-03-26"],
+                            "headers": card_headers,
+                        }
+                    ],
                 }).encode("utf-8"),
             )
 
@@ -2260,10 +2288,14 @@ def run_tier_1_tests(
         t0 = time.perf_counter()
         try:
             status, _, body = client.send_http(
-                "outils", path="/healthz", method="GET"
+                "outils", path="/healthz", method="GET", auth_token="OMIT"
             )
             data = json.loads(body.decode("utf-8")) if body else {}
-            ok = status == 200 and data.get("status") == "ok"
+            ok = (
+                status == 200
+                and data.get("status") == "ok"
+                and data.get("service") == "mcp-outils"
+            )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T1.2.outils_healthz",
@@ -2286,15 +2318,49 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # T1.2.server_card : Découverte SEP-2127
+    # T1.2.server_card : Découverte publique SEP-2127 (sans authentification)
+    expected_card_repos = {
+        "legislation": "https://github.com/jpoirierlavoie/MCP-Legislation",
+        "jurisprudence": "https://github.com/jpoirierlavoie/MCP-Jurisprudence",
+        "outils": "https://github.com/jpoirierlavoie/MCP-Outils",
+    }
     for srv_key in ("legislation", "jurisprudence", "outils"):
         if target_server not in ("all", srv_key):
             continue
         t0 = time.perf_counter()
         try:
-            status, _, body = client.send_http(srv_key, path="/mcp/server-card", method="GET")
+            status, hdrs, body = client.send_http(
+                srv_key, path="/mcp/server-card", method="GET", auth_token="OMIT"
+            )
+            ctype = {k.lower(): v for k, v in hdrs.items()}.get("content-type", "")
             data = json.loads(body.decode("utf-8")) if body else {}
-            has_card = status == 200 and "name" in data and "remotes" in data
+            remotes = data.get("remotes") if isinstance(data.get("remotes"), list) else []
+            rem0 = remotes[0] if remotes and isinstance(remotes[0], dict) else {}
+            rem_headers = rem0.get("headers")
+            headers_ok = (
+                rem_headers == []
+                if srv_key == "outils"
+                else (
+                    isinstance(rem_headers, list)
+                    and len(rem_headers) >= 1
+                    and isinstance(rem_headers[0], dict)
+                    and rem_headers[0].get("name") == "Authorization"
+                    and rem_headers[0].get("isRequired") is True
+                    and rem_headers[0].get("isSecret") is True
+                )
+            )
+            repo_obj = data.get("repository") if isinstance(data.get("repository"), dict) else {}
+            has_card = (
+                status == 200
+                and ctype.startswith("application/mcp-server-card+json")
+                and data.get("$schema")
+                == "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json"
+                and data.get("name") == f"ca.poirierlavoie.{srv_key}/mcp-{srv_key}"
+                and repo_obj.get("url") == expected_card_repos[srv_key]
+                and rem0.get("type") == "streamable-http"
+                and rem0.get("url") == URL_SERVEURS[srv_key]
+                and headers_ok
+            )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 f"T1.2.{srv_key}_server_card",
@@ -2302,7 +2368,7 @@ def run_tier_1_tests(
                 srv_key,
                 has_card,
                 elapsed,
-                None if has_card else f"HTTP {status}, corps : {data}",
+                None if has_card else f"HTTP {status}, ctype={ctype}, corps={data}",
             )
         except ConnectionError:
             raise

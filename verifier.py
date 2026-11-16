@@ -368,6 +368,15 @@ def verifier(racine: Path) -> list[str]:
             erreurs.append(
                 f".claude-plugin/marketplace.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
             )
+        meta = marketplace.get("metadata")
+        if isinstance(meta, dict) and "version" in meta:
+            mver = meta.get("version")
+            if not isinstance(mver, str) or not _SEMVER_RE.match(mver):
+                erreurs.append(
+                    ".claude-plugin/marketplace.json : metadata.version semver invalide"
+                )
+            else:
+                versions[".claude-plugin/marketplace.json#metadata"] = mver
         plugins_list = marketplace.get("plugins")
         if not isinstance(plugins_list, list) or len(plugins_list) != 1 or not isinstance(
             plugins_list[0], dict

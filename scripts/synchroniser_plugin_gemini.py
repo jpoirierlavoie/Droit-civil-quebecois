@@ -7,6 +7,7 @@ Usage:
 """
 import os
 import sys
+import time
 import shutil
 import filecmp
 from pathlib import Path
@@ -52,6 +53,7 @@ def main():
     files = collect_bundle_files()
     copied = 0
     identical = 0
+    mcp_config_copied = False
     
     for rel_path in files:
         s = SRC_DIR / rel_path
@@ -65,6 +67,8 @@ def main():
                 d.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(s, d)
             copied += 1
+            if rel_path == Path("mcp_config.json"):
+                mcp_config_copied = True
         else:
             print(f"  [CONFORME] {rel_path}")
             identical += 1
@@ -76,6 +80,13 @@ def main():
         diffs = [rel for rel in files if not filecmp.cmp(SRC_DIR / rel, DST_DIR / rel, shallow=False)]
         assert len(diffs) == 0, f"Différences persistantes après copie: {diffs}"
         print("[OK] Vérification post-synchronisation : 100% conforme.")
+        if mcp_config_copied:
+            time.sleep(2.5)
+            print(
+                "[!] mcp_config.json modifié : exécuter maintenant "
+                "'python scripts/regenerer_cache_mcp.py --apply' pour restaurer les schémas "
+                "d'outils > 64 caractères dans ~/.gemini/antigravity/mcp/."
+            )
 
 if __name__ == "__main__":
     main()
