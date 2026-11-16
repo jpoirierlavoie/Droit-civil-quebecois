@@ -1,10 +1,10 @@
 # Suite d'évaluation comportementale (`evals/`)
 
-Dix-neuf scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.0.1`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
+Vingt scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.0.2`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
 
 ## Fichiers
 
-- `evals/scenarios.json` — les dix-neuf scénarios de référence, critères d'évaluation et assertions déterministes d'outillage.
+- `evals/scenarios.json` — les vingt scénarios de référence, critères d'évaluation et assertions déterministes d'outillage.
 - `evals/executer_evals.py` — utilitaire autonome en bibliothèque standard Python pour lister les scénarios, valider les utilitaires locaux et noter des réponses produites hors ligne.
 
 ## Commandes

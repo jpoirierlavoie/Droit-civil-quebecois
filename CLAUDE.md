@@ -1,6 +1,6 @@
 # droit-civil-quebecois — Architecture, principes et consignes de travail
 
-Directives de développement, architecture à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v2.0.1`, anciennement `pratique-civile-quebecoise`). Ce document gouverne de façon identique Claude et Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
+Directives de développement, architecture à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v2.0.2`, anciennement `pratique-civile-quebecoise`). Ce document gouverne de façon identique Claude et Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
 
 > **Note Gemini CLI (`gemini-extension.json`) :** La racine déclare `"contextFileName": []` afin que `GEMINI.md` ne soit **jamais** injecté comme contexte système dans les sessions d'usage juridique normal des utilisateurs finaux. Il s'applique exclusivement aux agents qui modifient ce dépôt.
 
@@ -12,7 +12,7 @@ Directives de développement, architecture à trois couches et règles anti-dér
 
 ```
              ┌────────────────────────────────────────────────────────┐
-             │      droit-civil-quebecois (Plugin Cadre v2.0.1)       │
+             │      droit-civil-quebecois (Plugin Cadre v2.0.2)       │
              │  5 routeurs SKILL.md · 17 feuilles · 2 scripts stdlib  │
              └──────┬───────────────────────┬──────────────────┬──────┘
                     │                       │                  │
@@ -54,7 +54,7 @@ Conception **Découverte progressive à 3 niveaux** (*3-Tier Progressive Discove
 5. **`skills/deontologie-et-pratique`**
    - Feuilles (`3`) : `radar-deontologique.md`, `identification-conflits-et-mandat.md`, `facturation-temps-et-fideicommis.md`
 
-### Règles transversales de fond (`v2.0.1`)
+### Règles transversales de fond (`v2.0.2`)
 
 - **Noyau de sécurité canonique (`SAFETY-KERNEL`) :** Les 5 `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END -->` (contrôle SHA-256 dans `verifier.py`), couvrant la confidentialité (recherche web et champs de recherche libre `query` sans noms ni faits identifiants), le repérage des connecteurs par outils signatures/alias et chargement des outils différés avant arrêt sur le volet touché (*fail-closed*), l'étanchéité bijuridique et la présomption `CONFIDENTIEL`. Les crochets normalisés sont `[À CONFIRMER]`, `[DATE À CONFIRMER]`, `[À COMPLÉTER]`, `[À VÉRIFIER VIA LOIS]` et `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 - **Feuilles terminales (« impasses ») :** Une compétence ne renvoie jamais vers un autre `SKILL.md`. Seuls les routeurs `SKILL.md` peuvent pointer vers une feuille voisine précise (`../<compétence>/references/<feuille>.md`) avec repli autonome via `lois` ; les feuilles sous `references/` ne contiennent aucun lien relatif `../`.
@@ -87,7 +87,7 @@ Conception **Découverte progressive à 3 niveaux** (*3-Tier Progressive Discove
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
 1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** Aucun fichier orphelin à la racine ni sous `skills/`. Tout nouveau fichier racine doit être justifié et inscrit dans `ROOT_ALLOWLIST` (`verifier.py`).
-2. **Parité exacte des manifestes et licence (`2.0.1`) :**
+2. **Parité exacte des manifestes et licence (`2.0.2`) :**
    - `name` / slug = `droit-civil-quebecois` ; `displayName` = `Droit civil québécois` ; dépôt = `https://github.com/jpoirierlavoie/droit-civil-quebecois`.
    - Version semver identique partout : `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (`metadata.version` et `plugins[0].version`), `plugin.json`, `gemini-extension.json`, `verifier_tout.py`.
    - Licence SPDX = `CC-BY-NC-SA-4.0` dans `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `LICENSE` et `verifier.py`.

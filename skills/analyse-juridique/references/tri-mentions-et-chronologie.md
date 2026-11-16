@@ -23,12 +23,13 @@ En mode **Tri**, produire une ligne par fichier sans répéter la prose inutilem
 
 ## 3. Contrôle des mentions exigées (le discriminant du projet vs déposé)
 
-Appeler `lois.get_articles(law="cpc", numbers=["99", "101", "105", "107", "111", "119", "120", "145", "148", "174", "247", "353", "389"])` au besoin. Ne jamais déduire une mention manquante depuis le nom de fichier.
+Appeler `lois.get_articles(law="cpc", numbers=["99", "101", "105", "107", "111", "119", "120", "145", "146", "148", "174", "247", "353", "389", "490"])` au besoin. Ne jamais déduire une mention manquante depuis le nom de fichier.
 
 | Type de document | Mentions critiques à relever | Signal d'absence |
 |---|---|---|
 | **Acte de procédure** (`cpc` 99) | Tribunal, district, **numéro de dossier de cour**, parties, faits numérotés, conclusions, date, signature, indication des pièces (145, 247) | **Absence de n° de dossier = projet non déposé** (non `PUBLIC`); vérifier s'il s'agit d'une page isolée |
-| **Avis d'assignation** (`145`) | Pièces au soutien indiquées, délai de réponse de 15 jours | Irrégularité formelle |
+| **Avis d'assignation** (`145–146, 490`) | Modèle ministériel : pièces au soutien indiquées (`145 al. 1`), délai de réponse de `15 jours` (`30 jours` si défendeur sans domicile, résidence ni établissement au Québec, `490`), options et petites créances | Irrégularité formelle ou calcul de défaut prématuré hors Québec |
+| **Avis de présentation** (`101`) | Date, heure, salle/palais, notification `>= 3 jours` à l'avance (sauf délai particulier ou urgence), serment joint **si** faits hors dossier (`101 al. 3`) | Présentation prématurée ou faits hors dossier non appuyés du serment |
 | **Protocole** (`148`) | Les 9 rubriques obligatoires, modes PRD, temps/coûts, échéances | Incomplet (retour possible) |
 | **Jugement / Arrêt** (`389`) | Tribunal, district, n° cour, parties, date, **dispositif**, signature juge (+ noms des juges/dissidences en appel) | Sans dispositif = extrait ou projet; sans motifs en 1re instance = non irrégulier |
 | **Procès-verbal de signification** (`119`, `120`) | N° cour, parties, nature signifiée, lieu, **date et heure**, récipiendaire/qualité, refus/échec, frais, serment huissier (+ récépissé si personne désignée) | **Critique** : commande le point de départ et le déplacement `art. 111 al. 2`; signaler tout délai déclenché |

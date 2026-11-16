@@ -35,7 +35,7 @@ Lot recommandé : `numbers=["2878", "2884", "2892", "2895", "2896", "2904", "290
 * **Piège 2930 :** En préjudice corporel, aucun avis municipal ni délai plus court ne fait échec au livre VIII.
 
 ### Compétence, seuils et moyens préliminaires (`law="cpc"` et `"ccq"`)
-Lot recommandé (`cpc`) : `numbers=["33", "35", "41", "42", "51", "85", "166", "167", "168", "535.1", "535.2", "535.3", "535.15"]`; plus `law="ccq"`, `numbers=["1458", "3148"]`.
+Lot recommandé (`cpc`) : `numbers=["33", "35", "41", "42", "51", "85", "166", "167", "168", "490", "491", "535.1", "535.2", "535.3", "535.15"]`; plus `law="ccq"`, `numbers=["1458", "3148"]`.
 
 * **Seuil indexé art. 35 `[À VÉRIFIER VIA LOIS]` :** Cour du Québec exclusive sous `75 000 $`, concurrente de `75 000 $` à moins de `100 000 $` hors intérêts, indexée par tranches de `5 000 $` à la *Gazette officielle*. En Cour du Québec sous art. 35, le **régime simplifié (art. 535.1–535.15)** s'impose (sans protocole, demande `<= 5 pages`, expertise commune sous `50 000 $`). Vérifier le seuil courant à la *Gazette officielle* si le montant approche une borne.
 * **Confusion 41 / 42 C.p.c. :** Le domicile du défendeur relève de **41**; **42** n'ajoute que trois fors additionnels au choix du demandeur (contrat, fait générateur/préjudice, immeuble). Élection de for nulle en contrat d'adhésion (art. 41 al. 2).
