@@ -1,7 +1,7 @@
 {
   "name": "pratique-civile-quebecoise",
   "version": "1.6.0",
-  "description": "Recherche, rédaction, analyse documentaire, calendrier procédural et déontologie en droit civil et commercial québécois. Câble les connecteurs « Legislation », « Jurisprudence » et « pratique-civile-outils ».",
+  "description": "Recherche, rédaction, analyse documentaire, calendrier procédural et déontologie en droit civil et commercial québécois. Câble les connecteurs « Legislation », « Jurisprudence » et « Outils ».",
   "contextFileName": [],
   "settings": [
     {
@@ -30,7 +30,7 @@
         "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
       }
     },
-    "pratique-civile-outils": {
+    "outils": {
       "httpUrl": "https://outils.poirierlavoie.ca/mcp"
     }
   }

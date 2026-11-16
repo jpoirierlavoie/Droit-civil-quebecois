@@ -62,15 +62,15 @@ commun de douze besoins :
 | Besoin | Ce qu'il recouvre |
 |---|---|
 | **FICHE** | Qualification du recours, forum, rôle du client, délai inscrit et sa nature |
-| **PARTIES** | Désignations exactes, forme juridique, qualité, coordonnées — recoupement hors ligne des entreprises et adresses québécoises servi au besoin par « pratique-civile-outils » (`registre_*`, `adresse_verify`) |
+| **PARTIES** | Désignations exactes, forme juridique, qualité, coordonnées — recoupement hors ligne des entreprises et adresses québécoises servi au besoin par le connecteur « Outils » (`registre_*`, `adresse_verify`) |
 | **THÉORIE** | La théorie de la cause telle que l'avocat l'a arrêtée |
 | **NOTES** | Ce qui a déjà été écrit au dossier sur la question |
 | **INVENTAIRE** | Quels documents le dossier contient, sous quelle catégorie |
 | **TEXTE** | Le texte d'un document donné |
 | **ÉCHÉANCES** | Protocole, audiences, tâches, portrait de prescription |
 | **CORRESPONDANCE** | Les échanges — courriels, lettres, pièces jointes |
-| **CALCUL** | Le calcul d'un délai de procédure ou d'intérêts légaux — servi par le connecteur « pratique-civile-outils » (`calendrier_*`, `interets_compute_1619`), à défaut par `scripts/calcul_delai.py` pour les délais |
-| **GREFFE** | La décomposition d'un numéro de dossier de cour et les palais de justice — servis par le connecteur « pratique-civile-outils » (`greffe_*`, `palais_*`) |
+| **CALCUL** | Le calcul d'un délai de procédure ou d'intérêts légaux — servi par le connecteur « Outils » (`calendrier_*`, `interets_compute_1619`), à défaut par `scripts/calcul_delai.py` pour les délais |
+| **GREFFE** | La décomposition d'un numéro de dossier de cour et les palais de justice — servis par le connecteur « Outils » (`greffe_*`, `palais_*`) |
 | **VOCABULAIRE** | Les codes qu'un système accepte en écriture |
 | **INSCRIPTION** | Verser un résultat au dossier |
 
@@ -93,7 +93,7 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 └───────┬────────────────────────┬───────────────────────────────┬───────┘
         │                        │                               │
 ┌───────▼────────────────┐┌──────▼───────────────────────┐┌──────▼───────────────────────┐
-│     MCP-Legislation    ││   MCP-Jurisprudence          ││ pratique-civile-outils       │
+│     MCP-Legislation    ││   MCP-Jurisprudence          ││         MCP-Outils           │
 │  Lois du Québec & Can. ││   Vérification CanLII        ││ Calcul, greffe, registres,   │
 │  (10 outils, D1/Vect.) ││   (10 outils, D1/CanLII)     ││ RQA & terminologie (12 out.) │
 └───────┬────────────────┘└──────┬───────────────────────┘└──────────────────────────────┘
@@ -101,7 +101,7 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
         └───────────┬────────────┘
                     │
         ┌───────────▼────────────┐
-        │  MCP-Socle-Juridique   │
+        │       MCP-Socle        │
         │ Bibliothèque partagée  │
         │ (SEP-2127, Bearer,     │
         │  JSON-RPC 2.0 router)  │
@@ -110,8 +110,8 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 
 1. **`MCP-Legislation`** (`https://legislation.poirierlavoie.ca/mcp`) : 10 outils en lecture seule sur le corpus législatif et réglementaire consolidé du Québec (LégisQuébec) et fédéral (Justice Canada). Recherche hybride (lexicale FTS5 et sémantique Vectorize).
 2. **`MCP-Jurisprudence`** (`https://jurisprudence.poirierlavoie.ca/mcp`) : 10 outils de vérification déterministe et de consultation de citations contre l'API et la collection CanLII (métadonnées officielles, 6 verdicts d'intégrité).
-3. **`pratique-civile-outils`** (`https://outils.poirierlavoie.ca/mcp`) : 12 outils hors ligne répartis en 5 familles — calcul déterministe arithmétique (délais art. 83 C.p.c., intérêts art. 1619 C.c.Q.), annuaire judiciaire MJQ (numéros de greffe et palais de justice), registres d'entreprises (instantanés REQ/RBQ/OPC/RENA et Corporations Canada), référentiel québécois des adresses (RQA, MRNF) et terminologie juridique bilingue et bijuridique. Point d'accès public, sans secret, zéro appel sortant et journalisation zéro, adossé à 3 bases D1 strictement en lecture seule à la requête.
-4. **`MCP-Socle-Juridique`** (`@poirierlavoie/socle-juridique`) : bibliothèque de protocole partagée garantissant la conformité SEP-2127, le routage JSON-RPC 2.0 sans état, la vérification constante des jetons Bearer (`timingSafeEqual` sur empreintes SHA-256) et l'étanchéité CORS/DNS rebinding.
+3. **`MCP-Outils`** (`https://outils.poirierlavoie.ca/mcp`) : 12 outils hors ligne répartis en 5 familles — calcul déterministe arithmétique (délais art. 83 C.p.c., intérêts art. 1619 C.c.Q.), annuaire judiciaire MJQ (numéros de greffe et palais de justice), registres d'entreprises (instantanés REQ/RBQ/OPC/RENA et Corporations Canada), référentiel québécois des adresses (RQA, MRNF) et terminologie juridique bilingue et bijuridique. Point d'accès public, sans secret, zéro appel sortant et journalisation zéro, adossé à 3 bases D1 strictement en lecture seule à la requête.
+4. **`MCP-Socle`** (`@poirierlavoie/mcp-socle`) : bibliothèque de protocole partagée garantissant la conformité SEP-2127, le routage JSON-RPC 2.0 sans état, la vérification constante des jetons Bearer (`timingSafeEqual` sur empreintes SHA-256) et l'étanchéité CORS/DNS rebinding.
 
 ---
 
@@ -145,7 +145,7 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
 | `jurisprudence_get_legislation` | CanLII Légis | `database_id`, `legislation_id` | Fiche CanLII d'une loi consolidée (dates de version de CanLII). |
 | `jurisprudence_parse_citation` | Hors ligne | `citation` | Analyse syntaxique pure hors ligne d'une citation canadienne. |
 
-### 3. Pratique civile outils (12 outils — `https://outils.poirierlavoie.ca/mcp`)
+### 3. Outils (12 outils — `https://outils.poirierlavoie.ca/mcp`)
 | Outil | Catégorie | Entrées principales | Sorties & Rôle |
 |---|---|---|---|
 | `calendrier_list_holidays` | Calcul | `year` (1970..2100), `regime` | Jours fériés et non juridiques (C.p.c., L.I. Québec, L.I. fédérale). |
@@ -173,11 +173,11 @@ Le framework s'appuie sur quatre briques MCP complémentaires :
      - Worker Législation lit `env.MCP_TOKEN` (ou `env.MCP_TOKEN_VEILLE`).
      - Worker Jurisprudence lit `env.MCP_SHARED_SECRET`.
 2. **Comparaison à temps constant** :
-   - La bibliothèque `@poirierlavoie/socle-juridique` hache le jeton présenté et le secret attendu en SHA-256 avant d'exécuter `crypto.subtle.timingSafeEqual`. Aucune fuite de préfixe ni de longueur n'est possible.
+   - La bibliothèque `@poirierlavoie/mcp-socle` hache le jeton présenté et le secret attendu en SHA-256 avant d'exécuter `crypto.subtle.timingSafeEqual`. Aucune fuite de préfixe ni de longueur n'est possible.
 3. **Forme des refus** :
    - `MCP-Legislation` refuse en **HTTP 404** (corps vide), empêchant les clients MCP d'entrer dans une boucle de découverte OAuth destructrice.
    - `MCP-Jurisprudence` refuse en **HTTP 401** avec en-tête `WWW-Authenticate: Bearer`.
-   - `pratique-civile-outils` est **public et sans état** (aucun secret ni jeton requis).
+   - `MCP-Outils` est **public et sans état** (aucun secret ni jeton requis).
 4. **Erreurs d'arguments** :
    - Tout échec de validation de schéma ou d'argument d'outil répond un résultat applicatif `{ content: [...], isError: true }` et jamais une faute JSON-RPC `-32602`. L'agent LLM peut ainsi lire l'erreur et auto-corriger son appel.
 
@@ -196,7 +196,7 @@ claude mcp add --transport http legislation https://legislation.poirierlavoie.ca
 claude mcp add --transport http jurisprudence https://jurisprudence.poirierlavoie.ca/mcp --header "Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}"
 
 # Connecteur Outils (public)
-claude mcp add --transport http pratique-civile-outils https://outils.poirierlavoie.ca/mcp
+claude mcp add --transport http outils https://outils.poirierlavoie.ca/mcp
 ```
 
 #### Méthode 2 : Fichier `.mcp.json` dans le projet
@@ -218,7 +218,7 @@ Créer `.mcp.json` à la racine de votre projet :
         "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
       }
     },
-    "pratique-civile-outils": {
+    "outils": {
       "type": "http",
       "url": "https://outils.poirierlavoie.ca/mcp"
     }
@@ -256,7 +256,7 @@ Ajouter dans la section `mcpServers` :
         "Authorization": "Bearer VOTRE_SECRET_JURISPRUDENCE"
       }
     },
-    "pratique-civile-outils": {
+    "outils": {
       "url": "https://outils.poirierlavoie.ca/mcp"
     }
   }
@@ -274,7 +274,7 @@ Dans l'interface web `claude.ai` :
 2. Ajouter les connecteurs distants :
    - **Legislation** : `https://legislation.poirierlavoie.ca/mcp?key=<VOTRE_SECRET_LEGISLATION>` (ou en-tête `Authorization: Bearer <VOTRE_SECRET_LEGISLATION>`).
    - **Jurisprudence** : `https://jurisprudence.poirierlavoie.ca/mcp?key=<VOTRE_SECRET_JURISPRUDENCE>` (ou en-tête `Authorization: Bearer <VOTRE_SECRET_JURISPRUDENCE>`).
-   - **pratique-civile-outils** : `https://outils.poirierlavoie.ca/mcp` (sans secret).
+   - **Outils** : `https://outils.poirierlavoie.ca/mcp` (sans secret).
 
 ---
 
@@ -297,7 +297,7 @@ Dans l'interface web `claude.ai` :
    ```bash
    gemini extensions install https://github.com/jpoirierlavoie/pratique-civile-quebecoise
    ```
-2. Le fichier `gemini-extension.json` invite à saisir de façon masquée (`sensitive: true`) les secrets `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et active `pratique-civile-outils` sans secret requis.
+2. Le fichier `gemini-extension.json` invite à saisir de façon masquée (`sensitive: true`) les secrets `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et active le connecteur « Outils » (`outils`) sans secret requis.
 
 ---
 

@@ -58,10 +58,10 @@ la téléverser**, sans contourner en recopiant un corpus.
 fournis par l'utilisateur et marquer *toute* proposition de droit comme non vérifiée, sans jamais
 réciter un article de mémoire.
 
-*Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur « pratique-civile-outils » : « Legislation »
+*Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur « Outils » : « Legislation »
 (`legislation_*`) pour le texte officiel des lois et des règlements du Québec et du fédéral,
 « Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions. Le connecteur
-« pratique-civile-outils » n'effectue aucun appel sortant : outre le calcul (`calendrier_*`,
+« Outils » n'effectue aucun appel sortant : outre le calcul (`calendrier_*`,
 `interets_compute_1619`), il lit des tables et instantanés locaux en lecture seule pour le greffe et
 les palais (`greffe_*`, `palais_*`), les registres d'entreprises (`registre_search_entities`,
 `registre_get_entity`), le référentiel d'adresses (`adresse_verify`) et la terminologie juridique
