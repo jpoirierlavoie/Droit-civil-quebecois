@@ -1,324 +1,130 @@
-# Pratique civile québécoise
+# Droit civil québécois (`v2.0.0`)
 
-Cinq compétences pour le litige civil et commercial québécois : **établir le droit**, **écrire**,
-**qualifier les documents**, **dater**, **se rappeler ce qu'on doit**. Elles se répondent et ne se
-recoupent pas.
+Greffon multiplateforme (Claude Code, Claude Desktop, claude.ai, Google Antigravity et Gemini CLI) regroupant **5 compétences de pratique juridique québécoise**, **17 feuilles de référence ciblées**, **2 scripts Python locaux** et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels) pour le litige et le conseil en droit civil et commercial québécois.
 
-| Compétence | Répond à | Produit |
+---
+
+## Philosophie de conception (`v2.0.0`)
+
+La version `2.0.0` (`droit-civil-quebecois`) remplace l'ancienne architecture monolithique orientée vers un seul gestionnaire de dossiers par une structure agnostique conçue pour la pratique réelle d'un avocat au Québec :
+
+1. **Découverte progressive à 3 niveaux (*3-Tier Progressive Discovery*) :**
+   - **Niveau 1 — En-têtes et routeurs (`SKILL.md`) :** 5 descriptions YAML compactes (`<= 850` car.) et 5 routeurs synthétiques (`<= 1 000` mots) partageant un noyau de garde-fous canonique (`SAFETY-KERNEL`, identique au bit près par empreinte SHA-256).
+   - **Niveau 2 — Feuilles terminales (« impasses ») :** 17 fiches ciblées (`<= 1 500` mots et `<= 12 Kio` chacune) chargées à la demande selon l'intention précise, sans renvois en chaîne infinis.
+   - **Niveau 3 — Outillage déterministe local et connecteurs MCP :** 2 scripts Python utilisant uniquement la bibliothèque standard (`inspecter_piece.py`, `calcul_delai.py`) et 32 outils MCP distants à schémas durcis.
+2. **Calibration de rigueur à 3 paliers :**
+   - **Palier 1 — Triage / Question ponctuelle :** orientation rapide sur règle vérifiée, sans surproduction documentaire.
+   - **Palier 2 — Travail de dossier / Analyse :** stratégie, remue-méninges, tri de preuve, matrices de concordance et plans d'argumentation.
+   - **Palier 3 — Acte ou état prêt au dépôt / Cour :** procédure complète par défaut (en-tête de cour, avis d'assignation, corps allégué, conclusions, avis de présentation, endos de cour) — avec mode explicite *« bloc de contenu seul à copier-coller »* lorsque demandé.
+3. **Sources primaires obligatoires (*fail-closed*) :** les connecteurs `lois`, `juris` et `outils` sont requis pour énoncer un article, un seuil indexé, un délai calculé ou une décision authentifiée. Si un connecteur requis est hors ligne ou non configuré (`401` / `404`), l'agent s'arrête, nomme le connecteur manquant et demande de le reconnecter ou de fournir le texte officiel. Au Palier 3, toute décision non lue intégralement en PDF CanLII utilise explicitement le marqueur de complétion `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+4. **Budget d'identifiants natif (`<= 64` caractères) :** tous les identifiants composés respectent nativement la limite stricte de 64 caractères sans tronquer les schémas JSON (maximum **62/64** sous Claude Code, **52/64** sous Google Antigravity).
+
+---
+
+## Les 5 compétences, 17 feuilles et 2 scripts (`skills/`)
+
+| Compétence | Rôle principal | Feuilles (`references/`) et scripts locaux (`scripts/`) |
 |---|---|---|
-| `recherche-juridique` | Quelle est la règle? | La fiche, la note de recherche, la vérification de citations |
-| `redaction-juridique` | Comment l'écrire? | Le bloc de contenu d'un acte, d'une lettre, d'une note |
-| `analyse-documentaire` | Qu'est-ce que ce document, et que vaut-il? | Le registre de tri, la fiche de pièce, le bordereau, la chronologie |
-| `calendrier-procedural` | Quand? | Le calendrier daté de l'instance, chaque délai qualifié |
-| `deontologie-professionnelle` | Qu'est-ce que je dois, ici? | L'obligation nommée au texte, signalée sans qu'on la demande |
-
-Aucune compétence ne dépend d'un gestionnaire de dossiers. Le plugin `pallas-athena` fournit celui du
-cabinet; un autre connecteur, ou aucun, laisse les cinq compétences pleinement opérantes. Les connecteurs
-(sources de droit et calcul déterministe) sont déclarés ici : voir `.mcp.json`, `mcp_config.json` et
-`gemini-extension.json`.
+| **`recherche-juridique`** | Droit applicable, prescriptions, préalables procéduraux, jurisprudence et doctrine | `grille-prealables.md`, `strategie-sources.md`, `doctrine-et-livrables.md` |
+| **`analyse-juridique`** | Stratégie, remue-méninges, qualification de pièces, privilège/confidentialité, chronologies, préparation d'interrogatoire | `remue-meninges-et-strategie.md`, `tri-mentions-et-chronologie.md`, `preuve-et-protection.md`, `interrogatoire-prealable.md`, `scripts/inspecter_piece.py` |
+| **`redaction-juridique`** | Actes de procédure complets, mémoires/exposés en appel, mises en demeure, transactions, contrats, purge d'anglicismes | `actes-de-procedure.md`, `argumentation-appel-et-sources.md`, `correspondance-et-contrats.md`, `anti-contamination-bilingue.md` |
+| **`administration-litige`** | Délais et calendrier C.p.c., bordereaux de pièces (`145`, `174`, `247`, `250`), concordance, endos, tableaux de quantum/intérêts (`1619 C.c.Q.`), état des frais (`339–344`) | `echeanciers-cpc.md`, `bordereaux-concordance-et-endos.md`, `tableaux-quantum-et-frais.md`, `scripts/calcul_delai.py` |
+| **`deontologie-et-pratique`** | Conflits d'intérêts, identification du client, mandat/honoraires, fidéicommis, facturation, rapports avec la partie adverse et le tribunal | `radar-deontologique.md`, `identification-conflits-et-mandat.md`, `facturation-temps-et-fideicommis.md` |
 
 ---
 
-## Le partage des rôles
+## Les 3 connecteurs MCP et les 32 outils
 
-`recherche-juridique` **établit ce qui peut être affirmé**. Aucune proposition de droit n'est
-avancée ailleurs sans être passée par elle ou par une source que l'utilisateur fournit.
-
-`redaction-juridique` **consomme ce travail et le convertit en texte**. Elle ne construit pas le
-fondement; elle le présuppose et signale quand il manque.
-
-`analyse-documentaire` **dit ce qu'un document est, qui peut le voir et ce qu'il prouve**. Elle
-alimente les autres — une pièce qualifiée devient une allégation soutenue, un jugement authentifié
-devient une autorité, une chronologie fournit ses ancrages au calendrier.
-
-`calendrier-procedural` **dit le jour**. Depuis une date d'ancrage, il déroule la chaîne des délais
-du Code de procédure civile, compte selon l'art. 83 et qualifie selon l'art. 84. Il ne touche pas à
-la prescription, qui est du droit substantiel et reste à la recherche.
-
-`deontologie-professionnelle` **rappelle l'obligation, au texte, sans qu'on la demande**. Elle est
-le second regard du praticien seul : chaque autre compétence porte, en fin de contrôle, une ligne
-qui lui renvoie ce qu'elle a aperçu. Elle rappelle; elle n'atteste rien, ne lit l'état d'aucune
-vérification et ne dépend d'aucun système de suivi — elle est la seule des cinq à ne porter aucun
-besoin du contrat d'information.
-
-Trois disciplines circulent d'une compétence à l'autre et portent le même nom partout :
-- le **statut de lecture** d'une autorité (`recherche-juridique`) — citée, résumée, rapportée, lue;
-- le **statut du fait** (`redaction-juridique`) — établi, rapporté, administratif, absent;
-- le **régime de protection** d'un document (`analyse-documentaire`) — niveaux 0 à 3.
-
-Une autorité, un fait ou un document transmis d'une compétence à l'autre voyage **avec son
-statut**, jamais nu.
-
----
-
-## Le contrat d'information
-
-Les compétences disent **quels renseignements il leur faut**; elles ne disent jamais **par quel
-appel les obtenir**. C'est la règle qui les garde indépendantes du logiciel.
-
-Chaque compétence porte une section « Ce qu'il faut du dossier » rédigée dans un vocabulaire
-commun de douze besoins :
-
-| Besoin | Ce qu'il recouvre |
-|---|---|
-| **FICHE** | Qualification du recours, forum, rôle du client, délai inscrit et sa nature |
-| **PARTIES** | Désignations exactes, forme juridique, qualité, coordonnées — recoupement hors ligne des entreprises et adresses québécoises servi au besoin par le connecteur « Outils » (`registre_*`, `adresse_verify`) |
-| **THÉORIE** | La théorie de la cause telle que l'avocat l'a arrêtée |
-| **NOTES** | Ce qui a déjà été écrit au dossier sur la question |
-| **INVENTAIRE** | Quels documents le dossier contient, sous quelle catégorie |
-| **TEXTE** | Le texte d'un document donné |
-| **ÉCHÉANCES** | Protocole, audiences, tâches, portrait de prescription |
-| **CORRESPONDANCE** | Les échanges — courriels, lettres, pièces jointes |
-| **CALCUL** | Le calcul d'un délai de procédure ou d'intérêts légaux — servi par le connecteur « Outils » (`calendrier_*`, `interets_compute_1619`), à défaut par `scripts/calcul_delai.py` pour les délais |
-| **GREFFE** | La décomposition d'un numéro de dossier de cour et les palais de justice — servis par le connecteur « Outils » (`greffe_*`, `palais_*`) |
-| **VOCABULAIRE** | Les codes qu'un système accepte en écriture |
-| **INSCRIPTION** | Verser un résultat au dossier |
-
-**L'appui factuel se cherche dans un ordre de préférence**, le même partout : le gestionnaire de
-dossiers s'il y en a un de connecté; à défaut, l'avocat, interrogé sur les éléments précis qui
-manquent; à défaut encore, la réponse en droit, hypothèses énoncées et crochets apparents. La
-compétence dit toujours lequel des trois a servi, et ne bascule jamais en silence sur la mémoire
-pour combler.
-
----
-
-## Architecture des serveurs MCP
-
-Le framework s'appuie sur quatre briques MCP complémentaires :
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Plugin Pratique Civile                          │
-│     (Claude Code, Claude Desktop, claude.ai, Antigravity, Gemini CLI)  │
-└───────┬────────────────────────┬───────────────────────────────┬───────┘
-        │                        │                               │
-┌───────▼────────────────┐┌──────▼───────────────────────┐┌──────▼───────────────────────┐
-│     MCP-Legislation    ││   MCP-Jurisprudence          ││         MCP-Outils           │
-│  Lois du Québec & Can. ││   Vérification CanLII        ││ Calcul, greffe, registres,   │
-│  (10 outils, D1/Vect.) ││   (10 outils, D1/CanLII)     ││ RQA & terminologie (12 out.) │
-└───────┬────────────────┘└──────┬───────────────────────┘└──────────────────────────────┘
-        │                        │
-        └───────────┬────────────┘
-                    │
-        ┌───────────▼────────────┐
-        │       MCP-Socle        │
-        │ Bibliothèque partagée  │
-        │ (SEP-2127, Bearer,     │
-        │  JSON-RPC 2.0 router)  │
-        └────────────────────────┘
-```
-
-1. **`MCP-Legislation`** (`https://legislation.poirierlavoie.ca/mcp`) : 10 outils en lecture seule sur le corpus législatif et réglementaire consolidé du Québec (LégisQuébec) et fédéral (Justice Canada). Recherche hybride (lexicale FTS5 et sémantique Vectorize).
-2. **`MCP-Jurisprudence`** (`https://jurisprudence.poirierlavoie.ca/mcp`) : 10 outils de vérification déterministe et de consultation de citations contre l'API et la collection CanLII (métadonnées officielles, 6 verdicts d'intégrité).
-3. **`MCP-Outils`** (`https://outils.poirierlavoie.ca/mcp`) : 12 outils hors ligne répartis en 5 familles — calcul déterministe arithmétique (délais art. 83 C.p.c., intérêts art. 1619 C.c.Q.), annuaire judiciaire MJQ (numéros de greffe et palais de justice), registres d'entreprises (instantanés REQ/RBQ/OPC/RENA et Corporations Canada), référentiel québécois des adresses (RQA, MRNF) et terminologie juridique bilingue et bijuridique. Point d'accès public, sans secret, zéro appel sortant et journalisation zéro, adossé à 3 bases D1 strictement en lecture seule à la requête.
-4. **`MCP-Socle`** (`@poirierlavoie/mcp-socle`) : bibliothèque de protocole partagée garantissant la conformité SEP-2127, le routage JSON-RPC 2.0 sans état, la vérification constante des jetons Bearer (`timingSafeEqual` sur empreintes SHA-256) et l'étanchéité CORS/DNS rebinding.
-
----
-
-## Répertoire exhaustif des 32 outils MCP
-
-### 1. Législation (10 outils — `https://legislation.poirierlavoie.ca/mcp`)
-| Outil | Catégorie | Entrées principales | Sorties & Rôle |
+| Clé serveur | URL MCP | Authentification | Dépôt serveur |
 |---|---|---|---|
-| `legislation_find_relevant` | Découverte | `query`, `lang`, `limit` | Repérage heuristique déterministe de lois et chapitres pertinents (4 signaux). |
-| `legislation_list_laws` | Découverte | `fonction`, `forum`, `subject`, `lang` | Carte intégrale du corpus, dates de consolidation et plan des grands codes. |
-| `legislation_list_subjects` | Découverte | `lang` | Matières de la taxonomie du droit québécois (droit privé et spécialisé). |
-| `legislation_related_laws` | Graphe | `law`, `rel_type`, `direction`, `lang` | Graphe d'interconnexion (lois habilitantes, règlements, relations curées). |
-| `legislation_get_article` | Extraction | `law`, `article`, `lang` | Texte officiel verbatim d'un article, historique, fil d'Ariane et statut. |
-| `legislation_get_articles` | Extraction | `law`, `from`, `to`, `numbers`, `lang` | Textes officiels en lot par plage continue ou liste de numéros. |
-| `legislation_get_structure` | Structure | `law`, `depth`, `root_path`, `lang` | Arborescence d'une loi (Livres, Titres, Chapitres, Sections) sans texte. |
-| `legislation_get_division` | Extraction | `law`, `path`, `include_text`, `lang` | Texte officiel d'une division complète avec ses sous-divisions et articles. |
-| `legislation_search_text` | Recherche | `query`, `law`, `lang`, `limit` | Recherche plein texte hybride (lexicale + sémantique) avec replis étiquetés. |
-| `legislation_resolve_reference` | Résolution | `citation`, `lang` | Résolution d'une citation informelle vers l'article officiel correspondant. |
+| **`lois`** | `https://legislation.poirierlavoie.ca/mcp` | `Authorization: Bearer ${MCP_LEGISLATION_SECRET}` (garde non-oracle `404`) | [MCP-Legislation](https://github.com/jpoirierlavoie/MCP-Legislation) |
+| **`juris`** | `https://jurisprudence.poirierlavoie.ca/mcp` | `Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}` (`401 WWW-Authenticate`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
+| **`outils`** | `https://outils.poirierlavoie.ca/mcp` | Accès public libre (sans secret) | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
-### 2. Jurisprudence (10 outils — `https://jurisprudence.poirierlavoie.ca/mcp`)
-| Outil | Catégorie | Entrées principales | Sorties & Rôle |
-|---|---|---|---|
-| `jurisprudence_verify_citations` | Vérification | `citations` (max 25), `lang`, `refresh` | Vérification déterministe contre CanLII sous 6 verdicts (CONFIRMÉE, etc.). |
-| `jurisprudence_find_case` | Recherche | `title`, `database_id`, `year_from`, `year_to` | Retrouve une décision par les parties ou fragment d'intitulé. |
-| `jurisprudence_get_case` | Consultation | `citation` OU (`database_id` + `case_id`) | Fiche CanLII complète d'une décision (métadonnées et hyperlien). |
-| `jurisprudence_citator` | Citateur | `rel` (`cited`/`citing`/`legislation`), réf | Citateur brut sur la collection CanLII. |
-| `jurisprudence_subsequent_history` | Heuristique | `citation` OU (`database_id` + `case_id`) | Indice heuristique d'historique en juridiction supérieure. |
-| `jurisprudence_browse_cases` | Répertoire | `database_id`, filtres de dates | Liste chronologique des décisions récentes d'un tribunal. |
-| `jurisprudence_list_databases` | Répertoire | `kind`, `jurisdiction`, `query` | Répertoire officiel des bases CanLII (tribunaux ou corpus législatifs). |
-| `jurisprudence_browse_legislation` | CanLII Légis | `database_id`, `query`, `limit` | Liste des lois et règlements d'une base législative CanLII. |
-| `jurisprudence_get_legislation` | CanLII Légis | `database_id`, `legislation_id` | Fiche CanLII d'une loi consolidée (dates de version de CanLII). |
-| `jurisprudence_parse_citation` | Hors ligne | `citation` | Analyse syntaxique pure hors ligne d'une citation canadienne. |
+### Catalogue exact des 32 outils (`v2.0.0`)
 
-### 3. Outils (12 outils — `https://outils.poirierlavoie.ca/mcp`)
-| Outil | Catégorie | Entrées principales | Sorties & Rôle |
-|---|---|---|---|
-| `calendrier_list_holidays` | Calcul | `year` (1970..2100), `regime` | Jours fériés et non juridiques (C.p.c., L.I. Québec, L.I. fédérale). |
-| `calendrier_compute_deadlines` | Calcul | `event_date`, `deadlines` (1..25), `regime` | Calcul arithmétique déterministe de délais civils (art. 83 C.p.c.). |
-| `interets_compute_1619` | Calcul | `end_date`, `tranches`, `mode` | Intérêts légaux (5 %) et indemnité additionnelle art. 1619 C.c.Q. (art. 28 L.A.F.). |
-| `greffe_parse_court_file_number` | Annuaire | `court_file_number` | Décomposition d'un numéro de dossier de cour (palais, district, tribunal). |
-| `palais_list` | Annuaire | `district`, `type`, `query` | Répertoire des palais de justice et points de service du Québec (MJQ). |
-| `palais_get` | Annuaire | `greffe_number` (3 chiffres) OU `palais` | Fiche détaillée d'un lieu de justice (adresses municipale et postale). |
-| `registre_search_entities` | Registres | `query`, `jurisdiction`, `active_only`, `limit` | Recherche hors ligne dans les instantanés REQ (RBQ/OPC/RENA) et Corporations Canada. |
-| `registre_get_entity` | Registres | `neq` OU `corporation_number` OU `bn_ne` | Fiche détaillée d'une entreprise par NEQ ou identifiant fédéral (sans dirigeants physiques). |
-| `adresse_verify` | Adresses | `address` ou champs structurés (`street`, `municipality`...) | Vérification et normalisation RQA (MRNF), unités, lots indicatifs et district probable. |
-| `terminologie_lookup` | Terminologie | `query`, `source_lang`, `domain_filter`, `limit` | Recherche bilingue FR/EN et bijuridique hiérarchisée (glossaire, lois, TERMIUM, OQLF). |
-| `terminologie_attestations` | Terminologie | `term`, `lang` (`fr`/`en`), `law_filter` | Occurrences exactes et extraits bilingues alignés dans le corpus législatif consolidé. |
-| `terminologie_scan_text` | Terminologie | `text` (≤ 32 000 car.), `lang`, `context_system` | Détection en lecture seule des francismes, calques de common law et archaïsmes d'avant 2016. |
+| Serveur (`lois`, 10 outils) | Serveur (`juris`, 10 outils) | Serveur (`outils`, 12 outils) |
+|---|---|---|
+| `list_laws` | `verify_citations` | `calendrier_holidays` |
+| `list_subjects` | `find_case` | `calendrier_deadlines` |
+| `related_laws` | `get_case` | `interets_1619` |
+| `find_relevant` | `citator` | `greffe_parse_number` |
+| `get_article` | `subsequent_history` | `palais_list` |
+| `get_articles` | `browse_cases` | `palais_get` |
+| `get_structure` | `list_databases` | `registre_search` |
+| `get_division` | `browse_legislation` | `registre_get_entity` |
+| `search_text` | `get_legislation` | `adresse_verify` |
+| `resolve_reference` | `parse_citation` | `terminologie_lookup` |
+| — | — | `termino_attestations` |
+| — | — | `terminologie_scan` |
+
+> Les deux serveurs authentifiés (`lois` et `juris`) sont configurés par variables d'environnement uniquement (`MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`). Aucun secret n'est stocké dans le dépôt.
 
 ---
 
-## Modèle de sécurité et d'authentification
+## Installation par plateforme
 
-1. **Variables d'environnement clientes vs secrets Cloudflare** :
-   - Côté client (Claude Code, Claude Desktop, Antigravity, Gemini CLI), les variables sont nommées :
-     - `MCP_LEGISLATION_SECRET` (transmis en en-tête `Authorization: Bearer ...`)
-     - `MCP_JURISPRUDENCE_SECRET` (transmis en en-tête `Authorization: Bearer ...`)
-   - Côté serveurs Cloudflare Workers :
-     - Worker Législation lit `env.MCP_TOKEN` (ou `env.MCP_TOKEN_VEILLE`).
-     - Worker Jurisprudence lit `env.MCP_SHARED_SECRET`.
-2. **Comparaison à temps constant** :
-   - La bibliothèque `@poirierlavoie/mcp-socle` hache le jeton présenté et le secret attendu en SHA-256 avant d'exécuter `crypto.subtle.timingSafeEqual`. Aucune fuite de préfixe ni de longueur n'est possible.
-3. **Forme des refus** :
-   - `MCP-Legislation` refuse en **HTTP 404** (corps vide), empêchant les clients MCP d'entrer dans une boucle de découverte OAuth destructrice.
-   - `MCP-Jurisprudence` refuse en **HTTP 401** avec en-tête `WWW-Authenticate: Bearer`.
-   - `MCP-Outils` est **public et sans état** (aucun secret ni jeton requis).
-4. **Erreurs d'arguments** :
-   - Tout échec de validation de schéma ou d'argument d'outil répond un résultat applicatif `{ content: [...], isError: true }` et jamais une faute JSON-RPC `-32602`. L'agent LLM peut ainsi lire l'erreur et auto-corriger son appel.
+### 1. Claude Code
 
----
-
-## Installation et configuration multi-plateformes
-
-### 1. Claude Code CLI
-
-#### Méthode 1 : Ligne de commande `claude mcp add`
-```bash
-# Connecteur Législation
-claude mcp add --transport http legislation https://legislation.poirierlavoie.ca/mcp --header "Authorization: Bearer ${MCP_LEGISLATION_SECRET}"
-
-# Connecteur Jurisprudence
-claude mcp add --transport http jurisprudence https://jurisprudence.poirierlavoie.ca/mcp --header "Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}"
-
-# Connecteur Outils (public)
-claude mcp add --transport http outils https://outils.poirierlavoie.ca/mcp
-```
-
-#### Méthode 2 : Fichier `.mcp.json` dans le projet
-Créer `.mcp.json` à la racine de votre projet :
-```json
-{
-  "mcpServers": {
-    "legislation": {
-      "type": "http",
-      "url": "https://legislation.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
-      }
-    },
-    "jurisprudence": {
-      "type": "http",
-      "url": "https://jurisprudence.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
-      }
-    },
-    "outils": {
-      "type": "http",
-      "url": "https://outils.poirierlavoie.ca/mcp"
-    }
-  }
-}
-```
-
-Installer ensuite le catalogue de compétences :
-```bash
-/plugin marketplace add jpoirierlavoie/pratique-civile-quebecoise
-/plugin install pratique-civile-quebecoise@pratique-civile-quebecoise
-```
-
----
-
-### 2. Claude Desktop (`claude_desktop_config.json`)
-
-Emplacement du fichier :
-- **macOS** : `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows** : `%APPDATA%\Claude\claude_desktop_config.json`
-
-Ajouter dans la section `mcpServers` :
-```json
-{
-  "mcpServers": {
-    "legislation": {
-      "url": "https://legislation.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer VOTRE_SECRET_LEGISLATION"
-      }
-    },
-    "jurisprudence": {
-      "url": "https://jurisprudence.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer VOTRE_SECRET_JURISPRUDENCE"
-      }
-    },
-    "outils": {
-      "url": "https://outils.poirierlavoie.ca/mcp"
-    }
-  }
-}
-```
-
-*Remarque : si votre version de Claude Desktop requiert un pont stdio local, employer `npx -y mcp-remote <URL> --header "Authorization: Bearer <SECRET>"`.*
-
----
-
-### 3. Claude.ai (Navigateur Web)
-
-Dans l'interface web `claude.ai` :
-1. Accéder à *Paramètres de l'organisation → Connecteurs / Intégrations*.
-2. Ajouter les connecteurs distants :
-   - **Legislation** : `https://legislation.poirierlavoie.ca/mcp?key=<VOTRE_SECRET_LEGISLATION>` (ou en-tête `Authorization: Bearer <VOTRE_SECRET_LEGISLATION>`).
-   - **Jurisprudence** : `https://jurisprudence.poirierlavoie.ca/mcp?key=<VOTRE_SECRET_JURISPRUDENCE>` (ou en-tête `Authorization: Bearer <VOTRE_SECRET_JURISPRUDENCE>`).
-   - **Outils** : `https://outils.poirierlavoie.ca/mcp` (sans secret).
-
----
-
-### 4. Google Antigravity
-
-1. Installer le plugin :
-   ```bash
-   agy plugin install https://github.com/jpoirierlavoie/pratique-civile-quebecoise.git
-   ```
-   ou cloner le dossier dans `~/.gemini/config/plugins/pratique-civile-quebecoise`.
-2. Le fichier `mcp_config.json` à la racine câble automatiquement les 3 serveurs :
-   - Définir `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` dans les variables de plugin Antigravity.
-   - Les schémas d'outils sont mis en cache dans `~/.gemini/antigravity/mcp/`.
-
----
-
-### 5. Gemini CLI
-
-1. Installer l'extension :
-   ```bash
-   gemini extensions install https://github.com/jpoirierlavoie/pratique-civile-quebecoise
-   ```
-2. Le fichier `gemini-extension.json` invite à saisir de façon masquée (`sensitive: true`) les secrets `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et active le connecteur « Outils » (`outils`) sans secret requis.
-
----
-
-## Contrôle qualité et vérification
-
-Exécuter la suite de contrôles depuis la racine du dépôt :
+Définir d'abord les secrets dans l'environnement utilisateur, puis installer depuis la place de marché du dépôt :
 
 ```bash
-# 1. Contrôle statique des invariants et des manifestes
-python verifier.py
+export MCP_LEGISLATION_SECRET="<votre-secret-legislation>"
+export MCP_JURISPRUDENCE_SECRET="<votre-secret-jurisprudence>"
+```
 
-# 2. Exécution des scénarios d'évaluation et tests unitaires locaux
-python evals/executer_evals.py --auto-test
+```text
+/plugin marketplace add jpoirierlavoie/droit-civil-quebecois
+/plugin install droit-civil-quebecois@droit-civil-quebecois
+```
 
-# 3. Vérification de bout en bout multi-serveurs (M3)
-python verifier_tout.py
+### 2. Claude Desktop & `claude.ai`
+
+1. Dans les connecteurs personnalisés, ajouter les trois URL MCP (`https://legislation.poirierlavoie.ca/mcp`, `https://jurisprudence.poirierlavoie.ca/mcp`, `https://outils.poirierlavoie.ca/mcp`) avec l'en-tête `Authorization: Bearer <secret>` pour `lois` et `juris`.
+2. Importer les compétences depuis `skills/` ou installer le bundle `.claude-plugin/plugin.json`.
+
+### 3. Google Antigravity
+
+Synchroniser le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` et configurer `MCP_LEGISLATION_SECRET` / `MCP_JURISPRUDENCE_SECRET` dans le gestionnaire de greffons (tous les outils respectent nativement le plafond `<= 64` caractères, max 52 caractères sous Antigravity) :
+
+```powershell
+python scripts/synchroniser_plugin_gemini.py --apply
+python scripts/regenerer_cache_mcp.py --apply   # optionnel : reconstruit le cache depuis les dépôts locaux
+```
+
+### 4. Gemini CLI
+
+```bash
+gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecois
+```
+
+`gemini-extension.json` déclare `sensitive: true` sur `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et fixe `"contextFileName": []` afin que les consignes de développement (`GEMINI.md`) n'alourdissent jamais le contexte juridique de l'avocat.
+
+---
+
+## Migration depuis `v1.x` (`pratique-civile-quebecoise`) -> `v2.0.0` (`droit-civil-quebecois`)
+
+En `v2.0.0`, le greffon change de nom (`droit-civil-quebecois`), de clés de serveurs (`lois`, `juris`, `outils`) et d'identifiants d'outils pour corriger le bogue de troncature `> 64` caractères et supprimer l'ancien couplage applicatif :
+
+- **Claude Code :** désinstaller l'ancien greffon (`/plugin uninstall pratique-civile-quebecoise`), retirer l'ancienne place de marché si nécessaire, puis installer `jpoirierlavoie/droit-civil-quebecois`.
+- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` ; le script déploie `droit-civil-quebecois`, retire automatiquement l'ancien dossier `~/.gemini/config/plugins/pratique-civile-quebecoise` et purge les fichiers obsolètes. Si le cache local est régénéré via `python scripts/regenerer_cache_mcp.py --apply`, les anciens répertoires `pratique-civile-quebecoise_*` sont supprimés.
+- **Gemini CLI :** exécuter `gemini extensions uninstall pratique-civile-quebecoise` puis installer `droit-civil-quebecois`.
+
+---
+
+## Vérification et qualité
+
+```powershell
+python verifier.py                                  # Contrôle statique strict (sortie muette, code 0)
+python verifier.py --stats                          # Bilan de taille des compétences (< 140 KB)
+python evals/executer_evals.py --auto-test          # Validation déterministe des 19 scénarios & 2 scripts
+python verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale (79 vérifications)
+python verifier_tout.py --mode live                 # Vérification distante (requiert les 2 secrets env)
 ```
 
 ---
 
-## Sécurité, confidentialité et licence
+## Sécurité et licence
 
-- **Sécurité, vie privée et secret professionnel :** Consulter [`SECURITY.md`](SECURITY.md) pour la politique de signalement privé et coordonné auprès de Jason Poirier Lavoie (`jason@poirierlavoie.ca`), applicable tant aux vulnérabilités techniques qu'à toute question de confidentialité, de vie privée ou de secret professionnel de l'avocat.
-- **Licence :** Les compétences, manifestes, scénarios d'évaluation, scripts et la documentation sont mis à disposition sous licence **Creative Commons Attribution - Pas d'Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International (`CC-BY-NC-SA-4.0`)** — voir [`LICENSE`](LICENSE). Aucun conseil juridique.
+- Consulter [SECURITY.md](SECURITY.md) pour la politique de divulgation coordonnée, les règles de secret professionnel et les garanties de confidentialité des connecteurs.
+- Licence : **CC-BY-NC-SA-4.0** — voir [LICENSE](LICENSE).

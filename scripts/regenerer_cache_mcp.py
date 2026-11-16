@@ -73,7 +73,7 @@ def load_legislation():
             "description": t["description"],
             "parameters": t["inputSchema"]
         }
-    return "pratique-civile-quebecoise_legislation", tool_dict, instructions
+    return "droit-civil-quebecois_lois", tool_dict, instructions
 
 def load_jurisprudence():
     script = "import { listToolDescriptors, INSTRUCTIONS } from './src/mcp/registry.ts'; console.log(JSON.stringify({ tools: listToolDescriptors(), instructions: INSTRUCTIONS }));"
@@ -98,7 +98,7 @@ def load_jurisprudence():
             "description": t["description"],
             "parameters": t["inputSchema"]
         }
-    return "pratique-civile-quebecoise_jurisprudence", tool_dict, data["instructions"]
+    return "droit-civil-quebecois_juris", tool_dict, data["instructions"]
 
 def load_outils():
     script = "import { listToolDescriptors, INSTRUCTIONS } from './src/mcp/server.ts'; console.log(JSON.stringify({ tools: listToolDescriptors(), instructions: INSTRUCTIONS }));"
@@ -123,7 +123,7 @@ def load_outils():
             "description": t["description"],
             "parameters": t["inputSchemaJson"]
         }
-    return "pratique-civile-quebecoise_outils", tool_dict, data["instructions"]
+    return "droit-civil-quebecois_outils", tool_dict, data["instructions"]
 
 def main():
     apply_mode = "--apply" in sys.argv
@@ -137,7 +137,10 @@ def main():
         for existing in sorted(BASE_CACHE.iterdir()):
             if (
                 existing.is_dir()
-                and existing.name.startswith("pratique-civile-quebecoise_")
+                and (
+                    existing.name.startswith("droit-civil-quebecois_")
+                    or existing.name.startswith("pratique-civile-quebecoise_")
+                )
                 and existing.name not in active_folders
             ):
                 shutil.rmtree(existing)
@@ -150,6 +153,9 @@ def main():
         
         if apply_mode:
             target_dir.mkdir(parents=True, exist_ok=True)
+            for existing_json in target_dir.glob("*.json"):
+                if existing_json.stem not in tools:
+                    existing_json.unlink()
             with open(target_dir / "instructions.md", "w", encoding="utf-8", newline="\n") as f:
                 f.write(instructions.strip() + "\n")
             

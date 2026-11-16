@@ -67,6 +67,7 @@ def evaluer_reponse(scenario: dict[str, Any], texte: str) -> dict[str, Any]:
     return {
         "id": scenario["id"],
         "competence": scenario["competence"],
+        "palier": scenario.get("palier"),
         "reussi": reussi,
         "manquants": manquants,
         "interdits_trouves": interdits_trouves,
@@ -131,10 +132,10 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
     """Exécute les assertions déterministes attachées aux outils Python locaux."""
     erreurs: list[str] = []
     calcul_mod = _charger_module(
-        "skills/calendrier-procedural/scripts/calcul_delai.py", "calcul_delai"
+        "skills/administration-litige/scripts/calcul_delai.py", "calcul_delai"
     )
     inspect_mod = _charger_module(
-        "skills/analyse-documentaire/scripts/inspecter_piece.py", "inspecter_piece"
+        "skills/analyse-juridique/scripts/inspecter_piece.py", "inspecter_piece"
     )
 
     for sc in scenarios:
@@ -247,7 +248,7 @@ def auto_test() -> int:
 def main(argv: list[str] | None = None) -> int:
     _configure_stdio()
     parser = argparse.ArgumentParser(
-        description="Suite d'évaluation comportementale de Pratique civile québécoise."
+        description="Suite d'évaluation comportementale de Droit civil québécois."
     )
     parser.add_argument("--liste", action="store_true", help="Lister les scénarios d'évaluation.")
     parser.add_argument(
@@ -271,7 +272,12 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 json.dumps(
                     [
-                        {"id": s["id"], "competence": s["competence"], "titre": s["titre"]}
+                        {
+                            "id": s["id"],
+                            "competence": s["competence"],
+                            "palier": s.get("palier"),
+                            "titre": s["titre"],
+                        }
                         for s in scenarios
                     ],
                     ensure_ascii=False,
@@ -280,7 +286,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         else:
             for sc in scenarios:
-                print(f"{sc['id']} | {sc['competence']} | {sc['titre']}")
+                palier = f" | Palier {sc['palier']}" if sc.get("palier") else ""
+                print(f"{sc['id']} | {sc['competence']}{palier} | {sc['titre']}")
         return 0
 
     if args.reponses is not None:

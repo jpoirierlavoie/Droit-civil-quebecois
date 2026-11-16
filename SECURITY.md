@@ -1,46 +1,41 @@
-# Security, Privacy & Professional Secrecy Policy / Politique de sécurité, confidentialité et secret professionnel
+# Politique de sécurité et de confidentialité (`SECURITY.md`)
 
-> **Français :** Pour signaler une **vulnérabilité de sécurité** OU un **enjeu de confidentialité, de vie privée ou de secret professionnel** (privilège avocat-client / privilège relatif au litige), **n'ouvrez jamais d'issue publique ni de discussion sur GitHub**. Écrivez directement au mainteneur :
-> **Jason Poirier Lavoie, avocat (Québec)** — `jason@poirierlavoie.ca` (accusé de réception sous **72 heures**, divulgation coordonnée).
-> **Ne joignez jamais** de dossiers clients réels, de pièces protégées par le secret professionnel, de renseignements nominatifs confidentiels ni de jetons/secrets actifs à un premier envoi ; utilisez des exemples fictifs ou anonymisés.
->
-> **English:** To report a **security vulnerability** OR a **privacy, confidentiality, or legal privilege / professional secrecy issue**, **do not open a public GitHub issue or pull request**. Email the maintainer privately:
-> **Jason Poirier Lavoie, Lawyer (Québec)** — `jason@poirierlavoie.ca` (acknowledgement within **72 hours**, coordinated disclosure).
-> **Never include** live client files, privileged communications, unredacted identifying facts, or active bearer tokens/secrets in an initial report; use synthetic or anonymized examples first.
+## Signalement d'une vulnérabilité ou d'un incident de confidentialité
 
----
+**Ne jamais ouvrir d'issue GitHub publique** pour signaler une faille de sécurité, une fuite de secret ou un enjeu touchant le secret professionnel.
 
-## Portée du dépôt (`pratique-civile-quebecoise`)
+- **Canal privé prioritaire :** [Avis de sécurité privé GitHub](https://github.com/jpoirierlavoie/droit-civil-quebecois/security/advisories/new)
+- **Courriel de contact :** `jason@poirierlavoie.ca`
+- **Délai d'accusé de réception :** dans les **72 heures**.
 
-Ce dépôt héberge le greffon multiplateforme **Pratique civile québécoise** (Claude Code, Claude Desktop, claude.ai, Google Antigravity, Gemini CLI) :
-- Les cinq compétences juridiques sous `skills/` (`recherche-juridique`, `redaction-juridique`, `analyse-documentaire`, `calendrier-procedural`, `deontologie-professionnelle`) et l'outillage local (`skills/calendrier-procedural/scripts/calcul_delai.py`) ;
-- Les manifestes clients (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`) ;
-- Les scripts de vérification et d'évaluation (`verifier.py`, `verifier_tout.py`, `evals/`).
+### Portée
 
-### Hors portée
-- Attaque volumétrique (DoS) sur les services d'hébergement tiers, ingénierie sociale, ou vulnérabilités propres aux plateformes clientes hôtes (Anthropic, Google, GitHub, Cloudflare).
-- Pour un incident visant spécifiquement un serveur MCP, vous pouvez également consulter la politique propre du dépôt concerné (`MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils`, `MCP-Socle`) — tous convergent vers la même adresse de contact confidentielle (`jason@poirierlavoie.ca`).
+Cette politique couvre le greffon **`droit-civil-quebecois`** ainsi que les dépôts d'infrastructure associés (`MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils`, `MCP-Socle`).
 
 ---
 
-## Signalement d'un enjeu de sécurité, de vie privée ou de secret professionnel
+## Secrets et authentification
 
-Merci de préciser, sans exposer de données confidentielles réelles :
-1. **Nature du signalement** : faille technique (manifeste, script Python, contournement d'isolation, injection) **ou** exposition / fuite potentielle de renseignements confidentiels, personnels ou couverts par le secret professionnel (`art. 9` *Charte des droits et libertés de la personne*, `art. 131` *Loi sur le Barreau*).
-2. **Composant concerné** : compétence (`SKILL.md` / `references/`), script, manifeste ou flux vers un connecteur MCP.
-3. **Scénario minimal de reproduction** (avec données fictives) et **impact potentiel**.
-4. **Correctif ou mesure d'atténuation suggérée**, le cas échéant.
+1. **Aucune donnée d'authentification dans le dépôt :** `.mcp.json`, `mcp_config.json` et `gemini-extension.json` référencent uniquement les variables d'environnement `${MCP_LEGISLATION_SECRET}` et `${MCP_JURISPRUDENCE_SECRET}` (marquées `sensitive: true` dans `gemini-extension.json`).
+2. **Isolation des serveurs MCP :**
+   - **`lois`** (`https://legislation.poirierlavoie.ca/mcp`) : authentification par secret partagé (`Authorization: Bearer`) en comparaison à temps constant SHA-256 ; garde non-oracle **HTTP 404** avant même la validation de méthode HTTP lorsqu'un jeton valide est absent.
+   - **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp`) : authentification par secret partagé (`Authorization: Bearer`) en comparaison à temps constant SHA-256 ; réponse **HTTP 401** (`WWW-Authenticate: Bearer`) sans jeton valide.
+   - **`outils`** (`https://outils.poirierlavoie.ca/mcp`) : serveur public en lecture seule sur données officielles et calculs déterministes ; aucun secret ni aucun jeton client requis.
+3. **Protection du transport et des entrées :** validation stricte des schémas JSON (`additionalProperties: false`), limitation de la taille des requêtes HTTP (`> 64 Kio` -> `413 Payload Too Large`), liste blanche d'en-têtes `Host` (protection contre le *DNS rebinding*) et rejet des requêtes JSON-RPC groupées ou à identifiant structuré.
 
 ---
 
-## Posture de confidentialité, de journalisation et de secret professionnel des connecteurs déclarés
+## Secret professionnel et posture de journalisation
 
-Ce greffon est conçu pour garder le contrôle du dossier chez l'avocat tout en limitant ce qui sort vers les outils MCP externes :
+### Règles impératives des compétences (`SAFETY-KERNEL`)
 
-1. **Isolation du gestionnaire de dossiers** : les compétences emploient un contrat d'information abstrait en 12 besoins et ne dépendent d'aucun logiciel de gestion de dossiers. Les documents du dossier sont classés selon quatre niveaux de protection (`0` à `3`, dont le secret professionnel et le privilège relatif au litige) dans `analyse-documentaire`.
-2. **Responsabilité de l'environnement hôte** : les faits d'un client confiés au modèle d'IA hôte demeurent soumis aux garanties contractuelles (DPA / absence d'entraînement) configurées par le cabinet auprès du fournisseur d'IA. Les compétences demandent à l'utilisateur ou rappellent l'obligation déontologique (`deontologie-professionnelle`) avant de transmettre des éléments nominatifs vers l'extérieur.
-3. **Flux vers les trois connecteurs MCP distants** :
-   - **`MCP-Legislation`** (`https://legislation.poirierlavoie.ca/mcp`) : protégé par secret partagé (`Bearer ${MCP_LEGISLATION_SECRET}`). En lecture seule sur les lois du Québec et du Canada. La table D1 `search_log` enregistre les chaînes de recherche en texte clair (sans identifiant d'auteur, mais sans purge automatique) : formuler des requêtes juridiques abstraites, sans nom de client ni faits identifiants ; côté client applicatif, privilégier l'en-tête `Authorization: Bearer` (évite l'exposition du secret dans les journaux d'URL `?key=`).
-   - **`MCP-Jurisprudence`** (`https://jurisprudence.poirierlavoie.ca/mcp`) : protégé par secret partagé (`Bearer ${MCP_JURISPRUDENCE_SECRET}`). L'outil `jurisprudence_parse_citation` fonctionne entièrement hors ligne (`openWorldHint: false`). Les neuf autres outils interrogent l'API REST de CanLII (`openWorldHint: true`) et alimentent une table D1 `search_log` : rechercher par `jurisprudence_find_case` le nom d'une partie à un dossier actif (non encore publié) révèle cet intérêt de recherche à CanLII et inscrit ce nom dans `search_log`.
-   - **`MCP-Outils`** (`https://outils.poirierlavoie.ca/mcp`) : public, sans état de session, adossé à trois bases Cloudflare D1 strictement en lecture seule à la requête (`DB_TERMINOLOGIE`, `DB_REGISTRES`, `DB_ADRESSES`, zéro écriture au fil de l'eau, aucune table `search_log`), sans journalisation applicative (`observability.enabled = false`, `logs.enabled = false`, `logpush = false`) et zéro appel sortant (`openWorldHint: false`). Les arguments soumis (dénominations d'entreprises, adresses civiques, extraits de projets d'acte contrôlés par `terminologie_scan_text`) restent confinés à la requête Worker + D1 en mémoire sans persistance. Néanmoins, par prudence déontologique, éviter d'inscrire des noms de clients personnes physiques ou renseignements couverts par le secret professionnel lorsqu'un terme abstrait ou un extrait anonymisé suffit.
-4. **Protection des secrets dans le dépôt** : `.mcp.json`, `mcp_config.json` et `gemini-extension.json` n'emploient que des références de variables d'environnement (`${MCP_LEGISLATION_SECRET}`, `${MCP_JURISPRUDENCE_SECRET}`), marquées `sensitive: true` sous Gemini CLI, sans chargement par défaut de `GEMINI.md` dans les sessions utilisatrices (`"contextFileName": []`). `verifier.py` rejette toute chaîne hexadécimale suspecte (`≥ 32` caractères).
+Toutes les compétences du greffon imposent les deux règles suivantes :
+
+- **Zéro information nominative dans les recherches externes :** ne jamais inclure de noms de parties, faits identifiants, numéros de dossier ou extraits de pièces confidentielles dans une requête web ou de recherche doctrinale.
+- **Présomption `CONFIDENTIEL` par défaut :** aucun document ou élément probant non analysé n'est considéré public par défaut ; tout indice de privilège (secret professionnel `9 Charte`, litige, règlement `s.p.`, confidentialité `108 C.p.c.`) est signalé avant toute communication.
+
+### Journalisation côté serveurs MCP
+
+- **`MCP-Outils` (`outils`) :** exécution **entièrement sans état ni journalisation applicative** des requêtes clients (aucune conservation des calculs `calendrier_deadlines`, `interets_1619`, `greffe_parse_number`, `registre_search`, `adresse_verify` ou `terminologie_scan`).
+- **`MCP-Legislation` (`lois`) et `MCP-Jurisprudence` (`juris`) :** ces Workers Cloudflare utilisent une base D1 avec une table de télémétrie technique (`search_log`) enregistrant des empreintes de requêtes de recherche (`find_relevant`, `search_text`, `find_case`) à des fins de diagnostic et de pertinence. **En conséquence, ne jamais soumettre d'éléments nominatifs, identifiants client ou faits confidentiels dans les paramètres de recherche libre `query`.**
+- **Scripts locaux Python :** `skills/analyse-juridique/scripts/inspecter_piece.py` et `skills/administration-litige/scripts/calcul_delai.py` n'utilisent que la bibliothèque standard Python, ne réalisent aucun appel réseau et n'écrivent aucun fichier hors du flux standard choisi par l'utilisateur.

@@ -1,13 +1,13 @@
 {
-  "name": "pratique-civile-quebecoise",
-  "version": "1.6.1",
-  "description": "Recherche, rédaction, analyse documentaire, calendrier procédural et déontologie en droit civil et commercial québécois. Cinq compétences qui se répondent, indépendantes de tout gestionnaire de dossiers. Déclare les connecteurs « Legislation », « Jurisprudence » et « Outils ».",
+  "name": "droit-civil-quebecois",
+  "version": "2.0.0",
+  "description": "Recherche, analyse stratégique et probante, rédaction judiciaire, administration du litige et déontologie en droit civil et commercial québécois. Cinq compétences à découverte progressive branchées sur les connecteurs « lois », « juris » et « outils ».",
   "author": {
     "name": "Jason Poirier Lavoie",
     "email": "jason@poirierlavoie.ca"
   },
-  "homepage": "https://github.com/jpoirierlavoie/pratique-civile-quebecoise",
-  "repository": "https://github.com/jpoirierlavoie/pratique-civile-quebecoise",
+  "homepage": "https://github.com/jpoirierlavoie/droit-civil-quebecois",
+  "repository": "https://github.com/jpoirierlavoie/droit-civil-quebecois",
   "license": "CC-BY-NC-SA-4.0",
   "keywords": [
     "québec",
@@ -17,6 +17,7 @@
     "C.p.c.",
     "recherche juridique",
     "rédaction juridique",
-    "preuve"
+    "preuve",
+    "déontologie"
   ]
 }

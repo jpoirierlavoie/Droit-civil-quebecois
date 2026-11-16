@@ -1,8 +1,9 @@
-"""Contrôle statique du dépôt « Pratique civile québécoise ».
+"""Contrôle statique du dépôt « Droit civil québécois ».
 
 Exécuter depuis la racine du dépôt :
 
     python verifier.py
+    python verifier.py --stats
 
 Ne retourne rien (code de sortie 0) lorsque tout est conforme ; écrit une
 ligne d'erreur par manquement sur la sortie d'erreur standard (code 1) sinon.
@@ -10,7 +11,9 @@ ligne d'erreur par manquement sur la sortie d'erreur standard (code 1) sinon.
 
 from __future__ import annotations
 
+import argparse
 import ast
+import hashlib
 import json
 import re
 import sys
@@ -76,8 +79,18 @@ ANTIGRAVITY_PLUGIN_KEYS = frozenset(
 
 ANTIGRAVITY_AUTHOR_KEYS = frozenset({"name", "url"})
 
-EXPECTED_PLUGIN_NAME = "pratique-civile-quebecoise"
-EXPECTED_REPO_URL = "https://github.com/jpoirierlavoie/pratique-civile-quebecoise"
+EXPECTED_PLUGIN_NAME = "droit-civil-quebecois"
+EXPECTED_DISPLAY_NAME = "Droit civil québécois"
+EXPECTED_REPO_URL = "https://github.com/jpoirierlavoie/droit-civil-quebecois"
+EXPECTED_SKILLS = frozenset(
+    {
+        "recherche-juridique",
+        "analyse-juridique",
+        "redaction-juridique",
+        "administration-litige",
+        "deontologie-et-pratique",
+    }
+)
 RETIRED_REPO_SLUGS = (
     "competence-litige-civil",
     "competence-pratique-civile-quebecoise",
@@ -85,19 +98,64 @@ RETIRED_REPO_SLUGS = (
     "MCP-Socle-Juridique",
     "pratique-civile-outils",
 )
+LEGACY_PLUGIN_ALLOW_MIGRATION = frozenset(
+    {
+        "verifier.py",
+        "README.md",
+        "CLAUDE.md",
+        "GEMINI.md",
+        "scripts/synchroniser_plugin_gemini.py",
+        "scripts/regenerer_cache_mcp.py",
+    }
+)
+RETIRED_V1_SKILLS = (
+    "analyse-documentaire",
+    "calendrier-procedural",
+    "deontologie-professionnelle",
+)
+RETIRED_V1_TOOLS = (
+    "legislation_list_laws",
+    "legislation_list_subjects",
+    "legislation_related_laws",
+    "legislation_find_relevant",
+    "legislation_get_article",
+    "legislation_get_articles",
+    "legislation_get_structure",
+    "legislation_get_division",
+    "legislation_search_text",
+    "legislation_resolve_reference",
+    "jurisprudence_verify_citations",
+    "jurisprudence_find_case",
+    "jurisprudence_get_case",
+    "jurisprudence_citator",
+    "jurisprudence_subsequent_history",
+    "jurisprudence_browse_cases",
+    "jurisprudence_list_databases",
+    "jurisprudence_browse_legislation",
+    "jurisprudence_get_legislation",
+    "jurisprudence_parse_citation",
+    "calendrier_list_holidays",
+    "calendrier_compute_deadlines",
+    "interets_compute_1619",
+    "greffe_parse_court_file_number",
+    "registre_search_entities",
+    "terminologie_attestations",
+    "terminologie_scan_text",
+)
 EXPECTED_LICENSE = "CC-BY-NC-SA-4.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_URL = "https://legislation.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_AUTH = "Bearer $" + "{MCP_LEGISLATION_SECRET}"
 EXPECTED_JURISPRUDENCE_URL = "https://jurisprudence.poirierlavoie.ca/mcp"
 EXPECTED_JURISPRUDENCE_AUTH = "Bearer $" + "{MCP_JURISPRUDENCE_SECRET}"
+
 EXPECTED_MCP_SERVERS = {
-    "legislation": {
+    "lois": {
         "type": "http",
         "url": EXPECTED_LEGISLATION_URL,
         "headers": {"Authorization": EXPECTED_LEGISLATION_AUTH},
     },
-    "jurisprudence": {
+    "juris": {
         "type": "http",
         "url": EXPECTED_JURISPRUDENCE_URL,
         "headers": {"Authorization": EXPECTED_JURISPRUDENCE_AUTH},
@@ -105,31 +163,66 @@ EXPECTED_MCP_SERVERS = {
     "outils": {"type": "http", "url": EXPECTED_OUTILS_URL},
 }
 EXPECTED_GOOGLE_SERVERS = {
-    "legislation": (
+    "lois": (
         EXPECTED_LEGISLATION_URL,
         EXPECTED_LEGISLATION_AUTH,
         "MCP_LEGISLATION_SECRET",
     ),
-    "jurisprudence": (
+    "juris": (
         EXPECTED_JURISPRUDENCE_URL,
         EXPECTED_JURISPRUDENCE_AUTH,
         "MCP_JURISPRUDENCE_SECRET",
     ),
 }
+EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
+    "lois": (
+        "list_laws",
+        "list_subjects",
+        "related_laws",
+        "find_relevant",
+        "get_article",
+        "get_articles",
+        "get_structure",
+        "get_division",
+        "search_text",
+        "resolve_reference",
+    ),
+    "juris": (
+        "verify_citations",
+        "find_case",
+        "get_case",
+        "citator",
+        "subsequent_history",
+        "browse_cases",
+        "list_databases",
+        "browse_legislation",
+        "get_legislation",
+        "parse_citation",
+    ),
+    "outils": (
+        "calendrier_holidays",
+        "calendrier_deadlines",
+        "interets_1619",
+        "greffe_parse_number",
+        "palais_list",
+        "palais_get",
+        "registre_search",
+        "registre_get_entity",
+        "adresse_verify",
+        "terminologie_lookup",
+        "termino_attestations",
+        "terminologie_scan",
+    ),
+}
+
 _HEX_SECRET_RE = re.compile(r"[0-9a-f]{32,}", re.I)
-ALLOWED_TOOL_PREFIXES = frozenset(
-    {
-        "legislation",
-        "jurisprudence",
-        "greffe",
-        "palais",
-        "calendrier",
-        "interets",
-        "registre",
-        "adresse",
-        "terminologie",
-    }
-)
+
+MAX_DESCRIPTION_CHARS = 850
+MAX_SKILL_BODY_WORDS = 1000
+MAX_LEAF_WORDS = 1500
+MAX_LEAF_BYTES = 12288
+MAX_TOTAL_SKILLS_BYTES = 143360  # 140 KB
+MAX_TOOL_COMPOUND_LEN = 64
 
 BANNED_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("mention de pallas-athena", re.compile(r"pallas[-_]athena", re.I)),
@@ -153,24 +246,25 @@ BANNED_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
             r")\b"
         ),
     ),
+    (
+        "code DMS fermé hérité de v1",
+        re.compile(
+            r"\b(?:PROC_DEM_INTRO|PV_SIGNIFICATION_DESIGNEE|CAB_MEMO|CAB_DEBOURSE|TRANS_INTERROGATOIRE|PIECE_COMMUNIQUEE)\b"
+        ),
+    ),
 )
 
 _SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
-_REF_PATH_RE = re.compile(r"references/[a-z0-9-]+\.md")
-_SCRIPT_PATH_RE = re.compile(r"scripts/[a-z0-9_-]+\.py")
+_REF_PATH_RE = re.compile(r"(?<![./\w-])references/[a-z0-9-]+\.md")
+_SIBLING_LEAF_RE = re.compile(r"\.\./([a-z0-9-]+)/references/([a-z0-9-]+\.md)")
+_SIBLING_SKILL_MD_RE = re.compile(r"\.\./[a-z0-9-]+/SKILL\.md")
+_ANY_PARENT_REL_RE = re.compile(r"\.\./")
+_SCRIPT_PATH_RE = re.compile(r"(?<![./\w-])scripts/[a-z0-9_-]+\.py")
 _SCRIPT_NAME_RE = re.compile(r"^[a-z0-9_]+\.py$")
-_CROSS_SKILL_RE = re.compile(
-    r"(?:(?:voir|relève\s+de)\s+`?([a-z0-9]+-[a-z0-9-]+)`?|`([a-z0-9]+-[a-z0-9-]+)`)"
+_KERNEL_RE = re.compile(
+    r"<!-- SAFETY-KERNEL:START -->\n(.*?)\n<!-- SAFETY-KERNEL:END -->", re.S
 )
-_BACKTICK_SPAN_RE = re.compile(r"`([^`\n]+)`")
-_TOOL_SPAN_RE = re.compile(r"^([a-z][a-z0-9_]*)_")
-_FENCE_RE = re.compile(r"(?ms)^```[^\n]*\n.*?^```\s*$")
-
-
-def _extract_h2_headings(body: str) -> list[str]:
-    stripped = _FENCE_RE.sub("", body)
-    return [line.strip() for line in stripped.splitlines() if line.startswith("## ")]
 
 
 def _iter_repo_files(racine: Path) -> list[str]:
@@ -271,10 +365,11 @@ def _load_json(racine: Path, rel: str, erreurs: list[str]) -> dict | None:
     return data
 
 
-def verifier(racine: Path) -> list[str]:
+def verifier(racine: Path) -> tuple[list[str], dict[str, int]]:
     erreurs: list[str] = []
     files = _iter_repo_files(racine)
     file_set = set(files)
+    stats = {"skill_md_bytes": 0, "leaf_md_bytes": 0, "total_md_bytes": 0, "total_md_words": 0}
 
     # 1. File inventory & allowlist
     for rel in sorted(ROOT_ALLOWLIST | EVALS_ALLOWLIST):
@@ -282,6 +377,8 @@ def verifier(racine: Path) -> list[str]:
             erreurs.append(f"fichier requis manquant : {rel}")
 
     skill_md_files: list[str] = []
+    skill_router_files: list[str] = []
+    skill_leaf_files: list[str] = []
     skill_script_files: list[str] = []
     eval_files: list[str] = []
     for rel in files:
@@ -293,6 +390,7 @@ def verifier(racine: Path) -> list[str]:
         parts = rel.split("/")
         if len(parts) == 3 and parts[0] == "skills" and parts[2] == "SKILL.md":
             skill_md_files.append(rel)
+            skill_router_files.append(rel)
             continue
         if (
             len(parts) == 4
@@ -301,6 +399,7 @@ def verifier(racine: Path) -> list[str]:
             and parts[3].endswith(".md")
         ):
             skill_md_files.append(rel)
+            skill_leaf_files.append(rel)
             continue
         if (
             len(parts) == 4
@@ -328,7 +427,14 @@ def verifier(racine: Path) -> list[str]:
             erreurs.append(f"{rel} : fins de ligne CR/CRLF interdites (LF requis)")
         decoded[rel] = text
 
-    # 3. Manifest consistency
+    # 3. Byte-for-byte CLAUDE.md / GEMINI.md parity
+    if "CLAUDE.md" in decoded and "GEMINI.md" in decoded:
+        if decoded["CLAUDE.md"] != decoded["GEMINI.md"]:
+            erreurs.append("CLAUDE.md et GEMINI.md doivent être identiques octet pour octet")
+        if len(decoded["GEMINI.md"].encode("utf-8")) >= 24000:
+            erreurs.append("GEMINI.md dépasse 24 000 octets UTF-8")
+
+    # 4. Manifest consistency & 64-char compound identifier invariant
     claude_plugin = _load_json(racine, ".claude-plugin/plugin.json", erreurs)
     marketplace = _load_json(racine, ".claude-plugin/marketplace.json", erreurs)
     agy_plugin = _load_json(racine, "plugin.json", erreurs)
@@ -421,6 +527,8 @@ def verifier(racine: Path) -> list[str]:
             )
         if agy_plugin.get("name") != EXPECTED_PLUGIN_NAME:
             erreurs.append(f"plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'")
+        if agy_plugin.get("displayName") != EXPECTED_DISPLAY_NAME:
+            erreurs.append(f"plugin.json : 'displayName' doit valoir '{EXPECTED_DISPLAY_NAME}'")
         ver = agy_plugin.get("version")
         if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
             erreurs.append("plugin.json : 'version' semver invalide")
@@ -461,7 +569,7 @@ def verifier(racine: Path) -> list[str]:
         if not isinstance(agy_servers, dict) or set(agy_servers.keys()) != expected_agy_keys:
             erreurs.append(
                 "mcp_config.json : 'mcpServers' doit déclarer exactement "
-                "'legislation', 'jurisprudence' et 'outils'"
+                "'lois', 'juris' et 'outils'"
             )
         else:
             for srv_name, (exp_url, exp_auth, exp_var) in EXPECTED_GOOGLE_SERVERS.items():
@@ -508,8 +616,7 @@ def verifier(racine: Path) -> list[str]:
             else:
                 if "eager" in outils_srv:
                     erreurs.append(
-                        "mcp_config.json : mcpServers.outils ne doit pas "
-                        "contenir 'eager'"
+                        "mcp_config.json : mcpServers.outils ne doit pas contenir 'eager'"
                     )
                 if outils_srv.get("url") != EXPECTED_OUTILS_URL:
                     erreurs.append(
@@ -518,8 +625,7 @@ def verifier(racine: Path) -> list[str]:
                     )
                 if set(outils_srv.keys()) != {"url"}:
                     erreurs.append(
-                        "mcp_config.json : mcpServers.outils ne doit contenir "
-                        "que la clé 'url'"
+                        "mcp_config.json : mcpServers.outils ne doit contenir que la clé 'url'"
                     )
 
     if gemini_ext is not None:
@@ -539,7 +645,7 @@ def verifier(racine: Path) -> list[str]:
         if not isinstance(g_servers, dict) or set(g_servers.keys()) != expected_gemini_keys:
             erreurs.append(
                 "gemini-extension.json : 'mcpServers' doit déclarer exactement "
-                "'legislation', 'jurisprudence' et 'outils'"
+                "'lois', 'juris' et 'outils'"
             )
         else:
             for srv_name, (exp_url, exp_auth, _) in EXPECTED_GOOGLE_SERVERS.items():
@@ -562,8 +668,7 @@ def verifier(racine: Path) -> list[str]:
             g_outils = g_servers["outils"]
             if not isinstance(g_outils, dict):
                 erreurs.append(
-                    "gemini-extension.json : mcpServers.outils doit être "
-                    "un objet JSON"
+                    "gemini-extension.json : mcpServers.outils doit être un objet JSON"
                 )
             else:
                 if g_outils.get("httpUrl") != EXPECTED_OUTILS_URL:
@@ -573,8 +678,7 @@ def verifier(racine: Path) -> list[str]:
                     )
                 if set(g_outils.keys()) != {"httpUrl"}:
                     erreurs.append(
-                        "gemini-extension.json : mcpServers.outils ne doit "
-                        "contenir que la clé 'httpUrl'"
+                        "gemini-extension.json : mcpServers.outils ne doit contenir que la clé 'httpUrl'"
                     )
         settings = gemini_ext.get("settings")
         for _, _, exp_var in EXPECTED_GOOGLE_SERVERS.values():
@@ -601,26 +705,42 @@ def verifier(racine: Path) -> list[str]:
     if mcp_json is not None:
         if mcp_json.get("mcpServers") != EXPECTED_MCP_SERVERS:
             erreurs.append(
-                ".mcp.json : 'mcpServers' doit déclarer exactement legislation, "
-                "jurisprudence et outils avec configuration http"
+                ".mcp.json : 'mcpServers' doit déclarer exactement lois, juris et outils "
+                "avec configuration http"
             )
 
-    # 4. Skills & references
+    for srv, tool_names in EXPECTED_TOOLS_BY_SERVER.items():
+        for tname in tool_names:
+            cc_id = f"mcp__plugin_{EXPECTED_PLUGIN_NAME}_{srv}__{tname}"
+            ag_id = f"mcp_{EXPECTED_PLUGIN_NAME}_{srv}_{tname}"
+            if len(cc_id) > MAX_TOOL_COMPOUND_LEN:
+                erreurs.append(
+                    f"identifiant outil Claude Code > {MAX_TOOL_COMPOUND_LEN} car. ({len(cc_id)}) : {cc_id}"
+                )
+            if len(ag_id) > MAX_TOOL_COMPOUND_LEN:
+                erreurs.append(
+                    f"identifiant outil Antigravity > {MAX_TOOL_COMPOUND_LEN} car. ({len(ag_id)}) : {ag_id}"
+                )
+
+    # 5. Skills, budgets, kernel parity & dead-end leaf checks
     skills_root = racine / "skills"
     skill_dirs = (
         sorted(p.name for p in skills_root.iterdir() if p.is_dir())
         if skills_root.is_dir()
         else []
     )
-    if not skill_dirs:
-        erreurs.append("aucune compétence trouvée sous skills/")
-        return erreurs
+    if set(skill_dirs) != EXPECTED_SKILLS:
+        erreurs.append(
+            f"skills/ : ensemble exact attendu {sorted(EXPECTED_SKILLS)}, trouvé {skill_dirs}"
+        )
+        return erreurs, stats
 
-    skill_dir_set = set(skill_dirs)
+    kernel_hashes: dict[str, str] = {}
+    total_md_bytes = 0
 
     for skill in skill_dirs:
         if len(skill) > 64 or not _SKILL_NAME_RE.match(skill):
-            erreurs.append(f"skills/{skill} : nom de dossier invalide (kebab-case ≤ 64 car.)")
+            erreurs.append(f"skills/{skill} : nom de dossier invalide (kebab-case <= 64 car.)")
         skill_rel = f"skills/{skill}/SKILL.md"
         if skill_rel not in file_set:
             erreurs.append(f"skills/{skill} : SKILL.md manquant")
@@ -629,26 +749,28 @@ def verifier(racine: Path) -> list[str]:
         if text is None:
             continue
 
+        b_len = len(text.encode("utf-8"))
+        stats["skill_md_bytes"] += b_len
+        total_md_bytes += b_len
+
         fm, body, fm_errs = _parse_frontmatter(text, skill_rel)
         erreurs.extend(fm_errs)
         if fm is not None:
             if set(fm.keys()) != {"name", "description"}:
                 erreurs.append(
-                    f"{skill_rel} : l'en-tête YAML doit contenir exactement 'name' et "
-                    "'description'"
+                    f"{skill_rel} : l'en-tête YAML doit contenir exactement 'name' et 'description'"
                 )
             if fm.get("name") != skill:
                 erreurs.append(
-                    f"{skill_rel} : 'name' ({fm.get('name')!r}) doit correspondre au dossier "
-                    f"({skill!r})"
+                    f"{skill_rel} : 'name' ({fm.get('name')!r}) doit correspondre au dossier ({skill!r})"
                 )
             desc = fm.get("description", "")
             if not desc:
                 erreurs.append(f"{skill_rel} : 'description' vide")
             else:
-                if len(desc) > 1024:
+                if len(desc) > MAX_DESCRIPTION_CHARS:
                     erreurs.append(
-                        f"{skill_rel} : 'description' dépasse 1 024 caractères ({len(desc)})"
+                        f"{skill_rel} : 'description' dépasse {MAX_DESCRIPTION_CHARS} caractères ({len(desc)})"
                     )
                 if "<" in desc or ">" in desc:
                     erreurs.append(f"{skill_rel} : 'description' ne doit contenir ni '<' ni '>'")
@@ -660,8 +782,32 @@ def verifier(racine: Path) -> list[str]:
                     )
 
         words = len(body.split())
-        if words >= 3000:
-            erreurs.append(f"{skill_rel} : corps de {words} mots (plafond < 3 000)")
+        stats["total_md_words"] += words
+        if words > MAX_SKILL_BODY_WORDS:
+            erreurs.append(
+                f"{skill_rel} : corps de {words} mots (plafond <= {MAX_SKILL_BODY_WORDS})"
+            )
+
+        km = _KERNEL_RE.search(body)
+        if not km or not km.group(1).strip():
+            erreurs.append(
+                f"{skill_rel} : bloc canonique <!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END --> manquant"
+            )
+        else:
+            k_hash = hashlib.sha256(km.group(1).strip().encode("utf-8")).hexdigest()
+            kernel_hashes[skill_rel] = k_hash
+
+        if _SIBLING_SKILL_MD_RE.search(text):
+            erreurs.append(
+                f"{skill_rel} : renvoi en cascade interdit vers un autre SKILL.md (../<autre>/SKILL.md)"
+            )
+        for m in _SIBLING_LEAF_RE.finditer(text):
+            target_skill, target_leaf = m.group(1), m.group(2)
+            target_path = racine / "skills" / target_skill / "references" / target_leaf
+            if not target_path.is_file():
+                erreurs.append(
+                    f"{skill_rel} : feuille voisine introuvable ({m.group(0)})"
+                )
 
         refs_mentioned = set(_REF_PATH_RE.findall(text))
         refs_dir = racine / "skills" / skill / "references"
@@ -674,13 +820,11 @@ def verifier(racine: Path) -> list[str]:
         orphan_refs = sorted(refs_actual - refs_mentioned)
         if missing_refs:
             erreurs.append(
-                f"{skill_rel} : fichiers de référence cités mais absents : "
-                + ", ".join(missing_refs)
+                f"{skill_rel} : fichiers de référence cités mais absents : {', '.join(missing_refs)}"
             )
         if orphan_refs:
             erreurs.append(
-                f"{skill_rel} : fichiers de référence non cités dans SKILL.md : "
-                + ", ".join(orphan_refs)
+                f"{skill_rel} : fichiers de référence non cités dans SKILL.md : {', '.join(orphan_refs)}"
             )
 
         scripts_mentioned = set(_SCRIPT_PATH_RE.findall(text))
@@ -710,83 +854,52 @@ def verifier(racine: Path) -> list[str]:
         orphan_scripts = sorted(scripts_actual - scripts_mentioned)
         if missing_scripts:
             erreurs.append(
-                f"{skill_rel} : scripts cités mais absents : " + ", ".join(missing_scripts)
+                f"{skill_rel} : scripts cités mais absents : {', '.join(missing_scripts)}"
             )
         if orphan_scripts:
             erreurs.append(
-                f"{skill_rel} : scripts non cités dans SKILL.md : " + ", ".join(orphan_scripts)
+                f"{skill_rel} : scripts non cités dans SKILL.md : {', '.join(orphan_scripts)}"
             )
 
-        # Cross-skill references
-        for m in _CROSS_SKILL_RE.finditer(text):
-            directed = m.group(1)
-            backticked = m.group(2)
-            if directed is not None and directed not in skill_dir_set:
-                erreurs.append(
-                    f"{skill_rel} : renvoi vers une compétence inexistante ({directed})"
-                )
-            elif backticked is not None and backticked in skill_dir_set:
-                continue
-
-        # 7-invariant structural contract
         non_empty_lines = [line.strip() for line in body.splitlines() if line.strip()]
         if not non_empty_lines or not non_empty_lines[0].startswith("# "):
             erreurs.append(f"{skill_rel} : titre '# ' d'ouverture manquant")
-        first_h2 = body.find("\n## ")
-        intro_zone = body[:first_h2] if first_h2 >= 0 else body
-        intro_lines = [
-            line.strip()
-            for line in intro_zone.splitlines()
-            if line.strip() and not line.strip().startswith("# ")
-        ]
-        if not intro_lines:
-            erreurs.append(f"{skill_rel} : texte introductif manquant sous le titre '# '")
 
-        h2 = _extract_h2_headings(body)
-        if len(h2) < 6:
+    if len(set(kernel_hashes.values())) > 1:
+        erreurs.append(
+            "parité du noyau de sécurité rompue entre les 5 SKILL.md : "
+            + ", ".join(f"{k}={v[:8]}" for k, v in sorted(kernel_hashes.items()))
+        )
+
+    for leaf_rel in sorted(skill_leaf_files):
+        leaf_text = decoded.get(leaf_rel)
+        if leaf_text is None:
+            continue
+        leaf_bytes = len(leaf_text.encode("utf-8"))
+        leaf_words = len(leaf_text.split())
+        stats["leaf_md_bytes"] += leaf_bytes
+        stats["total_md_words"] += leaf_words
+        total_md_bytes += leaf_bytes
+        if leaf_bytes > MAX_LEAF_BYTES:
             erreurs.append(
-                f"{skill_rel} : ossature incomplète ({len(h2)} sections '## ', au moins 6 requises)"
+                f"{leaf_rel} : taille {leaf_bytes} octets (plafond <= {MAX_LEAF_BYTES})"
             )
-        else:
-            if h2[0] not in ("## Le principe qui gouverne", "## La règle asymétrique"):
-                erreurs.append(
-                    f"{skill_rel} : premier intertitre '## ' invalide ({h2[0]!r})"
-                )
-            core_h2 = h2[:-3]
-            if "## La méthode" not in core_h2:
-                erreurs.append(f"{skill_rel} : section '## La méthode' manquante avant le triptyque final")
-            if "## Ce qu'il faut du dossier" not in core_h2:
-                erreurs.append(
-                    f"{skill_rel} : section '## Ce qu'il faut du dossier' manquante avant le triptyque final"
-                )
-            if (
-                "## La méthode" in core_h2
-                and "## Ce qu'il faut du dossier" in core_h2
-                and core_h2.index("## La méthode") > core_h2.index("## Ce qu'il faut du dossier")
-            ):
-                erreurs.append(
-                    f"{skill_rel} : '## La méthode' doit précéder '## Ce qu'il faut du dossier'"
-                )
-            if h2[-3] != "## Le périmètre":
-                erreurs.append(
-                    f"{skill_rel} : antépénultième section attendue '## Le périmètre' (trouvé {h2[-3]!r})"
-                )
-            if h2[-2] != "## Contrôle avant remise":
-                erreurs.append(
-                    f"{skill_rel} : avant-dernière section attendue '## Contrôle avant remise' "
-                    f"(trouvé {h2[-2]!r})"
-                )
-            expected_last = (
-                "## Fichiers de référence et outillage local"
-                if scripts_actual
-                else "## Fichiers de référence"
+        if leaf_words > MAX_LEAF_WORDS:
+            erreurs.append(
+                f"{leaf_rel} : {leaf_words} mots (plafond <= {MAX_LEAF_WORDS})"
             )
-            if h2[-1] != expected_last:
-                erreurs.append(
-                    f"{skill_rel} : dernière section attendue {expected_last!r} (trouvé {h2[-1]!r})"
-                )
+        if _ANY_PARENT_REL_RE.search(leaf_text):
+            erreurs.append(
+                f"{leaf_rel} : lien relatif '../' interdit dans une feuille terminale"
+            )
 
-    # 5. Evals validation
+    stats["total_md_bytes"] = total_md_bytes
+    if total_md_bytes > MAX_TOTAL_SKILLS_BYTES:
+        erreurs.append(
+            f"skills/**/*.md : total {total_md_bytes} octets (plafond <= {MAX_TOTAL_SKILLS_BYTES})"
+        )
+
+    # 6. Evals validation
     eval_py_rel = "evals/executer_evals.py"
     if eval_py_rel in decoded:
         try:
@@ -816,7 +929,7 @@ def verifier(racine: Path) -> list[str]:
                 else:
                     seen_ids.add(sid)
                 comp = sc.get("competence")
-                if comp not in skill_dir_set:
+                if comp not in EXPECTED_SKILLS:
                     erreurs.append(
                         f"{eval_json_rel} ({sid}) : compétence inconnue ({comp!r})"
                     )
@@ -849,7 +962,7 @@ def verifier(racine: Path) -> list[str]:
                                 f"({pat!r} : {exc})"
                             )
 
-    # Retired repository slugs across all files except verifier.py
+    # 7. Retired slugs, stale v1 names, and banned patterns
     for rel in files:
         if rel == "verifier.py":
             continue
@@ -859,8 +972,11 @@ def verifier(racine: Path) -> list[str]:
         for slug in RETIRED_REPO_SLUGS:
             if slug in text:
                 erreurs.append(f"{rel} : ancien identifiant de dépôt interdit ({slug})")
+        if rel not in LEGACY_PLUGIN_ALLOW_MIGRATION and "pratique-civile-quebecoise" in text:
+            erreurs.append(
+                f"{rel} : ancien identifiant de greffon 'pratique-civile-quebecoise' interdit en v2"
+            )
 
-    # Information-contract isolation across all files in skills/ and evals/
     for rel in sorted(skill_md_files + skill_script_files + eval_files):
         text = decoded.get(rel)
         if text is None:
@@ -868,27 +984,36 @@ def verifier(racine: Path) -> list[str]:
         for label, pat in BANNED_PATTERNS:
             if pat.search(text):
                 erreurs.append(f"{rel} : {label} interdit")
-    for rel in sorted(skill_md_files):
-        text = decoded.get(rel)
-        if text is None:
-            continue
-        for span in _BACKTICK_SPAN_RE.findall(text):
-            m = _TOOL_SPAN_RE.match(span)
-            if m and (span.endswith("_") or span.endswith("_*") or "(" in span):
-                prefix = span.split("_", 1)[0]
-                if prefix not in ALLOWED_TOOL_PREFIXES:
-                    erreurs.append(f"{rel} : appel ou préfixe d'outil non autorisé ({span})")
+        for old_skill in RETIRED_V1_SKILLS:
+            if old_skill in text:
+                erreurs.append(f"{rel} : ancien nom de compétence v1 interdit ({old_skill})")
+        for old_tool in RETIRED_V1_TOOLS:
+            if re.search(rf"\b{re.escape(old_tool)}\b", text):
+                erreurs.append(f"{rel} : ancien nom d'outil MCP v1 interdit ({old_tool})")
 
-    return erreurs
+    return erreurs, stats
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Contrôle statique Droit civil québécois v2.")
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Afficher le bilan de taille des compétences après validation.",
+    )
+    args = parser.parse_args(argv)
     racine = Path(__file__).resolve().parent
-    erreurs = verifier(racine)
+    erreurs, stats = verifier(racine)
     if erreurs:
         for err in erreurs:
             print(err, file=sys.stderr)
         return 1
+    if args.stats:
+        print(
+            f"OK — SKILL.md={stats['skill_md_bytes']} B, feuilles={stats['leaf_md_bytes']} B, "
+            f"total={stats['total_md_bytes']} B ({stats['total_md_bytes']/1024:.1f} KB), "
+            f"mots={stats['total_md_words']}"
+        )
     return 0
 
 
