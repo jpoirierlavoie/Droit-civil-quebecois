@@ -1,6 +1,6 @@
 """
 synchroniser_plugin_gemini.py
-Synchronise le plugin pratique-civile-quebecoise vers le répertoire de plugins Gemini installé.
+Synchronise le plugin droit-civil-quebecois (ex pratique-civile-quebecoise) vers le répertoire de plugins Gemini installé.
 Usage:
     python scripts/synchroniser_plugin_gemini.py          # dry-run
     python scripts/synchroniser_plugin_gemini.py --apply  # copie effective
@@ -13,12 +13,14 @@ import filecmp
 from pathlib import Path
 
 SRC_DIR = Path(os.environ.get("PCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1]))
+PLUGINS_ROOT = Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "config" / "plugins"
 DST_DIR = Path(
     os.environ.get(
         "GEMINI_PLUGIN_DST_DIR",
-        Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "config" / "plugins" / "pratique-civile-quebecoise",
+        PLUGINS_ROOT / "droit-civil-quebecois",
     )
 )
+LEGACY_DST_DIR = PLUGINS_ROOT / "pratique-civile-quebecoise"
 
 BUNDLE_ROOT_FILES = [
     Path("plugin.json"),
@@ -73,8 +75,39 @@ def main():
             print(f"  [CONFORME] {rel_path}")
             identical += 1
             
-    print(f"\n[OK] Résumé : {copied} fichier(s) mis à jour, {identical} déjà identiques sur {len(files)} fichiers analysés.")
-    
+    expected_set = set(files)
+    stale_files = []
+    if DST_DIR.is_dir():
+        for existing in sorted(DST_DIR.rglob("*")):
+            if existing.is_file():
+                rel_existing = existing.relative_to(DST_DIR)
+                if rel_existing not in expected_set:
+                    stale_files.append(rel_existing)
+                    print(f"  [RETRAIT] {rel_existing}")
+                    if apply_mode:
+                        existing.unlink()
+        if apply_mode:
+            for d in sorted((p for p in DST_DIR.rglob("*") if p.is_dir()), reverse=True):
+                try:
+                    d.rmdir()
+                except OSError:
+                    pass
+
+    legacy_removed = False
+    if LEGACY_DST_DIR != DST_DIR and LEGACY_DST_DIR.is_dir():
+        print(f"  [RETRAIT ANCIEN PLUGIN] {LEGACY_DST_DIR}")
+        if apply_mode:
+            shutil.rmtree(LEGACY_DST_DIR)
+            legacy_removed = True
+
+    print(
+        f"\n[OK] Résumé : {copied} fichier(s) mis à jour, {identical} déjà identiques "
+        f"sur {len(files)} fichiers analysés ; {len(stale_files)} fichier(s) obsolète(s) "
+        f"{'retiré(s)' if apply_mode else 'à retirer'}."
+    )
+    if legacy_removed:
+        print(f"[OK] Ancien répertoire retiré : {LEGACY_DST_DIR}")
+
     if apply_mode:
         # Re-vérification stricte
         diffs = [rel for rel in files if not filecmp.cmp(SRC_DIR / rel, DST_DIR / rel, shallow=False)]
@@ -83,9 +116,11 @@ def main():
         if mcp_config_copied:
             time.sleep(2.5)
             print(
-                "[!] mcp_config.json modifié : exécuter maintenant "
-                "'python scripts/regenerer_cache_mcp.py --apply' pour restaurer les schémas "
-                "d'outils > 64 caractères dans ~/.gemini/antigravity/mcp/."
+                "[!] mcp_config.json modifié : tous les identifiants d'outils v2.0 respectent "
+                "désormais la limite native <= 64 caractères (cache Antigravity rafraîchi "
+                "automatiquement). Exécuter optionnellement "
+                "'python scripts/regenerer_cache_mcp.py --apply' pour reconstruire le cache "
+                "à partir des dépôts locaux."
             )
 
 if __name__ == "__main__":

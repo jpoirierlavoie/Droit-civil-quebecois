@@ -1,19 +1,11 @@
 # Suite d'évaluation comportementale (`evals/`)
 
-Quatorze scénarios de régression couvrant les cinq compétences du plugin : détection de la
-contamination française et de common law, proportionnalité des recherches, statuts de lecture,
-rigueur des délais (dont l'ancrage technologique après 17 h 00, le piège du 30 septembre et le
-calcul à rebours), garde-fous de rédaction (crochets visibles, solidarité, exécution provisoire,
-actes modifiés, distinction `UNDER ALL RESERVES` / `WITHOUT PREJUDICE`), qualification des pièces
-(commentaires Word cachés, caviardage / Loi 25, engagements et objections d'interrogatoire
-préalable) et déclencheurs déontologiques concrets sans formule générique.
+Dix-neuf scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.0.0`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
 
 ## Fichiers
 
-- `evals/scenarios.json` — les quatorze scénarios de référence, critères d'évaluation et
-  assertions déterministes d'outillage.
-- `evals/executer_evals.py` — utilitaire autonome en bibliothèque standard Python pour lister les
-  scénarios, valider les utilitaires locaux et noter des réponses produites hors ligne.
+- `evals/scenarios.json` — les dix-neuf scénarios de référence, critères d'évaluation et assertions déterministes d'outillage.
+- `evals/executer_evals.py` — utilitaire autonome en bibliothèque standard Python pour lister les scénarios, valider les utilitaires locaux et noter des réponses produites hors ligne.
 
 ## Commandes
 
@@ -23,5 +15,4 @@ python evals/executer_evals.py --auto-test
 python evals/executer_evals.py --reponses chemin/vers/reponses.json
 ```
 
-L'exécution `--auto-test` est sans effet secondaire (répertoire temporaire détruit aussitôt) et est
-vérifiée par l'intégration continue après `python verifier.py`.
+L'exécution `--auto-test` est sans effet secondaire (répertoire temporaire détruit aussitôt) et est vérifiée par l'intégration continue après `python verifier.py`.

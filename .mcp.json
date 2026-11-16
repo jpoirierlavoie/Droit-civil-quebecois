@@ -1,13 +1,13 @@
 {
   "mcpServers": {
-    "legislation": {
+    "lois": {
       "type": "http",
       "url": "https://legislation.poirierlavoie.ca/mcp",
       "headers": {
         "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
       }
     },
-    "jurisprudence": {
+    "juris": {
       "type": "http",
       "url": "https://jurisprudence.poirierlavoie.ca/mcp",
       "headers": {

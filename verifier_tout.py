@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-verifier_tout.py — Suite de vérification E2E multi-paliers pour pratique-civile-quebecoise.
+verifier_tout.py — Suite de vérification E2E multi-paliers pour droit-civil-quebecois.
 
 Valide de bout en bout l'intégration du greffon et de ses serveurs MCP (Législation,
 Jurisprudence, Outils) pour Claude et Gemini, en mode simulation locale (Mock) ou
@@ -32,58 +32,64 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "1.6.1"
+VERSION_ATTENDUE = "2.0.0"
 USER_AGENT_VERIFICATEUR = (
-    "PratiqueCivileQuebecoise-Verifier/1.0 (Windows NT 10.0; Win64; x64) "
+    "DroitCivilQuebecois-Verifier/2.0 (PratiqueCivile; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
 )
 
 URL_SERVEURS = {
-    "legislation": "https://legislation.poirierlavoie.ca/mcp",
-    "jurisprudence": "https://jurisprudence.poirierlavoie.ca/mcp",
+    "lois": "https://legislation.poirierlavoie.ca/mcp",
+    "juris": "https://jurisprudence.poirierlavoie.ca/mcp",
     "outils": "https://outils.poirierlavoie.ca/mcp",
+}
+
+SLUGS_CARTE_SERVEUR = {
+    "lois": "legislation",
+    "juris": "jurisprudence",
+    "outils": "outils",
 }
 
 URL_COURTE_OUTILS = "https://outils.poirierlavoie.ca"
 
 NOMS_OUTILS_ATTENDUS = {
-    "legislation": [
-        "legislation_list_laws",
-        "legislation_list_subjects",
-        "legislation_related_laws",
-        "legislation_find_relevant",
-        "legislation_get_article",
-        "legislation_get_articles",
-        "legislation_get_structure",
-        "legislation_get_division",
-        "legislation_search_text",
-        "legislation_resolve_reference",
+    "lois": [
+        "list_laws",
+        "list_subjects",
+        "related_laws",
+        "find_relevant",
+        "get_article",
+        "get_articles",
+        "get_structure",
+        "get_division",
+        "search_text",
+        "resolve_reference",
     ],
-    "jurisprudence": [
-        "jurisprudence_verify_citations",
-        "jurisprudence_find_case",
-        "jurisprudence_get_case",
-        "jurisprudence_citator",
-        "jurisprudence_subsequent_history",
-        "jurisprudence_browse_cases",
-        "jurisprudence_list_databases",
-        "jurisprudence_browse_legislation",
-        "jurisprudence_get_legislation",
-        "jurisprudence_parse_citation",
+    "juris": [
+        "verify_citations",
+        "find_case",
+        "get_case",
+        "citator",
+        "subsequent_history",
+        "browse_cases",
+        "list_databases",
+        "browse_legislation",
+        "get_legislation",
+        "parse_citation",
     ],
     "outils": [
-        "calendrier_list_holidays",
-        "calendrier_compute_deadlines",
-        "interets_compute_1619",
-        "greffe_parse_court_file_number",
+        "calendrier_holidays",
+        "calendrier_deadlines",
+        "interets_1619",
+        "greffe_parse_number",
         "palais_list",
         "palais_get",
-        "registre_search_entities",
+        "registre_search",
         "registre_get_entity",
         "adresse_verify",
         "terminologie_lookup",
-        "terminologie_attestations",
-        "terminologie_scan_text",
+        "termino_attestations",
+        "terminologie_scan",
     ],
 }
 
@@ -117,9 +123,9 @@ class MockMcpServer:
         self.server_name = server_name
         if secret_token is not None:
             self.secret_token = secret_token
-        elif server_name == "legislation":
+        elif server_name == "lois":
             self.secret_token = os.environ.get("MCP_LEGISLATION_SECRET", "mock-secret-token")
-        elif server_name == "jurisprudence":
+        elif server_name == "juris":
             self.secret_token = os.environ.get("MCP_JURISPRUDENCE_SECRET", "mock-secret-token")
         else:
             self.secret_token = "mock-secret-token"
@@ -128,9 +134,9 @@ class MockMcpServer:
     def _build_tool_definitions(self) -> Dict[str, Dict[str, Any]]:
         tools: Dict[str, Dict[str, Any]] = {}
 
-        if self.server_name == "legislation":
-            tools["legislation_list_laws"] = {
-                "name": "legislation_list_laws",
+        if self.server_name == "lois":
+            tools["list_laws"] = {
+                "name": "list_laws",
                 "description": "Carte du corpus avec métadonnées et plans des grands codes.",
                 "inputSchema": {
                     "type": "object",
@@ -144,8 +150,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_list_subjects"] = {
-                "name": "legislation_list_subjects",
+            tools["list_subjects"] = {
+                "name": "list_subjects",
                 "description": "Matières de la taxonomie juridique québécoise.",
                 "inputSchema": {
                     "type": "object",
@@ -155,8 +161,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_related_laws"] = {
-                "name": "legislation_related_laws",
+            tools["related_laws"] = {
+                "name": "related_laws",
                 "description": "Graphe d'interconnexion (lois habilitantes, règlements).",
                 "inputSchema": {
                     "type": "object",
@@ -171,8 +177,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_find_relevant"] = {
-                "name": "legislation_find_relevant",
+            tools["find_relevant"] = {
+                "name": "find_relevant",
                 "description": "Repérage heuristique déterministe de lois et divisions.",
                 "inputSchema": {
                     "type": "object",
@@ -185,8 +191,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_get_article"] = {
-                "name": "legislation_get_article",
+            tools["get_article"] = {
+                "name": "get_article",
                 "description": "Texte officiel verbatim d'un article avec historique.",
                 "inputSchema": {
                     "type": "object",
@@ -199,8 +205,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_get_articles"] = {
-                "name": "legislation_get_articles",
+            tools["get_articles"] = {
+                "name": "get_articles",
                 "description": "Extraction en lot d'articles (plage from..to ou numbers).",
                 "inputSchema": {
                     "type": "object",
@@ -217,8 +223,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_get_structure"] = {
-                "name": "legislation_get_structure",
+            tools["get_structure"] = {
+                "name": "get_structure",
                 "description": "Arbre des divisions d'une loi sans les articles.",
                 "inputSchema": {
                     "type": "object",
@@ -232,8 +238,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_get_division"] = {
-                "name": "legislation_get_division",
+            tools["get_division"] = {
+                "name": "get_division",
                 "description": "Texte officiel complet des articles d'une division.",
                 "inputSchema": {
                     "type": "object",
@@ -250,8 +256,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_search_text"] = {
-                "name": "legislation_search_text",
+            tools["search_text"] = {
+                "name": "search_text",
                 "description": "Recherche plein texte FTS5 avec extraits surlignés.",
                 "inputSchema": {
                     "type": "object",
@@ -266,8 +272,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["legislation_resolve_reference"] = {
-                "name": "legislation_resolve_reference",
+            tools["resolve_reference"] = {
+                "name": "resolve_reference",
                 "description": "Résolution d'une citation libre vers un article officiel.",
                 "inputSchema": {
                     "type": "object",
@@ -280,9 +286,9 @@ class MockMcpServer:
                 },
             }
 
-        elif self.server_name == "jurisprudence":
-            tools["jurisprudence_verify_citations"] = {
-                "name": "jurisprudence_verify_citations",
+        elif self.server_name == "juris":
+            tools["verify_citations"] = {
+                "name": "verify_citations",
                 "description": "Vérification de citations contre CanLII (6 verdicts).",
                 "inputSchema": {
                     "type": "object",
@@ -306,8 +312,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_find_case"] = {
-                "name": "jurisprudence_find_case",
+            tools["find_case"] = {
+                "name": "find_case",
                 "description": "Recherche par noms des parties ou fragment d'intitulé.",
                 "inputSchema": {
                     "type": "object",
@@ -324,8 +330,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_get_case"] = {
-                "name": "jurisprudence_get_case",
+            tools["get_case"] = {
+                "name": "get_case",
                 "description": "Fiche CanLII complète d'une décision.",
                 "inputSchema": {
                     "type": "object",
@@ -339,8 +345,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_citator"] = {
-                "name": "jurisprudence_citator",
+            tools["citator"] = {
+                "name": "citator",
                 "description": "Citateur brut de décisions citées, citantes ou textes.",
                 "inputSchema": {
                     "type": "object",
@@ -357,8 +363,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_subsequent_history"] = {
-                "name": "jurisprudence_subsequent_history",
+            tools["subsequent_history"] = {
+                "name": "subsequent_history",
                 "description": "Indice heuristique de sorts ultérieurs.",
                 "inputSchema": {
                     "type": "object",
@@ -372,8 +378,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_browse_cases"] = {
-                "name": "jurisprudence_browse_cases",
+            tools["browse_cases"] = {
+                "name": "browse_cases",
                 "description": "Parcours chronologique des décisions d'un tribunal.",
                 "inputSchema": {
                     "type": "object",
@@ -389,8 +395,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_list_databases"] = {
-                "name": "jurisprudence_list_databases",
+            tools["list_databases"] = {
+                "name": "list_databases",
                 "description": "Répertoire des tribunaux et corpus législatifs CanLII.",
                 "inputSchema": {
                     "type": "object",
@@ -404,8 +410,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_browse_legislation"] = {
-                "name": "jurisprudence_browse_legislation",
+            tools["browse_legislation"] = {
+                "name": "browse_legislation",
                 "description": "Liste des lois/règlements d'un corpus législatif CanLII.",
                 "inputSchema": {
                     "type": "object",
@@ -420,8 +426,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_get_legislation"] = {
-                "name": "jurisprudence_get_legislation",
+            tools["get_legislation"] = {
+                "name": "get_legislation",
                 "description": "Fiche CanLII d'une loi/règlement avec historique.",
                 "inputSchema": {
                     "type": "object",
@@ -434,8 +440,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["jurisprudence_parse_citation"] = {
-                "name": "jurisprudence_parse_citation",
+            tools["parse_citation"] = {
+                "name": "parse_citation",
                 "description": "Analyseur syntaxique hors ligne de citation canadienne.",
                 "inputSchema": {
                     "type": "object",
@@ -448,8 +454,8 @@ class MockMcpServer:
             }
 
         elif self.server_name == "outils":
-            tools["calendrier_list_holidays"] = {
-                "name": "calendrier_list_holidays",
+            tools["calendrier_holidays"] = {
+                "name": "calendrier_holidays",
                 "description": "Calendrier des jours fériés et non juridiques (QC / CA).",
                 "inputSchema": {
                     "type": "object",
@@ -461,8 +467,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["calendrier_compute_deadlines"] = {
-                "name": "calendrier_compute_deadlines",
+            tools["calendrier_deadlines"] = {
+                "name": "calendrier_deadlines",
                 "description": "Calculateur arithmétique exact de délais procéduraux.",
                 "inputSchema": {
                     "type": "object",
@@ -479,8 +485,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["interets_compute_1619"] = {
-                "name": "interets_compute_1619",
+            tools["interets_1619"] = {
+                "name": "interets_1619",
                 "description": "Calcul d'intérêts légaux (5%) et indemnité art. 1619 C.c.Q.",
                 "inputSchema": {
                     "type": "object",
@@ -495,8 +501,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["greffe_parse_court_file_number"] = {
-                "name": "greffe_parse_court_file_number",
+            tools["greffe_parse_number"] = {
+                "name": "greffe_parse_number",
                 "description": "Décomposition hors ligne de numéro de dossier de cour.",
                 "inputSchema": {
                     "type": "object",
@@ -532,8 +538,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["registre_search_entities"] = {
-                "name": "registre_search_entities",
+            tools["registre_search"] = {
+                "name": "registre_search",
                 "description": "Recherche hors ligne dans les instantanés locaux du REQ (RBQ/OPC/RENA) et de Corporations Canada.",
                 "inputSchema": {
                     "type": "object",
@@ -592,8 +598,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["terminologie_attestations"] = {
-                "name": "terminologie_attestations",
+            tools["termino_attestations"] = {
+                "name": "termino_attestations",
                 "description": "Attestations statutaires bilingues FR/EN alignées dans le corpus législatif consolidé.",
                 "inputSchema": {
                     "type": "object",
@@ -607,8 +613,8 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["terminologie_scan_text"] = {
-                "name": "terminologie_scan_text",
+            tools["terminologie_scan"] = {
+                "name": "terminologie_scan",
                 "description": "Détection en lecture seule des contaminations de droit français, de common law et d'archaïsmes.",
                 "inputSchema": {
                     "type": "object",
@@ -636,7 +642,7 @@ class MockMcpServer:
 
         # Règle WAF Cloudflare : blocage des agents automatisés sans User-Agent conforme
         ua = headers.get("user-agent") or headers.get("User-Agent") or ""
-        if not ua or ("Python-urllib" in ua and "PratiqueCivile" not in ua):
+        if not ua or ("Python-urllib" in ua and "DroitCivil" not in ua and "PratiqueCivile" not in ua):
             return 403, {"Content-Type": "application/json"}, b'{"error":"Forbidden: Cloudflare WAF bot block"}'
 
         # 1. CORS Preflight OPTIONS (doit répondre avant auth, statut 204 No Content)
@@ -685,10 +691,11 @@ class MockMcpServer:
         # 4. Endpoint server card SEP-2127
         if path == "/mcp/server-card" and method == "GET":
             repo_slugs = {
-                "legislation": "MCP-Legislation",
-                "jurisprudence": "MCP-Jurisprudence",
+                "lois": "MCP-Legislation",
+                "juris": "MCP-Jurisprudence",
                 "outils": "MCP-Outils",
             }
+            card_slug = SLUGS_CARTE_SERVEUR[self.server_name]
             card_headers = (
                 []
                 if self.server_name == "outils"
@@ -706,9 +713,9 @@ class MockMcpServer:
                 {"Content-Type": "application/mcp-server-card+json; charset=utf-8"},
                 json.dumps({
                     "$schema": "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
-                    "name": f"ca.poirierlavoie.{self.server_name}/mcp-{self.server_name}",
-                    "title": f"MCP {self.server_name.capitalize()}",
-                    "description": f"MCP Server {self.server_name} pour pratique civile québécoise",
+                    "name": f"ca.poirierlavoie.{card_slug}/mcp-{card_slug}",
+                    "title": f"MCP {card_slug.capitalize()}",
+                    "description": f"MCP Server {card_slug} pour droit civil québécois",
                     "version": VERSION_ATTENDUE,
                     "repository": {
                         "url": f"https://github.com/jpoirierlavoie/{repo_slugs[self.server_name]}",
@@ -732,11 +739,11 @@ class MockMcpServer:
             auth_header in (f"Bearer {self.secret_token}", "Bearer mock-secret-token")
         ) and not auth_header.startswith("Bearer invalid")
 
-        if self.server_name == "legislation" and not is_authenticated:
+        if self.server_name == "lois" and not is_authenticated:
             # S8 : 404 Not Found non-oracle
             return 404, {"Content-Type": "application/json"}, b""
 
-        if self.server_name == "jurisprudence" and not is_authenticated:
+        if self.server_name == "juris" and not is_authenticated:
             return (
                 401,
                 {"Content-Type": "application/json", "WWW-Authenticate": "Bearer"},
@@ -975,8 +982,8 @@ class MockMcpServer:
             if not any(bool(str(args.get(k, "")).strip()) for k in ("address", "street", "postal_code")):
                 return "Paramètre requis manquant : fournir address ou street."
 
-        # Règle XOR pour jurisprudence_get_case, citator et subsequent_history
-        if tool_name in ("jurisprudence_get_case", "jurisprudence_citator", "jurisprudence_subsequent_history"):
+        # Règle XOR pour get_case, citator et subsequent_history
+        if tool_name in ("get_case", "citator", "subsequent_history"):
             has_cit = bool(str(args.get("citation", "")).strip())
             has_db = bool(str(args.get("database_id", "")).strip())
             has_case = bool(str(args.get("case_id", "")).strip())
@@ -989,12 +996,12 @@ class MockMcpServer:
                 )
 
         # Règle citation vide
-        if tool_name == "jurisprudence_parse_citation":
+        if tool_name == "parse_citation":
             if not args.get("citation", "").strip():
                 return "La citation ne peut pas être vide."
 
         # Contrôle de date pour calendrier
-        if tool_name == "calendrier_compute_deadlines":
+        if tool_name == "calendrier_deadlines":
             ev_date = args.get("event_date", "")
             try:
                 datetime.date.fromisoformat(ev_date)
@@ -1008,7 +1015,7 @@ class MockMcpServer:
     def _execute_tool(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         """Exécute la logique métier de l'outil simulé avec des retours réalistes."""
         # --- Législation ---
-        if tool_name == "legislation_list_laws":
+        if tool_name == "list_laws":
             return {
                 "content": [
                     {
@@ -1022,7 +1029,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_list_subjects":
+        elif tool_name == "list_subjects":
             return {
                 "content": [
                     {
@@ -1037,7 +1044,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_related_laws":
+        elif tool_name == "related_laws":
             law = args.get("law", "").lower()
             relations = [
                 {"law": "cpc", "target": "Tarif des honoraires judiciaires", "rel_type": "reglement-de"},
@@ -1045,7 +1052,7 @@ class MockMcpServer:
             ]
             return {"content": [{"type": "text", "text": json.dumps(relations, ensure_ascii=False)}]}
 
-        elif tool_name == "legislation_find_relevant":
+        elif tool_name == "find_relevant":
             query = args.get("query", "").lower()
             results = []
             if "vice" in query or "cach" in query or "infiltration" in query or "garantie" in query:
@@ -1059,7 +1066,7 @@ class MockMcpServer:
                 results.append({"law": "ccq", "article": "1457", "score": 0.70})
             return {"content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}]}
 
-        elif tool_name == "legislation_get_article":
+        elif tool_name == "get_article":
             law = args.get("law", "").lower()
             art = str(args.get("article", "")).strip()
             textes = {
@@ -1108,7 +1115,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_get_articles":
+        elif tool_name == "get_articles":
             law = args.get("law", "").lower()
             from_art = int(args.get("from", "1726")) if args.get("from", "").isdigit() else 1726
             to_art = int(args.get("to", "1731")) if args.get("to", "").isdigit() else 1731
@@ -1118,7 +1125,7 @@ class MockMcpServer:
             ]
             return {"content": [{"type": "text", "text": json.dumps(arts, ensure_ascii=False)}]}
 
-        elif tool_name == "legislation_get_structure":
+        elif tool_name == "get_structure":
             return {
                 "content": [
                     {
@@ -1134,7 +1141,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_get_division":
+        elif tool_name == "get_division":
             return {
                 "content": [
                     {
@@ -1149,7 +1156,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_search_text":
+        elif tool_name == "search_text":
             query = args.get("query", "")
             hits = []
             if "corporel" in query.lower():
@@ -1174,7 +1181,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "legislation_resolve_reference":
+        elif tool_name == "resolve_reference":
             cit = args.get("citation", "")
             cit_norm = re.sub(r"[.\s]", "", cit.lower())
             if "145" in cit and ("cpc" in cit_norm or "c-25" in cit_norm):
@@ -1197,7 +1204,7 @@ class MockMcpServer:
             }
 
         # --- Jurisprudence ---
-        elif tool_name == "jurisprudence_verify_citations":
+        elif tool_name == "verify_citations":
             citations = args.get("citations", [])
             rapports = []
             for item in citations:
@@ -1241,7 +1248,7 @@ class MockMcpServer:
                     })
             return {"content": [{"type": "text", "text": json.dumps(rapports, ensure_ascii=False)}]}
 
-        elif tool_name == "jurisprudence_find_case":
+        elif tool_name == "find_case":
             title = args.get("title", "")
             return {
                 "content": [
@@ -1259,7 +1266,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_get_case":
+        elif tool_name == "get_case":
             cit = args.get("citation") or f"{args.get('database_id')} {args.get('case_id')}"
             if "2015" in str(cit):
                 fiche = (
@@ -1288,7 +1295,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_citator":
+        elif tool_name == "citator":
             return {
                 "content": [
                     {
@@ -1301,7 +1308,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_subsequent_history":
+        elif tool_name == "subsequent_history":
             return {
                 "content": [
                     {
@@ -1317,7 +1324,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_browse_cases":
+        elif tool_name == "browse_cases":
             return {
                 "content": [
                     {
@@ -1330,7 +1337,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_list_databases":
+        elif tool_name == "list_databases":
             return {
                 "content": [
                     {
@@ -1344,7 +1351,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_browse_legislation":
+        elif tool_name == "browse_legislation":
             return {
                 "content": [
                     {
@@ -1356,7 +1363,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_get_legislation":
+        elif tool_name == "get_legislation":
             return {
                 "content": [
                     {
@@ -1370,7 +1377,7 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "jurisprudence_parse_citation":
+        elif tool_name == "parse_citation":
             cit = args.get("citation", "").strip()
             # Analyse de format déterministe
             m = re.match(r"^(\d{4})\s+([A-Z]+)\s+(\d+)$", cit)
@@ -1406,7 +1413,7 @@ class MockMcpServer:
             }
 
         # --- Outils ---
-        elif tool_name == "calendrier_list_holidays":
+        elif tool_name == "calendrier_holidays":
             year = args.get("year", 2026)
             holidays = [
                 {"date": f"{year}-01-01", "nom": "Jour de l'An", "basis": "art. 82 al. 1 C.p.c."},
@@ -1421,7 +1428,7 @@ class MockMcpServer:
             ]
             return {"content": [{"type": "text", "text": json.dumps(holidays, ensure_ascii=False)}]}
 
-        elif tool_name == "calendrier_compute_deadlines":
+        elif tool_name == "calendrier_deadlines":
             ev_date_str = args.get("event_date", "2026-07-03")
             d_date = datetime.date.fromisoformat(ev_date_str)
             mode = args.get("notification_mode", "none")
@@ -1471,7 +1478,7 @@ class MockMcpServer:
                 },
             }
 
-        elif tool_name == "interets_compute_1619":
+        elif tool_name == "interets_1619":
             tranches = args.get("tranches", [])
             total_principal = sum(t.get("principal_cents", 0) for t in tranches)
             # Calcul authentique d'intérêts : 5% légal + indemnité additionnelle (~4%)
@@ -1503,7 +1510,7 @@ class MockMcpServer:
                 },
             }
 
-        elif tool_name == "greffe_parse_court_file_number":
+        elif tool_name == "greffe_parse_number":
             num = args.get("court_file_number", "")
             # Format standard québécois : 500-17-012345-211
             parts = num.split("-")
@@ -1569,7 +1576,7 @@ class MockMcpServer:
                 "structuredContent": {"palais": info},
             }
 
-        elif tool_name == "registre_search_entities":
+        elif tool_name == "registre_search":
             q = args.get("query", "")
             cand = {
                 "jurisdiction": "qc",
@@ -1698,7 +1705,7 @@ class MockMcpServer:
                 },
             }
 
-        elif tool_name == "terminologie_attestations":
+        elif tool_name == "termino_attestations":
             term = args.get("term", "hypothec")
             lang = args.get("lang", "en")
             return {
@@ -1720,7 +1727,7 @@ class MockMcpServer:
                 },
             }
 
-        elif tool_name == "terminologie_scan_text":
+        elif tool_name == "terminologie_scan":
             txt = args.get("text", "")
             lang = args.get("lang", "fr")
             occurrences = []
@@ -1880,12 +1887,12 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "probe", "version": "1.5.0"}},
+            "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "probe", "version": VERSION_ATTENDUE}},
         }).encode("utf-8")
         headers_leg = dict(headers_base)
         headers_leg["Authorization"] = f"Bearer {leg_sec}"
         req = urllib.request.Request(
-            URL_SERVEURS["legislation"], data=init_body, headers=headers_leg, method="POST"
+            URL_SERVEURS["lois"], data=init_body, headers=headers_leg, method="POST"
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             if resp.status != 200:
@@ -1898,7 +1905,7 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
         headers_jur = dict(headers_base)
         headers_jur["Authorization"] = f"Bearer {jur_sec}"
         req = urllib.request.Request(
-            URL_SERVEURS["jurisprudence"], data=init_body, headers=headers_jur, method="POST"
+            URL_SERVEURS["juris"], data=init_body, headers=headers_jur, method="POST"
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             if resp.status != 200:
@@ -1920,8 +1927,8 @@ class UnifiedMcpClient:
         self.has_infra_failure = False
         self.last_infra_error: Optional[Exception] = None
         self.mock_servers: Dict[str, MockMcpServer] = {
-            "legislation": MockMcpServer("legislation"),
-            "jurisprudence": MockMcpServer("jurisprudence"),
+            "lois": MockMcpServer("lois"),
+            "juris": MockMcpServer("juris"),
             "outils": MockMcpServer("outils"),
         }
 
@@ -1965,10 +1972,10 @@ class UnifiedMcpClient:
             if auth_token != "OMIT":
                 headers["Authorization"] = f"Bearer {auth_token}"
         else:
-            if server_key == "legislation":
+            if server_key == "lois":
                 token = os.environ.get("MCP_LEGISLATION_SECRET", "mock-secret-token")
                 headers["Authorization"] = f"Bearer {token}"
-            elif server_key == "jurisprudence":
+            elif server_key == "juris":
                 token = os.environ.get("MCP_JURISPRUDENCE_SECRET", "mock-secret-token")
                 headers["Authorization"] = f"Bearer {token}"
 
@@ -2152,7 +2159,7 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 1.5.0
+    # T1.1.4 : Parité semver 2.0.0
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):
@@ -2196,7 +2203,7 @@ def run_tier_1_tests(
     t0 = time.perf_counter()
     p_json = parsed_manifests.get("plugin.json", {})
     p_errs = []
-    if not isinstance(p_json, dict) or p_json.get("name") != "pratique-civile-quebecoise":
+    if not isinstance(p_json, dict) or p_json.get("name") != "droit-civil-quebecois":
         p_errs.append("Nom invalide")
     if not (1 <= len(p_json.get("suggestedPrompts", [])) <= 3):
         p_errs.append("suggestedPrompts non conforme")
@@ -2215,7 +2222,7 @@ def run_tier_1_tests(
     m_json = parsed_manifests.get("mcp_config.json", {})
     m_servers = m_json.get("mcpServers", {}) if isinstance(m_json, dict) else {}
     m_errs = []
-    for exp_k in ("legislation", "jurisprudence", "outils"):
+    for exp_k in ("lois", "juris", "outils"):
         if exp_k not in m_servers:
             m_errs.append(f"Serveur '{exp_k}' absent de mcp_config.json")
     elapsed = (time.perf_counter() - t0) * 1000
@@ -2248,7 +2255,7 @@ def run_tier_1_tests(
     )
 
     # --- 1.2 Endpoint Reachability & Handshake ---
-    for srv_key in ("legislation", "jurisprudence", "outils"):
+    for srv_key in ("lois", "juris", "outils"):
         if target_server not in ("all", srv_key):
             continue
         t0 = time.perf_counter()
@@ -2256,7 +2263,7 @@ def run_tier_1_tests(
             init_res = client.call_rpc(
                 srv_key,
                 "initialize",
-                {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verifier-tout", "version": "1.5.0"}},
+                {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verifier-tout", "version": VERSION_ATTENDUE}},
             )
             result = init_res.get("result", {})
             has_proto = bool(result.get("protocolVersion"))
@@ -2320,11 +2327,11 @@ def run_tier_1_tests(
 
     # T1.2.server_card : Découverte publique SEP-2127 (sans authentification)
     expected_card_repos = {
-        "legislation": "https://github.com/jpoirierlavoie/MCP-Legislation",
-        "jurisprudence": "https://github.com/jpoirierlavoie/MCP-Jurisprudence",
+        "lois": "https://github.com/jpoirierlavoie/MCP-Legislation",
+        "juris": "https://github.com/jpoirierlavoie/MCP-Jurisprudence",
         "outils": "https://github.com/jpoirierlavoie/MCP-Outils",
     }
-    for srv_key in ("legislation", "jurisprudence", "outils"):
+    for srv_key in ("lois", "juris", "outils"):
         if target_server not in ("all", srv_key):
             continue
         t0 = time.perf_counter()
@@ -2355,7 +2362,7 @@ def run_tier_1_tests(
                 and ctype.startswith("application/mcp-server-card+json")
                 and data.get("$schema")
                 == "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json"
-                and data.get("name") == f"ca.poirierlavoie.{srv_key}/mcp-{srv_key}"
+                and data.get("name") == f"ca.poirierlavoie.{SLUGS_CARTE_SERVEUR[srv_key]}/mcp-{SLUGS_CARTE_SERVEUR[srv_key]}"
                 and repo_obj.get("url") == expected_card_repos[srv_key]
                 and rem0.get("type") == "streamable-http"
                 and rem0.get("url") == URL_SERVEURS[srv_key]
@@ -2385,7 +2392,7 @@ def run_tier_1_tests(
 
     # --- 1.3 32-Tool Enumeration & Schema Inspection ---
     discovered_tools: Dict[str, List[Dict[str, Any]]] = {}
-    for srv_key in ("legislation", "jurisprudence", "outils"):
+    for srv_key in ("lois", "juris", "outils"):
         if target_server not in ("all", srv_key):
             continue
         t0 = time.perf_counter()
@@ -2393,7 +2400,7 @@ def run_tier_1_tests(
             res = client.call_rpc(srv_key, "tools/list")
             tools = res.get("result", {}).get("tools", [])
             discovered_tools[srv_key] = tools
-            exp_count = 10 if srv_key in ("legislation", "jurisprudence") else 12
+            exp_count = 10 if srv_key in ("lois", "juris") else 12
             cnt_ok = len(tools) == exp_count
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -2463,39 +2470,35 @@ def run_tier_1_tests(
         "; ".join(schema_errs) if schema_errs else None,
     )
 
-    # T1.3.prefix_legislation : Préfixe legislation_ sur tous les 10 outils
+    # T1.3.lois_compact_names : Noms v2.0 courts exacts sur lois (sans préfixe redondant)
     t0 = time.perf_counter()
-    leg_bad_prefix = [
-        t.get("name", "") for t in discovered_tools.get("legislation", [])
-        if not t.get("name", "").startswith("legislation_")
-    ]
+    lois_names = [t.get("name", "") for t in discovered_tools.get("lois", [])]
+    lois_bad = [n for n in lois_names if n not in NOMS_OUTILS_ATTENDUS["lois"] or n.startswith("legislation_")]
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
-        "T1.3.prefix_legislation",
-        "Préfixe 'legislation_' uniforme sur les 10 outils Législation",
-        "legislation",
-        len(leg_bad_prefix) == 0,
+        "T1.3.lois_compact_names",
+        "Noms v2.0 compacts exacts sur les 10 outils lois",
+        "lois",
+        len(lois_bad) == 0 and (set(lois_names) == set(NOMS_OUTILS_ATTENDUS["lois"]) if "lois" in discovered_tools else True),
         elapsed,
-        f"Noms sans préfixe : {leg_bad_prefix}" if leg_bad_prefix else None,
+        f"Noms inattendus : {lois_bad}" if lois_bad else None,
     )
 
-    # T1.3.prefix_jurisprudence : Préfixe jurisprudence_ sur tous les 10 outils
+    # T1.3.juris_compact_names : Noms v2.0 courts exacts sur juris (sans préfixe redondant)
     t0 = time.perf_counter()
-    jur_bad_prefix = [
-        t.get("name", "") for t in discovered_tools.get("jurisprudence", [])
-        if not t.get("name", "").startswith("jurisprudence_")
-    ]
+    juris_names = [t.get("name", "") for t in discovered_tools.get("juris", [])]
+    juris_bad = [n for n in juris_names if n not in NOMS_OUTILS_ATTENDUS["juris"] or n.startswith("jurisprudence_")]
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
-        "T1.3.prefix_jurisprudence",
-        "Préfixe 'jurisprudence_' uniforme sur les 10 outils Jurisprudence",
-        "jurisprudence",
-        len(jur_bad_prefix) == 0,
+        "T1.3.juris_compact_names",
+        "Noms v2.0 compacts exacts sur les 10 outils juris",
+        "juris",
+        len(juris_bad) == 0 and (set(juris_names) == set(NOMS_OUTILS_ATTENDUS["juris"]) if "juris" in discovered_tools else True),
         elapsed,
-        f"Noms sans préfixe : {jur_bad_prefix}" if jur_bad_prefix else None,
+        f"Noms inattendus : {juris_bad}" if juris_bad else None,
     )
 
-    # T1.3.prefix_outils : Préfixes autorisés sur les 12 outils de MCP-Outils
+    # T1.3.prefix_outils : Préfixes sectoriels autorisés sur les 12 outils de MCP-Outils
     t0 = time.perf_counter()
     outils_allowed = (
         "calendrier_",
@@ -2505,6 +2508,7 @@ def run_tier_1_tests(
         "registre_",
         "adresse_",
         "terminologie_",
+        "termino_",
     )
     outils_bad_prefix = [
         t.get("name", "") for t in discovered_tools.get("outils", [])
@@ -2518,6 +2522,26 @@ def run_tier_1_tests(
         len(outils_bad_prefix) == 0,
         elapsed,
         f"Noms inattendus : {outils_bad_prefix}" if outils_bad_prefix else None,
+    )
+
+    # T1.3.compound_id_64_chars : Identifiants composés <= 64 car. (Claude Code & Antigravity)
+    t0 = time.perf_counter()
+    over_64 = []
+    for srv_k, srv_tools in discovered_tools.items():
+        for t in srv_tools:
+            t_name = t.get("name", "")
+            cc_id = f"mcp__plugin_droit-civil-quebecois_{srv_k}__{t_name}"
+            ag_id = f"mcp_droit-civil-quebecois_{srv_k}_{t_name}"
+            if len(cc_id) > 64 or len(ag_id) > 64:
+                over_64.append(f"{srv_k}/{t_name} (CC={len(cc_id)}, AG={len(ag_id)})")
+    elapsed = (time.perf_counter() - t0) * 1000
+    add_result(
+        "T1.3.compound_id_64_chars",
+        "Identifiants composés <= 64 caractères sur Claude Code et Antigravity",
+        "all",
+        len(over_64) == 0,
+        elapsed,
+        f"Dépassements > 64 car. : {over_64}" if over_64 else None,
     )
 
     # T1.3.additional_properties_hardened : additionalProperties: false sur tous les 26 outils
@@ -2613,11 +2637,11 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
 
     # --- 2.1 Authentification ---
     # T2.1.1 : Jurisprudence non authentifié -> 401 WWW-Authenticate
-    if target_server in ("all", "jurisprudence"):
+    if target_server in ("all", "juris"):
         t0 = time.perf_counter()
         try:
             status, hdrs, body = client.send_http(
-                "jurisprudence",
+                "juris",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
@@ -2629,7 +2653,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result(
                 "T2.1.1",
                 "Rejet HTTP 401 sur Jurisprudence sans jeton",
-                "jurisprudence",
+                "juris",
                 ok,
                 elapsed,
                 None if ok else f"Statut reçu {status}, en-têtes {hdrs}",
@@ -2638,14 +2662,14 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.1", "Rejet 401 Jurisprudence", "jurisprudence", False, elapsed, str(ex))
+            add_result("T2.1.1", "Rejet 401 Jurisprudence", "juris", False, elapsed, str(ex))
 
     # T2.1.2 : Jurisprudence jeton invalide -> 401
-    if target_server in ("all", "jurisprudence"):
+    if target_server in ("all", "juris"):
         t0 = time.perf_counter()
         try:
             status, _, _ = client.send_http(
-                "jurisprudence",
+                "juris",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
@@ -2656,7 +2680,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result(
                 "T2.1.2",
                 "Rejet HTTP 401 sur Jurisprudence avec jeton erroné",
-                "jurisprudence",
+                "juris",
                 ok,
                 elapsed,
                 None if ok else f"Statut reçu {status}",
@@ -2665,14 +2689,14 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.2", "Rejet 401 Jurisprudence jeton erroné", "jurisprudence", False, elapsed, str(ex))
+            add_result("T2.1.2", "Rejet 401 Jurisprudence jeton erroné", "juris", False, elapsed, str(ex))
 
     # T2.1.3 : Législation non authentifié -> 404 (S8 non-oracle)
-    if target_server in ("all", "legislation"):
+    if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
             status, _, _ = client.send_http(
-                "legislation",
+                "lois",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
@@ -2683,7 +2707,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result(
                 "T2.1.3",
                 "Garde non-oracle HTTP 404 sur Législation sans jeton",
-                "legislation",
+                "lois",
                 ok,
                 elapsed,
                 None if ok else f"Statut reçu {status} au lieu de 404",
@@ -2692,14 +2716,14 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.3", "Garde 404 Législation", "legislation", False, elapsed, str(ex))
+            add_result("T2.1.3", "Garde 404 Législation", "lois", False, elapsed, str(ex))
 
     # T2.1.4 : Législation jeton invalide -> 404
-    if target_server in ("all", "legislation"):
+    if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
             status, _, _ = client.send_http(
-                "legislation",
+                "lois",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
@@ -2710,7 +2734,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result(
                 "T2.1.4",
                 "Garde non-oracle HTTP 404 sur Législation avec jeton erroné",
-                "legislation",
+                "lois",
                 ok,
                 elapsed,
                 None if ok else f"Statut reçu {status} au lieu de 404",
@@ -2719,7 +2743,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.4", "Garde 404 Législation jeton erroné", "legislation", False, elapsed, str(ex))
+            add_result("T2.1.4", "Garde 404 Législation jeton erroné", "lois", False, elapsed, str(ex))
 
     # T2.1.5 : Outils sans jeton -> accès public 200
     if target_server in ("all", "outils"):
@@ -2729,7 +2753,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.5.0"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"2.0.0"}}}',
                 auth_token="OMIT",
             )
             ok = status == 200
@@ -2862,7 +2886,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         # 1. Requête standard : vérification de la transmission effective de l'en-tête
         status, _, _ = client.send_http("outils", path="/healthz", method="GET")
         sent_ua = getattr(client, "last_sent_headers", {}).get("User-Agent", "")
-        ua_present = bool(sent_ua and "PratiqueCivile" in sent_ua)
+        ua_present = bool(sent_ua and "DroitCivil" in sent_ua)
         waf_allowed = (status == 200)
 
         # 2. Requête contre-épreuve : un client standard sans User-Agent personnalisé est bloqué (403)
@@ -3027,16 +3051,16 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
-            "legislation",
+            "lois",
             "tools/call",
-            {"name": "legislation_list_laws", "arguments": {"_champ_injecte": "exploit"}},
+            {"name": "list_laws", "arguments": {"_champ_injecte": "exploit"}},
         )
         is_err = "error" in res or res.get("result", {}).get("isError") is True
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.1",
             "Rejet de propriété injectée (additionalProperties: false)",
-            "legislation",
+            "lois",
             is_err,
             elapsed,
             None if is_err else f"Paramètre non rejeté : {res}",
@@ -3045,22 +3069,22 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T2.4.1", "additionalProperties: false", "legislation", False, elapsed, str(ex))
+        add_result("T2.4.1", "additionalProperties: false", "lois", False, elapsed, str(ex))
 
-    # T2.4.2 : Paramètre requis manquant sur legislation_get_article -> isError: true
+    # T2.4.2 : Paramètre requis manquant sur get_article -> isError: true
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
-            "legislation",
+            "lois",
             "tools/call",
-            {"name": "legislation_get_article", "arguments": {"article": "1726"}},  # law manquant
+            {"name": "get_article", "arguments": {"article": "1726"}},  # law manquant
         )
         is_err = res.get("result", {}).get("isError") is True
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.2",
-            "Rejet de legislation_get_article sans paramètre 'law'",
-            "legislation",
+            "Rejet de get_article sans paramètre 'law'",
+            "lois",
             is_err,
             elapsed,
             None if is_err else f"Réponse sans erreur : {res}",
@@ -3069,21 +3093,21 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T2.4.2", "Paramètre requis manquant 'law'", "legislation", False, elapsed, str(ex))
+        add_result("T2.4.2", "Paramètre requis manquant 'law'", "lois", False, elapsed, str(ex))
 
-    # T2.4.3 : Paramètre requis manquant sur calendrier_compute_deadlines
+    # T2.4.3 : Paramètre requis manquant sur calendrier_deadlines
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
             "outils",
             "tools/call",
-            {"name": "calendrier_compute_deadlines", "arguments": {"event_date": "2026-07-03"}},
+            {"name": "calendrier_deadlines", "arguments": {"event_date": "2026-07-03"}},
         )
         is_err = res.get("result", {}).get("isError") is True
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.3",
-            "Rejet de calendrier_compute_deadlines sans 'deadlines'",
+            "Rejet de calendrier_deadlines sans 'deadlines'",
             "outils",
             is_err,
             elapsed,
@@ -3095,13 +3119,13 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T2.4.3", "Paramètre manquant 'deadlines'", "outils", False, elapsed, str(ex))
 
-    # T2.4.4 : Type incompatible sur calendrier_list_holidays (string au lieu de integer)
+    # T2.4.4 : Type incompatible sur calendrier_holidays (string au lieu de integer)
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
             "outils",
             "tools/call",
-            {"name": "calendrier_list_holidays", "arguments": {"year": "deux-mille-vingt-six"}},
+            {"name": "calendrier_holidays", "arguments": {"year": "deux-mille-vingt-six"}},
         )
         is_err = "error" in res or res.get("result", {}).get("isError") is True
         elapsed = (time.perf_counter() - t0) * 1000
@@ -3171,30 +3195,30 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     t0 = time.perf_counter()
     try:
         res1 = client.call_rpc(
-            "jurisprudence",
+            "juris",
             "tools/call",
             {
-                "name": "jurisprudence_get_case",
+                "name": "get_case",
                 "arguments": {"citation": "2020 QCCA 495", "database_id": "qcca", "case_id": "2020qcca495"},
             },
         )
         is_err1 = res1.get("result", {}).get("isError") is True
 
         res2 = client.call_rpc(
-            "jurisprudence",
+            "juris",
             "tools/call",
             {
-                "name": "jurisprudence_citator",
+                "name": "citator",
                 "arguments": {"citation": "2020 QCCA 495", "database_id": "qcca", "rel": "citing"},
             },
         )
         is_err2 = res2.get("result", {}).get("isError") is True
 
         res3 = client.call_rpc(
-            "jurisprudence",
+            "juris",
             "tools/call",
             {
-                "name": "jurisprudence_subsequent_history",
+                "name": "subsequent_history",
                 "arguments": {"citation": "2020 QCCA 495", "case_id": "2020qcca495"},
             },
         )
@@ -3205,7 +3229,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         add_result(
             "T2.4.7",
             "Violation contrainte XOR jurisprudence (get_case, citator, subsequent_history)",
-            "jurisprudence",
+            "juris",
             is_err,
             elapsed,
             None if is_err else f"get_case err={is_err1}, citator err={is_err2}, sub_hist err={is_err3}",
@@ -3214,7 +3238,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T2.4.7", "XOR jurisprudence", "jurisprudence", False, elapsed, str(ex))
+        add_result("T2.4.7", "XOR jurisprudence", "juris", False, elapsed, str(ex))
 
     # T2.4.8 : Date calendaire bissextile impossible (2025-02-29) -> isError: true
     t0 = time.perf_counter()
@@ -3223,7 +3247,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             "outils",
             "tools/call",
             {
-                "name": "calendrier_compute_deadlines",
+                "name": "calendrier_deadlines",
                 "arguments": {
                     "event_date": "2025-02-29",
                     "deadlines": [{"amount": 10, "label": "Test"}],
@@ -3246,20 +3270,20 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T2.4.8", "Date invalide 2025-02-29", "outils", False, elapsed, str(ex))
 
-    # T2.4.9 : Citation vide sur jurisprudence_parse_citation
+    # T2.4.9 : Citation vide sur parse_citation
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
-            "jurisprudence",
+            "juris",
             "tools/call",
-            {"name": "jurisprudence_parse_citation", "arguments": {"citation": ""}},
+            {"name": "parse_citation", "arguments": {"citation": ""}},
         )
         is_err = res.get("result", {}).get("isError") is True
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.9",
-            "Rejet de citation vide sur jurisprudence_parse_citation",
-            "jurisprudence",
+            "Rejet de citation vide sur parse_citation",
+            "juris",
             is_err,
             elapsed,
             None if is_err else f"Réponse : {res}",
@@ -3268,16 +3292,16 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T2.4.9", "Citation vide parse_citation", "jurisprudence", False, elapsed, str(ex))
+        add_result("T2.4.9", "Citation vide parse_citation", "juris", False, elapsed, str(ex))
 
-    # T2.4.10 : Type invalide pour principal_cents sur interets_compute_1619
+    # T2.4.10 : Type invalide pour principal_cents sur interets_1619
     t0 = time.perf_counter()
     try:
         res = client.call_rpc(
             "outils",
             "tools/call",
             {
-                "name": "interets_compute_1619",
+                "name": "interets_1619",
                 "arguments": {
                     "end_date": "2026-11-14",
                     "tranches": "cinquante-mille",  # string au lieu de array
@@ -3288,7 +3312,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.10",
-            "Rejet de tranches de capital non tableau sur interets_compute_1619",
+            "Rejet de tranches de capital non tableau sur interets_1619",
             "outils",
             is_err,
             elapsed,
@@ -3369,13 +3393,13 @@ def run_tier_3_tests(
     mcp_srv_keys = set(mcp_data.get("mcpServers", {}).keys())
     agy_srv_keys = set(agy_data.get("mcpServers", {}).keys())
     gem_srv_keys = set(gem_data.get("mcpServers", {}).keys())
-    exp_keys = {"legislation", "jurisprudence", "outils"}
+    exp_keys = {"lois", "juris", "outils"}
 
     keys_ok = (mcp_srv_keys == exp_keys) and (agy_srv_keys == exp_keys) and (gem_srv_keys == exp_keys)
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T3.1.1",
-        "Uniformité des clés de serveurs (legislation, jurisprudence, outils)",
+        "Uniformité des clés de serveurs (lois, juris, outils)",
         "all",
         keys_ok,
         elapsed,
@@ -3429,17 +3453,17 @@ def run_tier_3_tests(
         else Path.home() / ".gemini" / "antigravity" / "mcp"
     )
 
-    leg_dir = antigravity_mcp_base / "pratique-civile-quebecoise_legislation"
-    jur_dir = antigravity_mcp_base / "pratique-civile-quebecoise_jurisprudence"
-    out_dir = antigravity_mcp_base / "pratique-civile-quebecoise_outils"
+    leg_dir = antigravity_mcp_base / "droit-civil-quebecois_lois"
+    jur_dir = antigravity_mcp_base / "droit-civil-quebecois_juris"
+    out_dir = antigravity_mcp_base / "droit-civil-quebecois_outils"
 
     cache_present = antigravity_mcp_base.is_dir() and (leg_dir.is_dir() or jur_dir.is_dir() or out_dir.is_dir())
 
     if not cache_present:
         if require_antigravity_cache:
             for tid, name, srv in [
-                ("T3.2.1", "Partition du cache Législation sur disque (10 outils)", "legislation"),
-                ("T3.2.2", "Partition du cache Jurisprudence sur disque (10 outils)", "jurisprudence"),
+                ("T3.2.1", "Partition du cache Législation sur disque (10 outils)", "lois"),
+                ("T3.2.2", "Partition du cache Jurisprudence sur disque (10 outils)", "juris"),
                 ("T3.2.3", "Partition du cache Outils sur disque (12 outils)", "outils"),
                 ("T3.2.4", "Intégrité approfondie des 32 schémas d'outils sur disque", "all"),
                 ("T3.2.5", "Présence et conformité de instructions.md sur disque", "all"),
@@ -3447,8 +3471,8 @@ def run_tier_3_tests(
                 add_result(tid, name, srv, False, 0.0, f"Cache absent dans {antigravity_mcp_base}")
         else:
             for tid, name, srv in [
-                ("T3.2.1", "Partition du cache Législation sur disque (ignoré : cache Antigravity absent hors local)", "legislation"),
-                ("T3.2.2", "Partition du cache Jurisprudence sur disque (ignoré : cache Antigravity absent hors local)", "jurisprudence"),
+                ("T3.2.1", "Partition du cache Législation sur disque (ignoré : cache Antigravity absent hors local)", "lois"),
+                ("T3.2.2", "Partition du cache Jurisprudence sur disque (ignoré : cache Antigravity absent hors local)", "juris"),
                 ("T3.2.3", "Partition du cache Outils sur disque (ignoré : cache Antigravity absent hors local)", "outils"),
                 ("T3.2.4", "Intégrité approfondie des 32 schémas (ignoré : cache Antigravity absent hors local)", "all"),
                 ("T3.2.5", "Présence instructions.md (ignoré : cache Antigravity absent hors local)", "all"),
@@ -3459,12 +3483,12 @@ def run_tier_3_tests(
         t0 = time.perf_counter()
         leg_tools = list(leg_dir.glob("*.json")) if leg_dir.is_dir() else []
         leg_names = {f.stem for f in leg_tools}
-        c_leg_ok = (len(leg_tools) == 10) and (leg_names == set(NOMS_OUTILS_ATTENDUS["legislation"]))
+        c_leg_ok = (len(leg_tools) == 10) and (leg_names == set(NOMS_OUTILS_ATTENDUS["lois"]))
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.1",
             "Partition du cache Législation sur disque (exactement 10 outils)",
-            "legislation",
+            "lois",
             c_leg_ok,
             elapsed,
             f"Trouvé {len(leg_tools)} fichiers .json au lieu de 10 dans {leg_dir}" if not c_leg_ok else None,
@@ -3474,13 +3498,13 @@ def run_tier_3_tests(
         t0 = time.perf_counter()
         jur_tools = list(jur_dir.glob("*.json")) if jur_dir.is_dir() else []
         jur_names = {f.stem for f in jur_tools}
-        stale_in_jur = jur_names.intersection({"greffe_parse_court_file_number", "palais_list", "palais_get"})
-        c_jur_ok = (len(jur_tools) == 10) and (jur_names == set(NOMS_OUTILS_ATTENDUS["jurisprudence"])) and (not stale_in_jur)
+        stale_in_jur = jur_names.intersection({"greffe_parse_number", "palais_list", "palais_get"})
+        c_jur_ok = (len(jur_tools) == 10) and (jur_names == set(NOMS_OUTILS_ATTENDUS["juris"])) and (not stale_in_jur)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.2",
             "Partition du cache Jurisprudence sur disque (exactement 10 outils, sans greffe/palais)",
-            "jurisprudence",
+            "juris",
             c_jur_ok,
             elapsed,
             f"Trouvé {len(jur_tools)} fichiers (stale: {stale_in_jur}) au lieu de 10 dans {jur_dir}" if not c_jur_ok else None,
@@ -3505,7 +3529,7 @@ def run_tier_3_tests(
         t0 = time.perf_counter()
         schema_errs = []
         total_inspected = 0
-        for srv_name, s_dir in [("legislation", leg_dir), ("jurisprudence", jur_dir), ("outils", out_dir)]:
+        for srv_name, s_dir in [("lois", leg_dir), ("juris", jur_dir), ("outils", out_dir)]:
             if not s_dir.is_dir():
                 schema_errs.append(f"Répertoire manquant: {s_dir}")
                 continue
@@ -3560,7 +3584,7 @@ def run_tier_3_tests(
         # T3.2.5 : Présence et conformité de instructions.md dans les 3 serveurs sur disque
         t0 = time.perf_counter()
         missing_instr = []
-        for srv_name, s_dir in [("legislation", leg_dir), ("jurisprudence", jur_dir), ("outils", out_dir)]:
+        for srv_name, s_dir in [("lois", leg_dir), ("juris", jur_dir), ("outils", out_dir)]:
             instr_path = s_dir / "instructions.md"
             if not instr_path.is_file() or instr_path.stat().st_size == 0:
                 missing_instr.append(f"{srv_name} ({instr_path})")
@@ -3582,7 +3606,7 @@ def run_tier_3_tests(
     try:
         greffe_res = client.call_tool(
             "outils",
-            "greffe_parse_court_file_number",
+            "greffe_parse_number",
             {"court_file_number": "500-17-000001-261"},
         )
         greffe_sc = greffe_res.get("structuredContent") or {}
@@ -3614,14 +3638,14 @@ def run_tier_3_tests(
     t0 = time.perf_counter()
     try:
         leg_res = client.call_tool(
-            "legislation", "legislation_resolve_reference", {"citation": "art. 1619 C.c.Q."}
+            "lois", "resolve_reference", {"citation": "art. 1619 C.c.Q."}
         )
         leg_sc = leg_res.get("structuredContent") or {}
         art_num = (leg_sc.get("resolved") or {}).get("number")
 
         calc_res = client.call_tool(
             "outils",
-            "interets_compute_1619",
+            "interets_1619",
             {
                 "end_date": "2026-11-14",
                 "tranches": [{"principal_cents": 10000000, "start_date": "2024-01-01"}],
@@ -3649,14 +3673,14 @@ def run_tier_3_tests(
     # T3.3.3 : Contrat Jurisprudence -> Greffe
     t0 = time.perf_counter()
     try:
-        case_res = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2015 QCCA 1526"})
+        case_res = client.call_tool("juris", "get_case", {"citation": "2015 QCCA 1526"})
         case_txt = case_res.get("content", [{}])[0].get("text", "")
         m_dossier = re.search(r"\b(\d{3}-\d{2}-\d{6}-\d{3})\b", case_txt)
         court_file = m_dossier.group(1) if m_dossier else ""
 
         parse_res = (
             client.call_tool(
-                "outils", "greffe_parse_court_file_number", {"court_file_number": court_file}
+                "outils", "greffe_parse_number", {"court_file_number": court_file}
             )
             if court_file
             else {}
@@ -3682,13 +3706,13 @@ def run_tier_3_tests(
     # T3.3.4 : Contrat CPC -> Calendrier (art. 145 C.p.c. 15 jours)
     t0 = time.perf_counter()
     try:
-        cpc_res = client.call_tool("legislation", "legislation_get_article", {"law": "cpc", "article": "145"})
+        cpc_res = client.call_tool("lois", "get_article", {"law": "cpc", "article": "145"})
         cpc_txt = cpc_res.get("content", [{}])[0].get("text", "")
         has_15 = "15" in cpc_txt
 
         cal_res = client.call_tool(
             "outils",
-            "calendrier_compute_deadlines",
+            "calendrier_deadlines",
             {
                 "event_date": "2026-09-01",
                 "deadlines": [{"amount": 15, "label": "Réponse art. 145"}],
@@ -3719,7 +3743,7 @@ def run_tier_3_tests(
         try:
             reg_res = client.call_tool(
                 "outils",
-                "registre_search_entities",
+                "registre_search",
                 {"query": "9123-4567"},
             )
             reg_sc = reg_res.get("structuredContent") or {}
@@ -3742,7 +3766,7 @@ def run_tier_3_tests(
             addr_sc = addr_res.get("structuredContent") or {}
             scan_res = client.call_tool(
                 "outils",
-                "terminologie_scan_text",
+                "terminologie_scan",
                 {"text": "The debtor granted a mortgage on the immovable.", "lang": "en"},
             )
             scan_sc = scan_res.get("structuredContent") or {}
@@ -3791,7 +3815,7 @@ def run_tier_3_tests(
     try:
         import verifier  # type: ignore
 
-        erreurs_statiques = verifier.verifier(repo_root)
+        erreurs_statiques, _ = verifier.verifier(repo_root)
         clean_run = len(erreurs_statiques) == 0
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
@@ -3810,8 +3834,8 @@ def run_tier_3_tests(
 
     # T3.4.3 : Vérification des scripts de compétences autonomes
     t0 = time.perf_counter()
-    script_calc = repo_root / "skills" / "calendrier-procedural" / "scripts" / "calcul_delai.py"
-    script_insp = repo_root / "skills" / "analyse-documentaire" / "scripts" / "inspecter_piece.py"
+    script_calc = repo_root / "skills" / "administration-litige" / "scripts" / "calcul_delai.py"
+    script_insp = repo_root / "skills" / "analyse-juridique" / "scripts" / "inspecter_piece.py"
     scripts_ok = script_calc.is_file() and script_insp.is_file()
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
@@ -3843,18 +3867,18 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
     t0 = time.perf_counter()
     try:
         # Étape 1 : Repérage heuristique
-        r1 = client.call_tool("legislation", "legislation_find_relevant", {"query": "vice caché infiltration fondation"})
+        r1 = client.call_tool("lois", "find_relevant", {"query": "vice caché infiltration fondation"})
         txt1 = r1.get("content", [{}])[0].get("text", "")
         # Étape 2 : Extraction article 1726
-        r2 = client.call_tool("legislation", "legislation_get_article", {"law": "ccq", "article": "1726"})
+        r2 = client.call_tool("lois", "get_article", {"law": "ccq", "article": "1726"})
         txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Extraction en lot 1726-1731
-        r3 = client.call_tool("legislation", "legislation_get_articles", {"law": "ccq", "from": "1726", "to": "1731"})
+        r3 = client.call_tool("lois", "get_articles", {"law": "ccq", "from": "1726", "to": "1731"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
         # Étape 4 : Vérification d'autorité 2020 QCCA 495 (SNC-Lavalin inc. ... c. Deguise)
         r4 = client.call_tool(
-            "jurisprudence",
-            "jurisprudence_verify_citations",
+            "juris",
+            "verify_citations",
             {
                 "citations": [
                     {
@@ -3866,15 +3890,15 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         )
         txt4 = r4.get("content", [{}])[0].get("text", "")
         # Étape 5 : Citateur CanLII
-        r5 = client.call_tool("jurisprudence", "jurisprudence_citator", {"citation": "2020 QCCA 495", "rel": "citing", "limit": 5})
+        r5 = client.call_tool("juris", "citator", {"citation": "2020 QCCA 495", "rel": "citing", "limit": 5})
         txt5 = r5.get("content", [{}])[0].get("text", "")
         # Étape 6 : Analyse numéro de greffe
-        r6 = client.call_tool("outils", "greffe_parse_court_file_number", {"court_file_number": "500-17-012345-211"})
+        r6 = client.call_tool("outils", "greffe_parse_number", {"court_file_number": "500-17-012345-211"})
         txt6 = r6.get("content", [{}])[0].get("text", "")
         # Étape 7 : Calcul exact d'intérêts et indemnité additionnelle art. 1619
         r7 = client.call_tool(
             "outils",
-            "interets_compute_1619",
+            "interets_1619",
             {
                 "end_date": "2026-11-14",
                 "tranches": [{"principal_cents": 5000000, "start_date": "2024-05-01", "label": "Réparations"}],
@@ -3912,15 +3936,15 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
     t0 = time.perf_counter()
     try:
         # Étape 1 : Résolution référence art. 145 C.p.c.
-        r1 = client.call_tool("legislation", "legislation_resolve_reference", {"citation": "art. 145 C.p.c."})
+        r1 = client.call_tool("lois", "resolve_reference", {"citation": "art. 145 C.p.c."})
         txt1 = r1.get("content", [{}])[0].get("text", "")
         # Étape 2 : Jours fériés 2026
-        r2 = client.call_tool("outils", "calendrier_list_holidays", {"year": 2026, "regime": "qc_cpc"})
+        r2 = client.call_tool("outils", "calendrier_holidays", {"year": 2026, "regime": "qc_cpc"})
         txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Calcul arithmétique avec bascule art. 111 al. 2 C.p.c. (17h35 un vendredi)
         r3 = client.call_tool(
             "outils",
-            "calendrier_compute_deadlines",
+            "calendrier_deadlines",
             {
                 "event_date": "2026-07-03",
                 "event_time": "17:35",
@@ -3961,18 +3985,18 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
     t0 = time.perf_counter()
     try:
         # Étape 1 : Analyse syntaxique hors ligne
-        r1 = client.call_tool("jurisprudence", "jurisprudence_parse_citation", {"citation": "2020 QCCA 495"})
+        r1 = client.call_tool("juris", "parse_citation", {"citation": "2020 QCCA 495"})
         txt1 = r1.get("content", [{}])[0].get("text", "")
         # Étape 2 : Vérification en ligne
         r2 = client.call_tool(
-            "jurisprudence", "jurisprudence_verify_citations", {"citations": [{"citation": "2020 QCCA 495"}]}
+            "juris", "verify_citations", {"citations": [{"citation": "2020 QCCA 495"}]}
         )
         txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Sort ultérieur
-        r3 = client.call_tool("jurisprudence", "jurisprudence_subsequent_history", {"citation": "2020 QCCA 495"})
+        r3 = client.call_tool("juris", "subsequent_history", {"citation": "2020 QCCA 495"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
         # Étape 4 : Fiche CanLII complète
-        r4 = client.call_tool("jurisprudence", "jurisprudence_get_case", {"citation": "2020 QCCA 495"})
+        r4 = client.call_tool("juris", "get_case", {"citation": "2020 QCCA 495"})
         txt4 = r4.get("content", [{}])[0].get("text", "")
 
         ok = (
@@ -3986,7 +4010,7 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         add_result(
             "T4.3",
             "Scénario 3 : Diagnostic de citation et vérification d'autorité CanLII",
-            "jurisprudence",
+            "juris",
             ok,
             elapsed,
             None if ok else "Échec de validation de la citation 2020 QCCA 495",
@@ -3995,25 +4019,25 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T4.3", "Scénario 3 : Citation CanLII", "jurisprudence", False, elapsed, str(ex))
+        add_result("T4.3", "Scénario 3 : Citation CanLII", "juris", False, elapsed, str(ex))
 
     # --- Scénario 4 : Recherche textuelle et exploration réglementaire ---
     t0 = time.perf_counter()
     try:
         # Étape 1 : Recherche FTS5 sur prescription
         r1 = client.call_tool(
-            "legislation",
-            "legislation_search_text",
+            "lois",
+            "search_text",
             {"query": "prescription dommage corporel", "law": "ccq", "limit": 3},
         )
         txt1 = r1.get("content", [{}])[0].get("text", "")
         # Étape 2 : Texte complet de la division (Livre VIII — De la prescription)
         r2 = client.call_tool(
-            "legislation", "legislation_get_division", {"law": "ccq", "path": "ga:l_huitieme-gb:l_troisieme"}
+            "lois", "get_division", {"law": "ccq", "path": "ga:l_huitieme-gb:l_troisieme"}
         )
         txt2 = r2.get("content", [{}])[0].get("text", "")
         # Étape 3 : Exploration des règlements pris en application du CPC
-        r3 = client.call_tool("legislation", "legislation_related_laws", {"law": "cpc", "rel_type": "reglement-de"})
+        r3 = client.call_tool("lois", "related_laws", {"law": "cpc", "rel_type": "reglement-de"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
 
         ok = "2930" in txt1 and "prescription" in txt2.lower() and "cour supérieure" in txt3.lower()
@@ -4021,7 +4045,7 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         add_result(
             "T4.4",
             "Scénario 4 : Recherche textuelle et exploration réglementaire (C.c.Q. / C.p.c.)",
-            "legislation",
+            "lois",
             ok,
             elapsed,
             None if ok else "Échec dans le scénario 4 de recherche",
@@ -4030,7 +4054,7 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         raise
     except Exception as ex:
         elapsed = (time.perf_counter() - t0) * 1000
-        add_result("T4.4", "Scénario 4 : Recherche réglementaire", "legislation", False, elapsed, str(ex))
+        add_result("T4.4", "Scénario 4 : Recherche réglementaire", "lois", False, elapsed, str(ex))
 
     return results
 
@@ -4050,11 +4074,11 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         results.append(TestResult(tid, name, 5, srv, passed, ms, err))
 
     # T5.1.1 : S8 Stealth non-oracle sur Législation (méthode non autorisée sans authentification -> 404)
-    if target_server in ("all", "legislation"):
+    if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
             status, _, _ = client.send_http(
-                "legislation",
+                "lois",
                 path="/mcp",
                 method="DELETE",
                 body_data=b"",
@@ -4065,7 +4089,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result(
                 "T5.1.1",
                 "S8 Stealth non-oracle : DELETE non authentifié rend 404 (non 405)",
-                "legislation",
+                "lois",
                 ok,
                 elapsed,
                 None if ok else f"Statut reçu {status} au lieu de 404",
@@ -4074,7 +4098,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T5.1.1", "S8 Stealth non-oracle", "legislation", False, elapsed, str(ex))
+            add_result("T5.1.1", "S8 Stealth non-oracle", "lois", False, elapsed, str(ex))
 
     # T5.1.2 : Host Header Security whitelist (rejet DNS rebinding sur domaines non autorisés -> 403)
     if target_server in ("all", "outils"):
@@ -4158,7 +4182,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             add_result("T5.1.3", "Rejet JSON-RPC id structuré", "outils", False, elapsed, str(ex))
 
     # T5.1.4 : Support CORS Preflight OPTIONS (/mcp -> HTTP 204 No Content)
-    if target_server in ("all", "legislation", "outils"):
+    if target_server in ("all", "lois", "outils"):
         t0 = time.perf_counter()
         try:
             cors_headers = {
@@ -4166,7 +4190,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "Access-Control-Request-Method": "POST",
             }
             status_leg, hdrs_leg, _ = client.send_http(
-                "legislation",
+                "lois",
                 path="/mcp",
                 method="OPTIONS",
                 body_data=b"",
@@ -4207,7 +4231,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             # 17:00 pile un vendredi -> NE DOIT PAS basculer (ancre reste 2026-07-03)
             r_1700 = client.call_tool(
                 "outils",
-                "calendrier_compute_deadlines",
+                "calendrier_deadlines",
                 {
                     "event_date": "2026-07-03",
                     "event_time": "17:00",
@@ -4223,7 +4247,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             # 17:01 un vendredi -> DOIT basculer au lundi suivant (2026-07-06)
             r_1701 = client.call_tool(
                 "outils",
-                "calendrier_compute_deadlines",
+                "calendrier_deadlines",
                 {
                     "event_date": "2026-07-03",
                     "event_time": "17:01",
@@ -4239,7 +4263,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             # 16:59 un vendredi -> NE DOIT PAS basculer (ancre reste 2026-07-03)
             r_1659 = client.call_tool(
                 "outils",
-                "calendrier_compute_deadlines",
+                "calendrier_deadlines",
                 {
                     "event_date": "2026-07-03",
                     "event_time": "16:59",
@@ -4282,7 +4306,7 @@ def format_report_terminal(
     """Génère un tableau de rapport lisible et coloré pour la console."""
     lines = []
     lines.append("\n" + "=" * 80)
-    lines.append(f"  PRATIQUE CIVILE QUÉBÉCOISE — VÉRIFICATEUR E2E MULTI-PALIERS")
+    lines.append("  DROIT CIVIL QUÉBÉCOIS — VÉRIFICATEUR E2E MULTI-PALIERS")
     lines.append(f"  Mode d'exécution : {mode.upper()} | Date : {datetime.datetime.now().isoformat()}")
     lines.append("=" * 80)
 
@@ -4380,7 +4404,7 @@ def format_report_github(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Vérificateur multi-paliers E2E pour pratique-civile-quebecoise",
+        description="Vérificateur multi-paliers E2E pour droit-civil-quebecois",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -4397,7 +4421,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--server",
-        choices=["legislation", "jurisprudence", "outils", "all"],
+        choices=["lois", "juris", "outils", "all"],
         default="all",
         help="Filtrer les tests par serveur MCP",
     )
