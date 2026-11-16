@@ -1,12 +1,15 @@
 ---
 name: administration-litige
 description: >-
-  Gérer le calendrier procédural C.p.c. (art. 82–84, 111, régime ordinaire, C.Q. 535.1 s., appel),
-  les bordereaux et notices de pièces (145, 174, 247, 250), les matrices allégation-pièce-témoin,
-  les endos de cour, les tableaux de quantum/intérêts (art. 1619 C.c.Q.) et l'état des frais
-  (art. 339–344 C.p.c., tarif t-16-r.10). En anglais — procedural deadlines, schedule, exhibit list,
-  concordance matrix, court backing, damages spreadsheet, bill of costs. Ne pas utiliser pour la
-  prescription substantielle (recherche-juridique) ni rédiger un acte complet (redaction-juridique).
+  Utiliser pour calculer une date limite ou gérer les opérations procédurales d'un litige au
+  Québec (C.p.c.) : échéance, délai de signification, réponse, mise en état, production ou
+  appel, calendrier d'instance (ordinaire ou simplifiée C.Q.), notification après 17 h, jours
+  fériés, bordereau de pièces, concordance preuve-allégations, endos de cour, tableau de
+  dommages/Scott, intérêts légaux et indemnité additionnelle (art. 1619 C.c.Q.) et état des
+  frais de justice. En anglais — use for Quebec procedural deadlines, due dates, court schedule,
+  exhibit list, concordance matrix, court backing, legal interest, damages table, bill of costs.
+  Ne pas utiliser pour la prescription substantielle (recherche-juridique) ni rédiger un acte
+  complet (redaction-juridique).
 ---
 
 # Administration du litige et échéanciers
@@ -16,13 +19,15 @@ Répond aux besoins opérationnels et procéduraux du dossier : délais C.p.c., 
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
 
-1. **Confidentialité stricte :** Ne jamais inclure de noms de parties, faits identifiants, extraits de pièces ou numéros de dossier dans une requête de recherche web.
-2. **Sources primaires obligatoires (arrêt en cas d'indisponibilité) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Lire le texte officiel via `lois` (`get_article` / `get_articles`), authentifier toute décision via `juris` (`verify_citations`), et exécuter les calculs via `outils` (`calendrier_deadlines`, `interets_1619`, ou `calcul_delai.py`). Si un connecteur requis est injoignable ou non configuré (`401`, `404`, hors ligne), **s'arrêter**, nommer le connecteur manquant et demander à l'avocat de le reconnecter ou de fournir le texte.
+1. **Confidentialité stricte :** Ne jamais inclure de noms de clients, faits identifiants, extraits de pièces ou numéros de dossier dans une recherche web ni dans un champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`). Sont seuls permis : les dénominations, adresses et numéros de greffe soumis aux outils sans journalisation de `outils` (`registre_search`, `adresse_verify`, `greffe_parse_number`) et les intitulés de décisions publiées dans `juris` (`find_case`, `verify_citations`).
+2. **Sources primaires obligatoires (arrêt sur le volet touché) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Repérer les trois connecteurs par leurs outils signatures — y compris s'ils sont différés (les charger par recherche d'outils avant de conclure à leur absence) ou nommés sous un alias client (`legis` / `Législation`, `Jurisprudence`, `Outils`) : `lois` (`get_article`, `get_articles`), `juris` (`verify_citations`, `get_case`) et `outils` (`calendrier_deadlines`, `interets_1619`). Si le connecteur requis échoue (`401`, `404`, hors ligne) sans repli local prévu par la compétence, **s'arrêter sur le volet touché**, nommer le connecteur et demander à l'avocat de le reconnecter ou de fournir le texte officiel.
 3. **Étanchéité bijuridique :** Écarter tout droit étranger (`.fr`, Belgique, Suisse; art. 1240, 2224, 1641) et purger les calques de common law (*duty of care*, *consideration*, *estoppel*, dommages punitifs sans loi habilitante sous l'art. 1621 C.c.Q.). En anglais, employer exclusivement la terminologie officielle anglaise du C.c.Q. et du C.p.c. (`get_article(lang="en")`, `terminologie_lookup`).
 4. **Protection et déclencheurs déontologiques :** Présumer tout document non coté `CONFIDENTIEL` (jamais `PUBLIC` par défaut). Signaler au texte via `lois` (`b-1-r.3.1`, `b-1-r.5`, `cpc` art. 108, 192–194) une obligation déontologique ou de caviardage uniquement devant un fait déclencheur concret, sans mise en garde générique.
 <!-- SAFETY-KERNEL:END -->
 
 ## Paliers de rigueur
+
+Choisir selon la destination (modifiable sur demande; **Palier 2 par défaut** si ambigu) : question orale ponctuelle → Palier 1; travail interne de dossier → Palier 2; écrit externe ou au tribunal → Palier 3.
 
 | Palier | Contexte | Exigence de calcul et de contrôle |
 |---|---|---|
@@ -44,7 +49,7 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 
 ## Contrôle avant remise
 
-1. **Ancrage et calcul :** Date de départ nommée par sa pièce/nature (ou marquée `[HYPOTHÉTIQUE]`); calcul fait par `outils` ou `scripts/calcul_delai.py` (jamais mental), montrant le report `111 al. 2`, le quantième et le report `83 al. 3`.
+1. **Ancrage et calcul :** Date de départ nommée par sa pièce/nature (ou marquée `[DATE À CONFIRMER]`); calcul fait par `outils` ou `scripts/calcul_delai.py` (jamais mental), montrant le report `111 al. 2`, le quantième et le report `83 al. 3`.
 2. **Avertissements obligatoires :** Mentionner en toutes lettres que la période `30 juin – 1er septembre` et `20 décembre – 7 janvier` ne suspend pas les délais (`82 al. 2`), que le 30 septembre est ouvrable au C.p.c., et que la prescription substantielle relève de `recherche-juridique`.
 3. **Privilège et cotes :** Aucun document non vérifié coté `PUBLIC` par défaut; alerte de caviardage (`108 C.p.c.`) sur tout NAS, compte ou dossier médical avant communication.
 4. **Tarifs et intérêts :** Montants du `Tarif judiciaire` (`t-16-r.10`) lus via `lois`; intérêts calculés via `outils.interets_1619` sans extrapoler de trimestre non publié.

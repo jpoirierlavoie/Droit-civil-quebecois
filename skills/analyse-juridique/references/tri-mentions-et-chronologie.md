@@ -4,7 +4,7 @@ Couvre l'inspection technique des fichiers bruts, le tri rapide de lots, la vér
 
 ## 1. Inspection technique obligatoire avant toute conclusion
 
-**Sur fichiers locaux (`.docx`, `.xlsx`, `.eml`, `.pdf`, `.jpg`, `.png`) :** Exécuter d'abord `python skills/analyse-juridique/scripts/inspecter_piece.py <fichier>... --json` pour détecter :
+**Sur fichiers locaux (`.docx`, `.xlsx`, `.eml`, `.pdf`, `.jpg`, `.png`) :** Exécuter d'abord `python scripts/inspecter_piece.py <fichier>... --json` *(depuis le dossier de `analyse-juridique`)* pour détecter :
 * `.docx` : commentaires Word (`COMMENTAIRES_WORD`), marques de révision (`w:ins`/`w:del`), propriétés auteur;
 * `.xlsx` : onglets cachés, formules, plages et commentaires;
 * `.eml` : en-têtes complets (`From`, `To`, `Cc`, `Bcc`, `X-Unsent` d'un brouillon), pièces jointes (chacune qualifiée séparément);
@@ -39,6 +39,6 @@ Appeler `lois.get_articles(law="cpc", numbers=["99", "101", "105", "107", "111",
 
 Extraire une suite d'événements datés (un document est une **source**, non un événement).
 * **Date propre uniquement :** Jamais la date système de création/numérisation/téléversement du fichier.
-* **Précisions de date :** Exacte (`2025-11-12`), encadrée (`~2025-11`, `entre 2025-11-04 et 2025-11-12`), ou inconnue (`[DATE]`). Noter l'heure et le fuseau si deux gestes surviennent le même jour (signification, offre).
+* **Précisions de date :** Exacte (`2025-11-12`), encadrée (`~2025-11`, `entre 2025-11-04 et 2025-11-12`), ou inconnue (`[DATE À CONFIRMER]`). Noter l'heure et le fuseau si deux gestes surviennent le même jour (signification, offre).
 * **Format :** `| Date | Événement | Source (pièce, page/courriel) | Statut (Établi / Rapporté / Déduit) |`
 * **Pied obligatoire :** Lister `[TROU]` (intervalles critiques sans pièce), **Contradictions** (deux pièces incompatibles présentées face à face sans trancher) et **Pièces sans événement**. Signaler les dates d'ancrage procédurales à `administration-litige`.

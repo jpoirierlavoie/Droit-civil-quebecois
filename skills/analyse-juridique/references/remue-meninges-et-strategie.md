@@ -14,7 +14,7 @@ Ne jamais valider passivement une thèse : éprouver la solidité factuelle, jur
 | **Version la plus forte d'en face** | Quelle est l'attaque la plus dévastatrice de l'adversaire si tous ses faits contestés sont tenus pour vrais? |
 | **Risque & levier de règlement** | Écart entre la valeur nette récupérable (quantum réaliste, risque de recouvrement, frais, honoraires) et la demande nominale; plancher de règlement. |
 
-**Discipline en Palier 1 :** Raisonner en concepts et faits du dossier sans deviner d'articles de mémoire (`[article à confirmer]`); déclencher `lois` dès qu'un seuil ou un délai fatidique surgit.
+**Discipline en Palier 1 :** Raisonner en concepts et faits du dossier sans deviner d'articles de mémoire (`[À VÉRIFIER VIA LOIS]`); déclencher `lois` dès qu'un seuil ou un délai fatidique surgit.
 
 ## 2. Le statut du fait (vocabulaire commun avec la rédaction)
 

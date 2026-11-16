@@ -5,7 +5,7 @@
 ## 1. Vecteurs `lois.get_articles` à charger au Palier 2–3
 
 * **Preuve & intégrité technologique :**
-  * `law="ccq"` : `numbers=["2803", "2804", "2811", "2813", "2814", "2818", "2819", "2821", "2822", "2826", "2828", "2831", "2832", "2833", "2835", "2837", "2838", "2839", "2840", "2843", "2850", "2852", "2854", "2855", "2857", "2858", "2860", "2862", "2863", "2864", "2865", "2869", "2870"]`
+  * `law="ccq"` *(charger uniquement les sous-lots utiles)* : *fardeau/moyens* `["2803", "2804", "2811"]`; *écrits/copies* `["2813", "2814", "2818", "2819", "2821", "2822", "2826", "2828", "2831", "2832", "2833", "2835", "2860"]`; *intégrité techno/éléments matériels* `["2837", "2838", "2839", "2840", "2854", "2855"]`; *présomptions, aveu, témoignage, ouï-dire & illégalité* `["2843", "2850", "2852", "2857", "2858", "2862", "2863", "2864", "2865", "2869", "2870"]`.
   * `law="c-1.1"` (LCJTI) : `numbers=["5", "7", "12", "16"]`
   * `law="cpc"` : `numbers=["246", "248", "250", "251", "262", "292", "293"]`
 * **Protection, accès et confidentialité :**
@@ -24,7 +24,7 @@ Un acte de procédure allègue et **ne prouve rien**. Pour toute pièce probatoi
 3. **Obstacles de recevabilité à vérifier :**
    * *Original / copie (`2860`; LCJTI `12, 16`)* : demander où est l'original si seule une copie circule.
    * *Intégrité technologique (`2838–2840`; LCJTI `7`)* : dispensée de preuve sauf preuve d'altération (relever capture recadrée, fil tronqué, horodatage incohérent).
-   * *Preuve testimoniale d'un acte juridique (`2862`) vs contradiction d'un écrit (`2863–2865`)* : la preuve testimoniale d'un acte juridique est plafonnée à `1 500 $`, sauf commencement de preuve (`2865`) ou à l'égard d'un acte fait dans le cours des activités d'une entreprise (`2862 al. 2`); indépendamment de la valeur en litige, le témoignage ne peut jamais contredire ou changer les termes d'un écrit constatant un acte juridique (`2863`, sous réserve de l'interprétation sous `2864` ou du commencement de preuve sous `2865`).
+   * *Preuve testimoniale d'un acte juridique (`2862`) vs contradiction d'un écrit (`2863–2865`)* : la preuve testimoniale d'un acte juridique est plafonnée à `1 500 $` `[À VÉRIFIER VIA LOIS]`, sauf commencement de preuve (`2865`) ou à l'égard d'un acte fait dans le cours des activités d'une entreprise (`2862 al. 2`); indépendamment de la valeur en litige, le témoignage ne peut jamais contredire ou changer les termes d'un écrit constatant un acte juridique (`2863`, sous réserve de l'interprétation sous `2864` ou du commencement de preuve sous `2865`).
    * *Ouï-dire (`2843, 2869–2870`)* : une lettre ou un rapport relatant les dires d'un tiers ne prouve pas leur véracité sans consentement ou autorisation avec garanties sérieuses.
    * *Preuve obtenue illégalement (`2858`)* : rejet d'office si atteinte aux droits fondamentaux + déconsidération (et rejet **sans** critère de déconsidération en cas de violation du secret professionnel).
 4. **Conclusion en 2 points :** Ce que la pièce **prouve** vs ce qu'elle **ne prouve pas** + `Statut du fait` (`Établi`, `Rapporté`, `Déduit`, `[À CONFIRMER]`).

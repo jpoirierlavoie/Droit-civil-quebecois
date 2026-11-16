@@ -1,6 +1,6 @@
 # Méthode d'interrogation des sources primaires (`lois`, `juris`, `outils`)
 
-Règles d'emploi des connecteurs, méthode de la boule de neige jurisprudentielle et gestion stricte des modes d'échec. **Aucun appel sortant ne doit recevoir de faits nominatifs d'un client.**
+Règles d'emploi des connecteurs, méthode de la boule de neige jurisprudentielle et gestion stricte des modes d'échec. **Aucun champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`) ni aucune recherche web ne doit recevoir de noms de clients ou faits identifiants** (seuls `outils` — sans journalisation — et `juris.find_case`/`verify_citations` sur décisions publiées reçoivent des noms ou adresses).
 
 ## 1. Capacités et limites des connecteurs
 
@@ -9,7 +9,7 @@ Règles d'emploi des connecteurs, méthode de la boule de neige jurisprudentiell
 | **Texte intégral** | **Oui**, verbatim, consolidation courante | **Non** (métadonnées et mots-clés seulement) | Glossaires, registres ouverts REQ/Fed, RQA, MJQ |
 | **Recherche par sujet** | **Oui** (`search_text` hybride + `find_relevant`) | **Non** (nom de parties ou citation uniquement) | Recherche d'entreprises, adresses, termes FR/EN |
 | **Historique / versions** | **Non** (pas de versions abrogées ni ancien C.p.c. c. C-25) | Indice heuristique (`subsequent_history`) | S.O. |
-| **Défaillance / hors ligne** | **Arrêt obligatoire** sur le volet législatif | **Arrêt obligatoire** sur la vérification | Repli local sur `calcul_delai.py` pour les délais |
+| **Défaillance / hors ligne** | **Arrêt obligatoire** sur le volet législatif | **Arrêt obligatoire** sur la vérification | Repli sur le script Python local de `administration-litige` pour les délais |
 
 * **Corpus législatif fermé (`lois`) :** Une absence de résultat signifie que le texte n'est pas dans les 97 lois du corpus, **jamais** qu'aucune règle n'existe. Confirmer à LégisQuébec si une loi récente ou un amendement de dernière heure est en cause, et toujours reporter la `date de consolidation`.
 * **Restriction de loi dans `search_text` :** Éviter de filtrer sur une seule loi sans certitude : une recherche filtrée qui renvoie un faux ami bloque l'élargissement automatique au corpus et crée un faux négatif silencieux.

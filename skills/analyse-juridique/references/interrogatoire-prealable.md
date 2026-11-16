@@ -8,7 +8,7 @@ Avant de planifier ou d'analyser un interrogatoire, appeler `lois.get_articles(l
 
 | Verrou | Règle à confirmer à la source (`cpc`) |
 |---|---|
-| **Seuil monétaire (`229 al. 1`)** | `[à confirmer via lois]` Aucun interrogatoire préalable permis lorsque la valeur en litige est inférieure à `50 000 $`. |
+| **Seuil monétaire (`229 al. 1`)** | `[À VÉRIFIER VIA LOIS]` Aucun interrogatoire préalable permis lorsque la valeur en litige est inférieure à `50 000 $`. |
 | **Cadre (`221`, `535.9`)** | En instance ordinaire : prévu au protocole (`148`). En régime simplifié C.Q. (`50 000 $` à `< 100 000 $`) : écrit plafonné à **3 pages** et au plus **1 interrogatoire oral** par partie sans autorisation (`535.9`). |
 | **Budget de temps (`229 al. 2–3`)** | **3 h** (familial ou `< 100 000 $`, prolongeable à 4 h par entente) ou **5 h** (autres cas, prolongeable à 7 h); au-delà sur autorisation du tribunal. |
 | **Délais et personnes (`221 al. 2`, `223`, `226`)** | Avis ou citation à l'oral **au moins 5 jours** avant (`226`); écrit avec réponse entre **15 jours et 1 mois** (`223`); personnes interrogables sans consentement limitées à `221 al. 2`. |
