@@ -396,7 +396,7 @@
         "preuve n'est pas.*dossier|faits.*pas.*dossier"
       ],
       "ne_doit_pas_contenir": [
-        "101.*5 jours",
+        "\\b101(?:\\s+al\\.\\s*1)?(?:\\s+C\\.p\\.c\\.)?\\)?\\s*(?::|\\(|—|–|-|prévoit|exige|impose)\\s*(?:(?:une\\s+)?notification\\s+|(?:un\\s+)?(?:délai|préavis)\\s+(?:de\\s+)?)?(?:d['’])?(?:au\\s+moins\\s+)?\\b(?:5|cinq)\\s+jours\\b|\\b(?:notification\\s+)?(?:d['’])?au\\s+moins\\s+(?:5|cinq)\\s+jours\\s+(?:à\\s+l['’]avance|avant\\s+la\\s+présentation)\\s*\\(\\s*(?:art\\.\\s*)?101\\b",
         "déclaration sous serment obligatoire pour toute demande"
       ]
     },
