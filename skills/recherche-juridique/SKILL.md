@@ -61,9 +61,13 @@ réciter un article de mémoire.
 *Ces deux rôles de sources primaires sont tenus par des connecteurs distincts, que ce plugin déclare aux côtés du connecteur « pratique-civile-outils » : « Legislation »
 (`legislation_*`) pour le texte officiel des lois et des règlements du Québec et du fédéral,
 « Jurisprudence » (`jurisprudence_*`) pour l'authentification des décisions. Le connecteur
-« pratique-civile-outils » porte aussi `greffe_*` et `palais_*`, qui n'appellent rien : ils lisent
-des tables locales du 15 juillet 2026, à revérifier auprès du Ministère avant toute signification ou
-tout dépôt. Leur usage détaillé est dans `references/methode-sources.md`.*
+« pratique-civile-outils » n'effectue aucun appel sortant : outre le calcul (`calendrier_*`,
+`interets_compute_1619`), il lit des tables et instantanés locaux en lecture seule pour le greffe et
+les palais (`greffe_*`, `palais_*`), les registres d'entreprises (`registre_search_entities`,
+`registre_get_entity`), le référentiel d'adresses (`adresse_verify`) et la terminologie juridique
+bilingue (`terminologie_lookup`, `terminologie_attestations`, `terminologie_scan_text`), toujours
+assortis de leurs gardes de fraîcheur et de valeur probante. Leur usage détaillé est dans
+`references/methode-sources.md`.*
 
 ## La méthode
 

@@ -10,9 +10,10 @@ méthode reste la grille de lecture, et tout résultat obtenu par le web seul es
 vérifier ».*
 
 *Le préfixe n'annonce plus la source. Sous `jurisprudence_*`, neuf outils interrogent CanLII et un
-seul, `jurisprudence_parse_citation`, n'appelle rien. Les outils `greffe_*` et `palais_*` relèvent
-désormais de « pratique-civile-outils » et lisent des tables locales, tout comme `calendrier_*` et
-`interets_compute_1619`. C'est la description de chaque outil qui nomme sa source, jamais son nom.*
+seul, `jurisprudence_parse_citation`, n'appelle rien. Les douze outils de « pratique-civile-outils »
+(`calendrier_*`, `interets_compute_1619`, `greffe_*`, `palais_*`, `registre_*`, `adresse_verify`,
+`terminologie_*`) s'exécutent tous hors ligne sur des tables ou instantanés D1 en lecture seule, sans
+aucun appel sortant. C'est la description de chaque outil qui nomme sa source, jamais son nom.*
 
 
 ## Table des matières
@@ -152,6 +153,21 @@ Justice le **15 juillet 2026**. Ils n'interrogent ni registre ni plumitif, et n'
 coordonnée téléphonique : **les revérifier auprès du Ministère avant toute signification ou tout
 dépôt**, et le dire chaque fois qu'on en rapporte une.
 
+**Recouper une entreprise, une adresse ou un terme (« pratique-civile-outils »).**
+`registre_search_entities` et `registre_get_entity` interrogent en lecture seule les instantanés de
+données ouvertes du Registraire des entreprises du Québec (enrichi des licences RBQ, permis OPC et
+inscriptions RENA) et de Corporations Canada : conformément à la *Loi sur la publicité légale des
+entreprises*, les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert, et
+l'instantané n'a aucune valeur de certificat ni d'attestation officielle — toujours vérifier l'état
+à jour au REQ avant signification ou désignation d'une partie. `adresse_verify` vérifie et normalise
+une adresse municipale québécoise contre le Référentiel québécois des adresses (RQA, MRNF) et
+*Odonymes et renvois*, distingue les unités confirmées des bureaux non subdivisés et indique le
+district judiciaire probable par municipalité : l'existence civique d'une adresse n'établit ni le
+domicile ou l'établissement d'une partie ni la propriété foncière (qui relève du Registre foncier du
+Québec). Enfin, `terminologie_lookup` et `terminologie_attestations` documentent les équivalents
+bilingues et doublets bijuridiques (glossaire curé, concordancier législatif FR/EN, TERMIUM Plus®,
+OQLF), mais seul le texte législatif officiel lu via `legislation_get_article` fait foi.
+
 **Législation.** `jurisprudence_get_legislation` existe, mais pour le texte d'une loi c'est
 `legislation_*` qu'il faut employer : lui seul rend le texte officiel verbatim. Réserver l'outil
 CanLII à la datation et à la vérification d'abrogation — et lire sa date avec précaution : le
@@ -204,6 +220,9 @@ de ce qui est nouveau depuis hier.
 | `jurisprudence_find_case` | La date exacte de la décision — celle qu'il rend est approximative |
 | `jurisprudence_parse_citation` | L'existence de la décision — il n'appelle rien et ne confirme rien |
 | `greffe_*`, `palais_*` | Qu'un dossier existe ou soit actif; l'exactitude actuelle d'une adresse |
+| `registre_*` | Les dirigeants ou actionnaires personnes physiques; l'état officiel en temps réel au REQ ou un certificat d'attestation |
+| `adresse_verify` | Le domicile ou l'établissement d'une partie; la propriété foncière ou l'état cadastral officiel (Registre foncier) |
+| `terminologie_*` | La règle de droit normative — seul le texte législatif officiel consolidé fait foi |
 | `legislation_get_article` | La version en vigueur postérieure à la consolidation |
 | `legislation_find_relevant` | Le droit applicable — c'est un classement heuristique |
 | Le corpus de `legislation_*` | Qu'aucune règle n'existe : c'est une sélection fermée, et une absence n'y est qu'une absence |

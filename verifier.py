@@ -116,7 +116,17 @@ EXPECTED_GOOGLE_SERVERS = {
 }
 _HEX_SECRET_RE = re.compile(r"[0-9a-f]{32,}", re.I)
 ALLOWED_TOOL_PREFIXES = frozenset(
-    {"legislation", "jurisprudence", "greffe", "palais", "calendrier", "interets"}
+    {
+        "legislation",
+        "jurisprudence",
+        "greffe",
+        "palais",
+        "calendrier",
+        "interets",
+        "registre",
+        "adresse",
+        "terminologie",
+    }
 )
 
 BANNED_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (

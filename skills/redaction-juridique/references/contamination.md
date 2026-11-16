@@ -208,9 +208,12 @@ d'où cela semble venir — l'information lui sert pour le prochain document iss
 marqueur écarte la source entière, pas seulement le passage. Une source qui se trompe de
 système ne devient pas fiable sur le reste.
 
-**En cas de doute sur une notion.** Ne pas trancher au jugé. Vérifier au connecteur
-`legislation_search_text` que la notion existe bien en droit québécois et sous quel article. Une
-notion qui ne se trouve pas dans le corpus québécois est probablement importée.
+**En cas de doute sur une notion.** Ne pas trancher au jugé. Vérifier aux connecteurs
+`legislation_search_text`, `terminologie_lookup` ou `terminologie_attestations` que la notion existe
+bien en droit québécois et sous quel article. Sur un projet d'écrit ou un texte fourni à réviser,
+`terminologie_scan_text` repère mécaniquement (sans jamais réécrire le texte) les marqueurs français,
+les faux amis de common law et les archaïsmes procéduraux d'avant 2016. Une notion qui ne se trouve
+pas dans le corpus québécois est probablement importée.
 
 
 ## 9. Terminologie anglaise officielle
@@ -223,8 +226,9 @@ of claim*, *limitation period* ou *tort*, qui n'existent dans aucune version off
 
 **La méthode.** Ne jamais traduire un terme de procédure ou de droit civil. Le prendre dans la
 version anglaise officielle de l'article qui le porte : `legislation_get_article(law="cpc",
-article="…", lang="en")` ou `law="ccq"`. Le corpus est bilingue et à jour; le terme y est à portée
-d'un appel, et il vaut mieux qu'un souvenir.
+article="…", lang="en")` ou `law="ccq"`, ou vérifier l'équivalent curé et ses attestations
+statutaires alignées par `terminologie_lookup` et `terminologie_attestations`. Le corpus est bilingue
+et à jour; le terme y est à portée d'un appel, et il vaut mieux qu'un souvenir.
 
 **Table d'amorce** — vérifiée sur le texte anglais consolidé au 2026-04-07. Elle sert à repérer;
 pour un terme absent de la table, appeler l'article.

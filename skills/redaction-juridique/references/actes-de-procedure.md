@@ -26,7 +26,7 @@ dossier plutôt que dans la demande de l'utilisateur. Avant la première alléga
 
 | Besoin | Sert à |
 |---|---|
-| **PARTIES** — désignation complète, forme juridique, siège, qualité | LES PARTIES, l'intitulé, la désignation abrégée |
+| **PARTIES** — désignation complète, forme juridique, siège, qualité | LES PARTIES, l'intitulé, la désignation abrégée (recouper au besoin une personne morale par `registre_search_entities` / `registre_get_entity` et normaliser une adresse civique québécoise par `adresse_verify`, tout en revérifiant l'état courant au REQ avant signification et les lots au Registre foncier) |
 | **FICHE** et **GREFFE** — numéro de dossier de cour, tribunal, district | Le district à alléguer dans LA COMPÉTENCE |
 | **THÉORIE** — la théorie de la cause, en lecture seule | L'ordre du récit, les allégations de caractérisation |
 | **NOTES**, puis **CORRESPONDANCE** en deux passes | LES FAITS : la chronologie et la substance |

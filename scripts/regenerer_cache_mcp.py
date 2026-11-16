@@ -1,6 +1,6 @@
 """
 regenerer_cache_mcp.py
-Regénère de façon déterministe les 26 fichiers JSON de schémas d'outils et les 3 instructions.md
+Regénère de façon déterministe les 32 fichiers JSON de schémas d'outils et les 3 instructions.md
 dans ~/.gemini/antigravity/mcp/ à partir des descripteurs TypeScript faisant autorité.
 Usage:
     python scripts/regenerer_cache_mcp.py          # validation / dry-run
@@ -140,7 +140,7 @@ def main():
                     f.write(json.dumps(tool_data, indent=2, ensure_ascii=False) + "\n")
             print(f"    - {name}.json (desc: {len(tool_data['description'])} car., {len(props)} props)")
 
-    print(f"\n[OK] {total_tools}/26 outils vérifiés avec succès.")
+    print(f"\n[OK] {total_tools}/32 outils vérifiés avec succès.")
 
 if __name__ == "__main__":
     main()
