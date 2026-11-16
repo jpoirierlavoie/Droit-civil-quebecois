@@ -260,6 +260,7 @@ _REF_PATH_RE = re.compile(r"(?<![./\w-])references/[a-z0-9-]+\.md")
 _SIBLING_LEAF_RE = re.compile(r"\.\./([a-z0-9-]+)/references/([a-z0-9-]+\.md)")
 _SIBLING_SKILL_MD_RE = re.compile(r"\.\./[a-z0-9-]+/SKILL\.md")
 _ANY_PARENT_REL_RE = re.compile(r"\.\./")
+_REPO_ROOT_SKILL_PATH_RE = re.compile(r"\bskills/[a-z0-9-]+/(?:scripts|references)/")
 _SCRIPT_PATH_RE = re.compile(r"(?<![./\w-])scripts/[a-z0-9_-]+\.py")
 _SCRIPT_NAME_RE = re.compile(r"^[a-z0-9_]+\.py$")
 _KERNEL_RE = re.compile(
@@ -990,6 +991,14 @@ def verifier(racine: Path) -> tuple[list[str], dict[str, int]]:
         for old_tool in RETIRED_V1_TOOLS:
             if re.search(rf"\b{re.escape(old_tool)}\b", text):
                 erreurs.append(f"{rel} : ancien nom d'outil MCP v1 interdit ({old_tool})")
+
+    for rel in sorted(skill_md_files):
+        text = decoded.get(rel)
+        if text is not None and _REPO_ROOT_SKILL_PATH_RE.search(text):
+            erreurs.append(
+                f"{rel} : chemin relatif à la racine du dépôt interdit dans une compétence "
+                "(utiliser scripts/... ou references/...)"
+            )
 
     return erreurs, stats
 

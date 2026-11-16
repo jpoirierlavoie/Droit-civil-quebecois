@@ -1,11 +1,14 @@
 ---
 name: recherche-juridique
 description: >-
-  Établir le droit civil et commercial québécois (C.c.Q., C.p.c., lois RLRQ et fédérales) :
-  préalables, prescription, compétence, fondement d'un recours, vérification de citations et
-  doctrine. En anglais — legal research, prescription, limitation period, statutory foundation,
-  case law verification. Ne pas utiliser pour rédiger un acte (redaction-juridique), inspecter
-  une pièce (analyse-juridique) ni compter un délai d'instance (administration-litige).
+  Utiliser dès qu'une question porte sur le droit civil ou commercial québécois applicable
+  (C.c.Q., C.p.c., lois RLRQ ou fédérales), même simple : vice caché, contrat, bail,
+  responsabilité, hypothèque, garantie, solidarité, prescription, déchéance, avis préalable,
+  compétence du tribunal, fondement d'un recours, recherche ou vérification d'arrêts CanLII et
+  doctrine. En anglais — use for Quebec legal research, statutory rules, latent defects,
+  liability, lease, prescription, limitation period, jurisdiction, case law citation check. Ne
+  pas utiliser pour rédiger un acte ou contrat (redaction-juridique), inspecter une pièce
+  (analyse-juridique) ni calculer une échéance procédurale (administration-litige).
 ---
 
 # Recherche juridique québécoise
@@ -15,19 +18,21 @@ description: >-
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
 
-1. **Confidentialité stricte :** Ne jamais inclure de noms de parties, faits identifiants, extraits de pièces ou numéros de dossier dans une requête de recherche web.
-2. **Sources primaires obligatoires (arrêt en cas d'indisponibilité) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Lire le texte officiel via `lois` (`get_article` / `get_articles`), authentifier toute décision via `juris` (`verify_citations`), et exécuter les calculs via `outils` (`calendrier_deadlines`, `interets_1619`, ou `calcul_delai.py`). Si un connecteur requis est injoignable ou non configuré (`401`, `404`, hors ligne), **s'arrêter**, nommer le connecteur manquant et demander à l'avocat de le reconnecter ou de fournir le texte.
+1. **Confidentialité stricte :** Ne jamais inclure de noms de clients, faits identifiants, extraits de pièces ou numéros de dossier dans une recherche web ni dans un champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`). Sont seuls permis : les dénominations, adresses et numéros de greffe soumis aux outils sans journalisation de `outils` (`registre_search`, `adresse_verify`, `greffe_parse_number`) et les intitulés de décisions publiées dans `juris` (`find_case`, `verify_citations`).
+2. **Sources primaires obligatoires (arrêt sur le volet touché) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Repérer les trois connecteurs par leurs outils signatures — y compris s'ils sont différés (les charger par recherche d'outils avant de conclure à leur absence) ou nommés sous un alias client (`legis` / `Législation`, `Jurisprudence`, `Outils`) : `lois` (`get_article`, `get_articles`), `juris` (`verify_citations`, `get_case`) et `outils` (`calendrier_deadlines`, `interets_1619`). Si le connecteur requis échoue (`401`, `404`, hors ligne) sans repli local prévu par la compétence, **s'arrêter sur le volet touché**, nommer le connecteur et demander à l'avocat de le reconnecter ou de fournir le texte officiel.
 3. **Étanchéité bijuridique :** Écarter tout droit étranger (`.fr`, Belgique, Suisse; art. 1240, 2224, 1641) et purger les calques de common law (*duty of care*, *consideration*, *estoppel*, dommages punitifs sans loi habilitante sous l'art. 1621 C.c.Q.). En anglais, employer exclusivement la terminologie officielle anglaise du C.c.Q. et du C.p.c. (`get_article(lang="en")`, `terminologie_lookup`).
 4. **Protection et déclencheurs déontologiques :** Présumer tout document non coté `CONFIDENTIEL` (jamais `PUBLIC` par défaut). Signaler au texte via `lois` (`b-1-r.3.1`, `b-1-r.5`, `cpc` art. 108, 192–194) une obligation déontologique ou de caviardage uniquement devant un fait déclencheur concret, sans mise en garde générique.
 <!-- SAFETY-KERNEL:END -->
 
 ## Paliers de rigueur
 
+Choisir selon la destination (modifiable sur demande; **Palier 2 par défaut** si ambigu) : question orale ponctuelle → Palier 1; travail interne de dossier → Palier 2; écrit externe ou au tribunal → Palier 3.
+
 | Palier | Contexte | Exigence de sources et livrable |
 |---|---|---|
-| **Palier 1 — Rapide / Remue-méninges** | Exploration, question ponctuelle informelle | Raisonner en concepts sans deviner aucun numéro d'article ni d'arrêt de mémoire (`[article à confirmer]`). **Escalade dynamique obligatoire** vers le Palier 2 dès qu'une date de prescription, un délai d'appel, un seuil de compétence ou un avis préalable est en jeu. |
+| **Palier 1 — Rapide / Remue-méninges** | Exploration, question ponctuelle informelle | Raisonner en concepts sans deviner aucun numéro d'article ni d'arrêt de mémoire (`[À VÉRIFIER VIA LOIS]`). **Escalade dynamique obligatoire** vers le Palier 2 dès qu'une date de prescription, un délai d'appel, un seuil de compétence ou un avis préalable est en jeu. |
 | **Palier 2 — Note ou fiche de travail** | Analyse d'un dossier, avis interne | Vérifier chaque texte décisif via `lois` (`get_articles`), authentifier les arrêts via `juris` (`verify_citations`), noter le statut de lecture de chaque décision et formuler l'attaque adverse. |
-| **Palier 3 — Écrit au tribunal / Externe** | Appui à une plaidoirie, avis formel au client | Contrôle intégral : aucune proposition décisive ne repose au-dessous du statut `Lue (intégrale) [par. X]` (PDF complet lu en session, motifs majoritaires vérifiés). Si `juris` confirme l'arrêt sans que le PDF complet ait été lu, **écrire le fondement législatif vérifié** et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`. |
+| **Palier 3 — Écrit au tribunal / Externe** | Appui à une plaidoirie, avis formel au client | Contrôle intégral : aucune proposition décisive ne repose au-dessous du statut `Lue (intégrale) [par. X]` (texte intégral officiel fourni et lu en session — PDF ou document complet CanLII/SOQUIJ/CAIJ; jamais un sommaire ou aperçu web —, motifs majoritaires vérifiés). Si `juris` confirme l'arrêt sans texte intégral lu, **écrire le fondement législatif vérifié** et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`. |
 
 ## Routage des tâches et feuilles
 
@@ -53,7 +58,7 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 
 ## Contrôle avant remise
 
-1. **Connecteurs vérifiés :** Tous les textes cités ont été lus via `lois` (avec date de consolidation) ou marqués `[à confirmer]` au Palier 1; aucun arrêt de mémoire ni ratio tiré d'un simple sommaire.
-2. **Statuts de lecture :** Chaque arrêt porte `Citée`, `Résumée`, `Rapportée`, `Lue (extrait) [par. X]` ou `Lue (intégrale) [par. X]`; au Palier 3, les arrêts dont le PDF complet n'est pas lu intégralement en session restent sous crochet `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+1. **Connecteurs vérifiés :** Tous les textes cités ont été lus via `lois` (avec date de consolidation) ou marqués `[À VÉRIFIER VIA LOIS]` au Palier 1; aucun arrêt de mémoire ni ratio tiré d'un simple sommaire.
+2. **Statuts de lecture :** Chaque arrêt porte `Citée`, `Résumée`, `Rapportée`, `Lue (extrait) [par. X]` ou `Lue (intégrale) [par. X]`; au Palier 3, les arrêts dont le texte intégral officiel (PDF/document complet) n'est pas lu en session restent sous crochet `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 3. **Épuration :** Zéro source `.fr`, belge ou suisse; zéro transposition mécanique de common law; zéro donnée client dans une requête web.
 4. **Attaque adverse et écarts :** Meilleur argument contraire formulé; toute contradiction avec les hypothèses du dossier placée en tête.

@@ -1,12 +1,15 @@
 ---
 name: analyse-juridique
 description: >-
-  Analyser un dossier, une stratégie ou des pièces brutes (.pdf, .docx, .xlsx, .eml, images) :
-  remue-méninges contradictoire, théorie de la cause, force probante, privilèges/caviardage,
-  tri rapide, mentions exigées, chronologie et interrogatoire préalable. En anglais — case strategy,
-  brainstorming, evidence analysis, privilege review, redaction, timeline, examination on discovery.
-  Ne pas utiliser pour la recherche pure (recherche-juridique), rédiger un acte (redaction-juridique)
-  ni compter les délais C.p.c. (administration-litige).
+  Utiliser pour analyser un dossier, bâtir une stratégie ou examiner des pièces brutes (.pdf,
+  .docx, .xlsx, .eml, images, notes sténo) : remue-méninges contradictoire, forces et
+  faiblesses, théorie de la cause, recevabilité, force probante, ouï-dire, secret professionnel,
+  privilège de litige ou de règlement, caviardage Loi 25, tri de pièces, mentions exigées,
+  chronologie et interrogatoire préalable (plan, engagements, objections). En anglais — use for
+  Quebec case strategy, brainstorming, evidence review, privilege, redaction, timeline,
+  pre-trial examination, undertakings, objections. Ne pas utiliser pour établir le droit
+  abstrait (recherche-juridique), rédiger un acte (redaction-juridique) ni compter un délai
+  (administration-litige).
 ---
 
 # Analyse juridique, stratégie et preuve
@@ -16,17 +19,19 @@ description: >-
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
 
-1. **Confidentialité stricte :** Ne jamais inclure de noms de parties, faits identifiants, extraits de pièces ou numéros de dossier dans une requête de recherche web.
-2. **Sources primaires obligatoires (arrêt en cas d'indisponibilité) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Lire le texte officiel via `lois` (`get_article` / `get_articles`), authentifier toute décision via `juris` (`verify_citations`), et exécuter les calculs via `outils` (`calendrier_deadlines`, `interets_1619`, ou `calcul_delai.py`). Si un connecteur requis est injoignable ou non configuré (`401`, `404`, hors ligne), **s'arrêter**, nommer le connecteur manquant et demander à l'avocat de le reconnecter ou de fournir le texte.
+1. **Confidentialité stricte :** Ne jamais inclure de noms de clients, faits identifiants, extraits de pièces ou numéros de dossier dans une recherche web ni dans un champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`). Sont seuls permis : les dénominations, adresses et numéros de greffe soumis aux outils sans journalisation de `outils` (`registre_search`, `adresse_verify`, `greffe_parse_number`) et les intitulés de décisions publiées dans `juris` (`find_case`, `verify_citations`).
+2. **Sources primaires obligatoires (arrêt sur le volet touché) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Repérer les trois connecteurs par leurs outils signatures — y compris s'ils sont différés (les charger par recherche d'outils avant de conclure à leur absence) ou nommés sous un alias client (`legis` / `Législation`, `Jurisprudence`, `Outils`) : `lois` (`get_article`, `get_articles`), `juris` (`verify_citations`, `get_case`) et `outils` (`calendrier_deadlines`, `interets_1619`). Si le connecteur requis échoue (`401`, `404`, hors ligne) sans repli local prévu par la compétence, **s'arrêter sur le volet touché**, nommer le connecteur et demander à l'avocat de le reconnecter ou de fournir le texte officiel.
 3. **Étanchéité bijuridique :** Écarter tout droit étranger (`.fr`, Belgique, Suisse; art. 1240, 2224, 1641) et purger les calques de common law (*duty of care*, *consideration*, *estoppel*, dommages punitifs sans loi habilitante sous l'art. 1621 C.c.Q.). En anglais, employer exclusivement la terminologie officielle anglaise du C.c.Q. et du C.p.c. (`get_article(lang="en")`, `terminologie_lookup`).
 4. **Protection et déclencheurs déontologiques :** Présumer tout document non coté `CONFIDENTIEL` (jamais `PUBLIC` par défaut). Signaler au texte via `lois` (`b-1-r.3.1`, `b-1-r.5`, `cpc` art. 108, 192–194) une obligation déontologique ou de caviardage uniquement devant un fait déclencheur concret, sans mise en garde générique.
 <!-- SAFETY-KERNEL:END -->
 
 ## Paliers de rigueur
 
+Choisir selon la destination (modifiable sur demande; **Palier 2 par défaut** si ambigu) : question orale ponctuelle → Palier 1; travail interne de dossier → Palier 2; écrit externe ou au tribunal → Palier 3.
+
 | Palier | Contexte | Exigence analytique et de vérification |
 |---|---|---|
-| **Palier 1 — Remue-méninges / Tri rapide** | Brainstorming d'angles, question simple sur une pièce, tri d'un lot | Direct et conversationnel; aucun gabarit lourd; interdiction d'inventer des numéros d'articles de mémoire (`[article à confirmer]`). Escalader vers `lois` dès qu'un seuil ou une date fatale apparaît. |
+| **Palier 1 — Remue-méninges / Tri rapide** | Brainstorming d'angles, question simple sur une pièce, tri d'un lot | Direct et conversationnel; aucun gabarit lourd; interdiction d'inventer des numéros d'articles de mémoire (`[À VÉRIFIER VIA LOIS]`). Escalader vers `lois` dès qu'un seuil ou une date fatale apparaît. |
 | **Palier 2 — Analyse de pièce / Stratégie** | Note d'analyse, force probante, chronologie, théorie de la cause | Inspecter d'abord les fichiers locaux via `scripts/inspecter_piece.py`; vérifier les articles décisifs via `lois`; marquer chaque fait (`Établi`, `Rapporté`, `Déduit`, `[À CONFIRMER]`) et formuler la thèse adverse. |
 | **Palier 3 — Audit probatoire ou de protection critique** | Privilège contesté, renonciation, caviardage avant production, plan d'interrogatoire | Contrôle intégral des textes via `lois` (`cpc`, `ccq`, `c-1.1`, `p-39.1`), authentification des jugements joints via `juris.verify_citations`, tableau complet des engagements/objections et alertes de caviardage (`art. 108 C.p.c.`). |
 
@@ -40,7 +45,7 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 | Inspecter des fichiers bruts, trier un lot, contrôler les mentions formelles ou dresser une chronologie factuelle | `scripts/inspecter_piece.py` puis `references/tri-mentions-et-chronologie.md` | `lois` (`get_articles`), `juris` (`verify_citations`), `outils` (`greffe_parse_number`) |
 | Analyser ce qu'une pièce prouve (moyen de preuve, recevabilité, intégrité, ouï-dire), vérifier un privilège ou le caviardage | `scripts/inspecter_piece.py` puis `references/preuve-et-protection.md` | `lois` (`get_articles` sur `ccq`, `cpc`, `c-1.1`, `p-39.1`) |
 | Préparer un plan d'interrogatoire préalable ou extraire engagements et objections d'une transcription | `references/interrogatoire-prealable.md` | `lois` (`get_articles` sur `cpc`) |
-| Date d'ancrage ou délai de 5 jours (art. 228 al. 2 C.p.c.) ou d'appel détecté sur une pièce | `../administration-litige/references/echeanciers-cpc.md` *(si absent : `lois` + `outils.calendrier_deadlines`)* | `outils` (`calendrier_deadlines`) ou `calcul_delai.py` |
+| Date d'ancrage ou délai de 5 jours (art. 228 al. 2 C.p.c.) ou d'appel détecté sur une pièce | `../administration-litige/references/echeanciers-cpc.md` *(si absent : `lois` + `outils.calendrier_deadlines`)* | `outils` (`calendrier_deadlines`) ou `../administration-litige/scripts/calcul_delai.py` |
 | Déclencheur déontologique (pièce privilégiée reçue par mégarde, conservation de preuve, conflit) | `../deontologie-et-pratique/references/radar-deontologique.md` *(si absent : appeler `lois` sur `b-1-r.3.1`)* | `lois` (`get_articles`) |
 
 ## Règles de base sur les documents bruts

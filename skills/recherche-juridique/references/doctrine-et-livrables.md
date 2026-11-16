@@ -22,10 +22,10 @@ Encadre la recherche doctrinale web (sans fuite de confidentialité) et calibre 
 | **Citée** | `juris.verify_citations` → `CONFIRMÉE` | Nommer l'arrêt, le tribunal et la date seulement |
 | **Résumée** | + fiche et mots-clés `juris.get_case` | Indiquer l'objet annoncé **en l'attribuant à la fiche** (« la fiche annonce… ») |
 | **Rapportée** | Mentionnée par un auteur identifié | Attribuer nommément à l'auteur (« selon X… »), jamais à la cour |
-| **Lue (extrait) `[par. X]`** | Passage exact vérifié majoritaire *(insuffisant seul au Palier 3)* | Citer le passage exact au Palier 2 *(au Palier 3, lecture intégrale du PDF requise avant de conclure sur le ratio)* |
-| **Lue (intégrale) `[par. X]`** | Décision lue intégralement dans la session (PDF complet) | Énoncer le *ratio*, citer `[par. X]`, fonder une plaidoirie ou un avis (Palier 3) |
+| **Lue (extrait) `[par. X]`** | Passage exact vérifié majoritaire *(insuffisant seul au Palier 3)* | Citer le passage exact au Palier 2 *(au Palier 3, lecture intégrale du texte officiel [PDF ou document complet CanLII/SOQUIJ/CAIJ] requise avant de conclure sur le ratio)* |
+| **Lue (intégrale) `[par. X]`** | Décision lue intégralement dans la session (texte intégral officiel — PDF ou document complet CanLII/SOQUIJ/CAIJ; jamais un sommaire ou aperçu web) | Énoncer le *ratio*, citer `[par. X]`, fonder une plaidoirie ou un avis (Palier 3) |
 
-**Seuil du Palier 3 (tribunal / avis formel) :** Aucune proposition décisive ne repose au-dessous de `Lue (intégrale) [par. X]` (décision complète lue en session, motifs majoritaires vérifiés; un extrait partiel ne lève pas le marqueur). Sans PDF complet lu en session, présenter l'argumentation législative vérifiée et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+**Seuil du Palier 3 (tribunal / avis formel) :** Aucune proposition décisive ne repose au-dessous de `Lue (intégrale) [par. X]` (décision complète lue en session, motifs majoritaires vérifiés; un extrait partiel ne lève pas le marqueur). Sans texte intégral officiel fourni et lu en session (PDF ou document complet CanLII/SOQUIJ/CAIJ; un sommaire ou aperçu web ne lève jamais le marqueur), présenter l'argumentation législative vérifiée et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 
 ## 3. Budget et structure des trois livrables
 
@@ -38,4 +38,4 @@ Viser **3 à 5 autorités vérifiées** (loi au bon alinéa + arrêt de principe
 | Autorité | Statut | Provenance | Vérifiée |
 |---|---|---|---|
 | art. X C.c.Q. | Texte officiel | `lois.get_articles` (consolidé AAAA-MM-JJ) | oui |
-| Citation neutre | `Résumée` / `Lue [par. X]` | `juris.verify_citations` / PDF téléversé | oui / à lire |
+| Citation neutre | `Résumée` / `Lue [par. X]` | `juris.verify_citations` / texte intégral fourni (PDF) | oui / à lire |
