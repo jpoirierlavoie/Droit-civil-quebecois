@@ -396,7 +396,7 @@
         "preuve n'est pas.*dossier|faits.*pas.*dossier"
       ],
       "ne_doit_pas_contenir": [
-        "\\b101(?:\\s+al\\.\\s*1)?(?:\\s+C\\.p\\.c\\.)?\\)?\\s*(?::|\\(|—|–|-|prévoit|exige|impose)\\s*(?:(?:une\\s+)?notification\\s+|(?:un\\s+)?(?:délai|préavis)\\s+(?:de\\s+)?)?(?:d['’])?(?:au\\s+moins\\s+)?\\b(?:5|cinq)\\s+jours\\b|\\b(?:notification\\s+)?(?:d['’])?au\\s+moins\\s+(?:5|cinq)\\s+jours\\s+(?:à\\s+l['’]avance|avant\\s+la\\s+présentation)\\s*\\(\\s*(?:art\\.\\s*)?101\\b",
+        "\\b101(?:\\s+al\\.\\s*1)?(?:\\s+C\\.p\\.c\\.)?(?:\\s*\\)?[\\s,:;—–-]+|\\s*\\()(?:(?![.;()\\n]|\\b(?:3|trois|10|dix|15|quinze|30|trente|527|180|226|361|66)\\b).){0,60}?\\b(?:5|cinq)\\s+jours\\b(?!\\s+ouvrables)|\\b(?:5|cinq)\\s+jours\\b(?!\\s+ouvrables)(?:(?![.;\\n]|\\b(?:3|trois|527|180|226|361|66)\\b).){0,45}?\\(\\s*(?:art(?:icle)?\\.?\\s*)?101\\b",
         "déclaration sous serment obligatoire pour toute demande"
       ]
     },
