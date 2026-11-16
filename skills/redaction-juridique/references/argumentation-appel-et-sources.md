@@ -15,7 +15,7 @@ Document sommaire destiné au **juge**, jamais substituable à une conclusion ab
 
 * **Discipline impérative de citation (Palier 3) :**
   * Suivre le *Manuel canadien de la référence juridique* (citation neutre + `[par. X]` majoritaire).
-  * **Aucune proposition décisive ne repose sur un arrêt non lu (`Résumée` / `Rapportée`).** Si `juris.verify_citations` et `juris.get_case` confirment l'arrêt mais que le PDF n'est pas téléversé : exposer l'assise législative lue via `lois` et insérer le crochet explicite **`[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`**.
+  * **Aucune proposition décisive ne repose sur un arrêt non lu intégralement (`Résumée`, `Rapportée` ou `Lue (extrait)` seul).** Si `juris.verify_citations` et `juris.get_case` confirment l'arrêt mais que le PDF complet n'est pas téléversé et lu intégralement en session : exposer l'assise législative lue via `lois` et maintenir le crochet explicite **`[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`**.
 * **Ce qui ne franchit jamais la porte du tribunal :** Aveu de faiblesse formulé comme tel (« notre point faible est… » → reformuler : « la partie adverse soutiendra que…, mais… »), risque de recouvrement, objectifs secrets du client, plancher de règlement, provision/honoraires, évaluation interne d'un témoin.
 
 ## 2. Déclaration d'appel, exposé et mémoire d'appel (`C.p.c.` & `c-25.01-r.0.2.01`)
@@ -38,4 +38,4 @@ Vérifier les exigences particulières du tribunal et du district via `lois` (`c
 2. **Authentification préalable :** Chaque arrêt passe par `juris.verify_citations` et `juris.get_case` (récupérant l'hyperlien officiel CanLII et la citation neutre exacte).
 3. **Structure du cahier généré :**
    * Table des matières / Index numéroté (`Onglet | Autorité & citation complète | Paragraphes ou articles pertinents | Statut de lecture | Hyperlien CanLII / LégisQuébec`).
-   * Fiche par onglet : reproduction de l'article consolidé (`lois`) ou extraits vérifiés majoritaires `[par. X–Y]` (si PDF téléversé), ou crochet `[EXTRAITS [PAR. X] ET COPIE PDF À JOINDRE DE <citation + lien CanLII>]` si le jugement complet manque encore.
+   * Fiche par onglet : reproduction de l'article consolidé (`lois`) ou extraits vérifiés majoritaires `[par. X–Y]` tirés du PDF complet lu en session, ou crochet `[EXTRAITS [PAR. X] ET COPIE PDF À JOINDRE DE <citation + lien CanLII>]` si le jugement complet n'a pas encore été lu intégralement.

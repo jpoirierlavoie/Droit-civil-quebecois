@@ -46,12 +46,31 @@ def collect_bundle_files():
                 files.append(p.relative_to(SRC_DIR))
     return sorted(files)
 
+def _verifier_confinement(cible: Path, racine: Path, nom: str) -> Path:
+    racine_res = racine.resolve()
+    cible_res = cible.resolve()
+    try:
+        rel = cible_res.relative_to(racine_res)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Chemin {nom} hors du répertoire autorisé ({racine_res}) : {cible_res}"
+        ) from exc
+    if rel == Path(".") or len(rel.parts) != 1:
+        raise RuntimeError(
+            f"Chemin {nom} invalide (doit être un sous-répertoire direct de {racine_res}) : {cible_res}"
+        )
+    return cible_res
+
+
 def main():
     apply_mode = "--apply" in sys.argv
     print(f"[*] Synchronisation du plugin Gemini (mode: {'APPLY' if apply_mode else 'DRY-RUN'})...")
     print(f"    Source:      {SRC_DIR}")
     print(f"    Destination: {DST_DIR}")
-    
+
+    dst_dir = _verifier_confinement(DST_DIR, PLUGINS_ROOT, "DST_DIR")
+    legacy_dst_dir = _verifier_confinement(LEGACY_DST_DIR, PLUGINS_ROOT, "LEGACY_DST_DIR")
+
     files = collect_bundle_files()
     copied = 0
     identical = 0
@@ -59,7 +78,7 @@ def main():
     
     for rel_path in files:
         s = SRC_DIR / rel_path
-        d = DST_DIR / rel_path
+        d = dst_dir / rel_path
         assert s.exists(), f"Fichier source introuvable: {s}"
         
         is_same = d.exists() and filecmp.cmp(s, d, shallow=False)
@@ -77,27 +96,27 @@ def main():
             
     expected_set = set(files)
     stale_files = []
-    if DST_DIR.is_dir():
-        for existing in sorted(DST_DIR.rglob("*")):
+    if dst_dir.is_dir():
+        for existing in sorted(dst_dir.rglob("*")):
             if existing.is_file():
-                rel_existing = existing.relative_to(DST_DIR)
+                rel_existing = existing.relative_to(dst_dir)
                 if rel_existing not in expected_set:
                     stale_files.append(rel_existing)
                     print(f"  [RETRAIT] {rel_existing}")
                     if apply_mode:
                         existing.unlink()
         if apply_mode:
-            for d in sorted((p for p in DST_DIR.rglob("*") if p.is_dir()), reverse=True):
+            for d in sorted((p for p in dst_dir.rglob("*") if p.is_dir()), reverse=True):
                 try:
                     d.rmdir()
                 except OSError:
                     pass
 
     legacy_removed = False
-    if LEGACY_DST_DIR != DST_DIR and LEGACY_DST_DIR.is_dir():
-        print(f"  [RETRAIT ANCIEN PLUGIN] {LEGACY_DST_DIR}")
+    if legacy_dst_dir != dst_dir and legacy_dst_dir.is_dir():
+        print(f"  [RETRAIT ANCIEN PLUGIN] {legacy_dst_dir}")
         if apply_mode:
-            shutil.rmtree(LEGACY_DST_DIR)
+            shutil.rmtree(legacy_dst_dir)
             legacy_removed = True
 
     print(
@@ -106,11 +125,11 @@ def main():
         f"{'retiré(s)' if apply_mode else 'à retirer'}."
     )
     if legacy_removed:
-        print(f"[OK] Ancien répertoire retiré : {LEGACY_DST_DIR}")
+        print(f"[OK] Ancien répertoire retiré : {legacy_dst_dir}")
 
     if apply_mode:
         # Re-vérification stricte
-        diffs = [rel for rel in files if not filecmp.cmp(SRC_DIR / rel, DST_DIR / rel, shallow=False)]
+        diffs = [rel for rel in files if not filecmp.cmp(SRC_DIR / rel, dst_dir / rel, shallow=False)]
         assert len(diffs) == 0, f"Différences persistantes après copie: {diffs}"
         print("[OK] Vérification post-synchronisation : 100% conforme.")
         if mcp_config_copied:

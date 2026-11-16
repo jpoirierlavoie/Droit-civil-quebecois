@@ -28,7 +28,7 @@ Convertit des faits et un droit vérifiés en écrits québécois complets et é
 |---|---|---|
 | **Palier 1 — Ébauche rapide / Canevas** | Premier jet, restructuration, reformulation sur faits fournis | Appliquer la forme québécoise exacte; marquer toute donnée absente `[À CONFIRMER]` et toute assise non vérifiée `[à vérifier]` sans inventer d'articles. |
 | **Palier 2 — Brouillon de travail** | Mise en demeure, lettre, contrat, projet d'acte | Vérifier les textes habilitants et seuils via `lois`; vérifier les entreprises/adresses via `outils` (`registre_search`, `adresse_verify`); distinguer faits `Établi` vs `Rapporté`. |
-| **Palier 3 — Acte prêt au dépôt / Externe** | Acte de procédure, plan d'argumentation, appel, cahier des sources | Contrôle intégral : textes et règlements de cour lus via `lois`, **aucune autorité décisive sous `Lue (extrait) [par. X]`** (sinon insérer `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`), contrôle `outils.terminologie_scan`, cotes continues et liste des vérifications hors texte. |
+| **Palier 3 — Acte prêt au dépôt / Externe** | Acte de procédure, plan d'argumentation, appel, cahier des sources | Contrôle intégral : textes et règlements de cour lus via `lois`, **aucune autorité décisive sous `Lue (intégrale) [par. X]` sur PDF complet lu en session** (sinon maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`), contrôle `outils.terminologie_scan`, cotes continues et liste des vérifications hors texte. |
 
 ## Mode de sortie et routage des feuilles
 

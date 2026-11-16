@@ -22,10 +22,10 @@ Encadre la recherche doctrinale web (sans fuite de confidentialité) et calibre 
 | **Citée** | `juris.verify_citations` → `CONFIRMÉE` | Nommer l'arrêt, le tribunal et la date seulement |
 | **Résumée** | + fiche et mots-clés `juris.get_case` | Indiquer l'objet annoncé **en l'attribuant à la fiche** (« la fiche annonce… ») |
 | **Rapportée** | Mentionnée par un auteur identifié | Attribuer nommément à l'auteur (« selon X… »), jamais à la cour |
-| **Lue (extrait) `[par. X]`** | Extrait exact fourni/téléversé, vérifié majoritaire | Citer le passage avec `[par. X]`; admissible au tribunal |
-| **Lue (intégrale) `[par. X]`** | Décision lue intégralement dans la session | Énoncer le *ratio*, citer `[par. X]`, fonder une plaidoirie ou un avis |
+| **Lue (extrait) `[par. X]`** | Passage exact vérifié majoritaire *(insuffisant seul au Palier 3)* | Citer le passage exact au Palier 2 *(au Palier 3, lecture intégrale du PDF requise avant de conclure sur le ratio)* |
+| **Lue (intégrale) `[par. X]`** | Décision lue intégralement dans la session (PDF complet) | Énoncer le *ratio*, citer `[par. X]`, fonder une plaidoirie ou un avis (Palier 3) |
 
-**Seuil du Palier 3 (tribunal / avis formel) :** Aucune proposition décisive ne repose au-dessous de `Lue (extrait) [par. X]`. Sans PDF fourni, présenter l'argumentation législative vérifiée et poser `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+**Seuil du Palier 3 (tribunal / avis formel) :** Aucune proposition décisive ne repose au-dessous de `Lue (intégrale) [par. X]` (décision complète lue en session, motifs majoritaires vérifiés; un extrait partiel ne lève pas le marqueur). Sans PDF complet lu en session, présenter l'argumentation législative vérifiée et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 
 ## 3. Budget et structure des trois livrables
 

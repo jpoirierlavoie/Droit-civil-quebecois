@@ -42,7 +42,7 @@ Règles d'emploi des connecteurs, méthode de la boule de neige jurisprudentiell
 Lorsque l'avocat fournit des décisions tirées de SOQUIJ, CAIJ ou CanLII :
 * Vérifier d'abord la citation neutre via `juris.verify_citations`.
 * Vérifier dans la décision si le passage cité exprime les motifs **majoritaires** (jamais une dissidence ni un *obiter* isolé sans le signaler).
-* Extraire le renvoi précis `[par. X]` ou `[par. X–Y]` et élever immédiatement le statut à `Lue (extrait)` ou `Lue (intégrale)`.
+* Extraire le renvoi précis `[par. X]` ou `[par. X–Y]` et élever le statut à `Lue (extrait)` (ou à `Lue (intégrale)` si la décision complète est fournie et lue en session).
 
 ## 5. Modes d'échec et arrêt obligatoire
 

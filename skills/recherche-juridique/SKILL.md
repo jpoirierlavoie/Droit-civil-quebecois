@@ -27,7 +27,7 @@ description: >-
 |---|---|---|
 | **Palier 1 — Rapide / Remue-méninges** | Exploration, question ponctuelle informelle | Raisonner en concepts sans deviner aucun numéro d'article ni d'arrêt de mémoire (`[article à confirmer]`). **Escalade dynamique obligatoire** vers le Palier 2 dès qu'une date de prescription, un délai d'appel, un seuil de compétence ou un avis préalable est en jeu. |
 | **Palier 2 — Note ou fiche de travail** | Analyse d'un dossier, avis interne | Vérifier chaque texte décisif via `lois` (`get_articles`), authentifier les arrêts via `juris` (`verify_citations`), noter le statut de lecture de chaque décision et formuler l'attaque adverse. |
-| **Palier 3 — Écrit au tribunal / Externe** | Appui à une plaidoirie, avis formel au client | Contrôle intégral : aucune proposition décisive ne repose sur une décision au-dessous du statut `Lue (extrait) [par. X]` vérifié majoritaire. Si `juris` confirme l'arrêt sans que son PDF soit téléversé, **écrire le fondement législatif vérifié** et insérer `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`. |
+| **Palier 3 — Écrit au tribunal / Externe** | Appui à une plaidoirie, avis formel au client | Contrôle intégral : aucune proposition décisive ne repose au-dessous du statut `Lue (intégrale) [par. X]` (PDF complet lu en session, motifs majoritaires vérifiés). Si `juris` confirme l'arrêt sans que le PDF complet ait été lu, **écrire le fondement législatif vérifié** et maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`. |
 
 ## Routage des tâches et feuilles
 
@@ -54,6 +54,6 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 ## Contrôle avant remise
 
 1. **Connecteurs vérifiés :** Tous les textes cités ont été lus via `lois` (avec date de consolidation) ou marqués `[à confirmer]` au Palier 1; aucun arrêt de mémoire ni ratio tiré d'un simple sommaire.
-2. **Statuts de lecture :** Chaque arrêt porte `Citée`, `Résumée`, `Rapportée`, `Lue (extrait) [par. X]` ou `Lue (intégrale) [par. X]`; au Palier 3, les arrêts non téléversés sont placés sous crochet `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+2. **Statuts de lecture :** Chaque arrêt porte `Citée`, `Résumée`, `Rapportée`, `Lue (extrait) [par. X]` ou `Lue (intégrale) [par. X]`; au Palier 3, les arrêts dont le PDF complet n'est pas lu intégralement en session restent sous crochet `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 3. **Épuration :** Zéro source `.fr`, belge ou suisse; zéro transposition mécanique de common law; zéro donnée client dans une requête web.
 4. **Attaque adverse et écarts :** Meilleur argument contraire formulé; toute contradiction avec les hypothèses du dossier placée en tête.

@@ -33,7 +33,7 @@
       "prompt": "Pour un plan d'argumentation au juge, juris confirme l'arrêt 2025 QCCA 123 sur CanLII mais aucun PDF n'a été téléversé. Puis-je présenter le ratio tiré d'un sommaire doctrinal comme jugé par la Cour d'appel ?",
       "criteres": [
         "Refuser de fonder une proposition décisive devant le juge sur une autorité au statut Résumée ou Rapportée.",
-        "Distinguer le statut Résumée du statut Lue (extrait) / Lue (intégrale) [par. X] vérifié majoritaire.",
+        "Distinguer le statut Résumée / Lue (extrait) du statut Lue (intégrale) [par. X] vérifié majoritaire sur PDF complet.",
         "Appliquer le protocole du Palier 3 : poser le crochet [RATIO / PAR. X À INSÉRER APRÈS LECTURE DE ...] jusqu'à réception du PDF."
       ],
       "doit_contenir": [

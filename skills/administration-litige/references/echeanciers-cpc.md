@@ -17,7 +17,7 @@ Lire via `lois.get_articles(law="cpc", numbers=["82", "83", "84", "107", "111"])
 
 ## 2. Outillage déterministe obligatoire (jamais de compte mental)
 
-Appeler `outils.calendrier_deadlines` (et `outils.calendrier_holidays` pour vérifier une année) ou, hors ligne, exécuter `python skills/administration-litige/scripts/calcul_delai.py <AAAA-MM-JJ> --jours <N> [--mois <M>] [--rebours] [--technologique --heure HH:MM] --json`. Vérifier séparément les jours proclamés et directives de greffe.
+Appeler `outils.calendrier_deadlines` (et `outils.calendrier_holidays` pour vérifier une année) ou, hors ligne, exécuter `python skills/administration-litige/scripts/calcul_delai.py <AAAA-MM-JJ> (--jours <N> | --mois <M>) [--a-rebours] [--technologique --heure HH:MM] [--fete-additionnelle AAAA-MM-JJ] --json`. Vérifier séparément les jours proclamés et directives de greffe.
 
 ## 3. Vecteurs d'articles C.p.c. (`law="cpc"`) et qualification des statuts
 
