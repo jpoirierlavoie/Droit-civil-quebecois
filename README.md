@@ -1,4 +1,4 @@
-# Droit civil québécois (`v2.0.1`)
+# Droit civil québécois (`v2.0.2`)
 
 Greffon multiplateforme (Claude Code, Claude Desktop, claude.ai, Google Antigravity et Gemini CLI) regroupant **5 compétences de pratique juridique québécoise**, **17 feuilles de référence ciblées**, **2 scripts Python locaux** et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels) pour le litige et le conseil en droit civil et commercial québécois.
 
@@ -80,7 +80,7 @@ export MCP_JURISPRUDENCE_SECRET="<votre-secret-jurisprudence>"
 
 ### 2. Claude Desktop & `claude.ai`
 
-1. Dans les connecteurs personnalisés, ajouter les trois URL MCP en les nommant **`lois`** (`https://legislation.poirierlavoie.ca/mcp`), **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp`) et **`outils`** (`https://outils.poirierlavoie.ca/mcp`), avec l'en-tête `Authorization: Bearer <secret>` pour `lois` et `juris` (en `v2.0.1`, les compétences reconnaissent aussi les alias d'interface et chargent les outils différés par recherche d'outils).
+1. Dans les connecteurs personnalisés, ajouter les trois URL MCP en les nommant **`lois`** (`https://legislation.poirierlavoie.ca/mcp`), **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp`) et **`outils`** (`https://outils.poirierlavoie.ca/mcp`), avec l'en-tête `Authorization: Bearer <secret>` pour `lois` et `juris` (depuis `v2.0.1`, les compétences reconnaissent aussi les alias d'interface et chargent les outils différés par recherche d'outils).
 2. Importer les compétences depuis `skills/` ou installer le bundle `.claude-plugin/plugin.json`.
 
 ### 3. Google Antigravity

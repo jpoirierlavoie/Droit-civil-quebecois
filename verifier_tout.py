@@ -32,7 +32,7 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "2.0.1"
+VERSION_ATTENDUE = "2.0.2"
 USER_AGENT_VERIFICATEUR = (
     "DroitCivilQuebecois-Verifier/2.0 (PratiqueCivile; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
@@ -2159,7 +2159,7 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 2.0.1
+    # T1.1.4 : Parité semver 2.0.2
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):

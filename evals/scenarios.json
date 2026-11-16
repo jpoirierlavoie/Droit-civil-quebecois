@@ -1,5 +1,5 @@
 {
-  "version": "2.0.1",
+  "version": "2.0.2",
   "scenarios": [
     {
       "id": "RJ-01",
@@ -374,6 +374,30 @@
       ],
       "ne_doit_pas_contenir": [
         "notre point faible est"
+      ]
+    },
+    {
+      "id": "RD-06",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Avis d'assignation hors Québec (art. 490 C.p.c.) et avis de présentation (art. 101 C.p.c.)",
+      "prompt": "Rédiger l'avis d'assignation d'une demande introductive en Cour supérieure visant une société ontarienne sans établissement au Québec, ainsi que l'avis de présentation d'une demande en cours d'instance fondée uniquement sur des pièces déjà versées au dossier.",
+      "criteres": [
+        "Lire via lois les art. 101, 145, 146 et 490 C.p.c. avant rédaction.",
+        "Inclure dans l'avis d'assignation conforme au modèle ministériel tant le délai de 15 jours que le délai de 30 jours applicable au défendeur sans domicile, résidence ni établissement au Québec (art. 490 C.p.c., protocole en 3 mois).",
+        "Indiquer pour la demande écrite en cours d'instance le préavis d'au moins 3 jours avant la présentation (art. 101 al. 1 C.p.c., sous réserve des délais particuliers) et préciser que la déclaration sous serment n'est requise que si la demande repose sur des faits dont la preuve n'est pas déjà au dossier (art. 101 al. 3 C.p.c.)."
+      ],
+      "doit_contenir": [
+        "490",
+        "30 jours",
+        "15 jours",
+        "101",
+        "3 jours|trois jours",
+        "preuve n'est pas.*dossier|faits.*pas.*dossier"
+      ],
+      "ne_doit_pas_contenir": [
+        "101.*5 jours",
+        "déclaration sous serment obligatoire pour toute demande"
       ]
     },
     {
