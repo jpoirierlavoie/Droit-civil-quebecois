@@ -1,6 +1,6 @@
 """
 synchroniser_plugin_gemini.py
-Synchronise le plugin droit-civil-quebecois (ex pratique-civile-quebecoise) vers le répertoire de plugins Gemini installé.
+Synchronise le plugin droit-civil-quebecois vers le répertoire de plugins Gemini installé.
 Usage:
     python scripts/synchroniser_plugin_gemini.py          # dry-run
     python scripts/synchroniser_plugin_gemini.py --apply  # copie effective
@@ -20,7 +20,6 @@ DST_DIR = Path(
         PLUGINS_ROOT / "droit-civil-quebecois",
     )
 )
-LEGACY_DST_DIR = PLUGINS_ROOT / "pratique-civile-quebecoise"
 
 BUNDLE_ROOT_FILES = [
     Path("plugin.json"),
@@ -69,7 +68,6 @@ def main():
     print(f"    Destination: {DST_DIR}")
 
     dst_dir = _verifier_confinement(DST_DIR, PLUGINS_ROOT, "DST_DIR")
-    legacy_dst_dir = _verifier_confinement(LEGACY_DST_DIR, PLUGINS_ROOT, "LEGACY_DST_DIR")
 
     files = collect_bundle_files()
     copied = 0
@@ -113,20 +111,11 @@ def main():
                     # Répertoire non vide : conservé car il contient des fichiers synchronisés.
                     continue
 
-    legacy_removed = False
-    if legacy_dst_dir != dst_dir and legacy_dst_dir.is_dir():
-        print(f"  [RETRAIT ANCIEN PLUGIN] {legacy_dst_dir}")
-        if apply_mode:
-            shutil.rmtree(legacy_dst_dir)
-            legacy_removed = True
-
     print(
         f"\n[OK] Résumé : {copied} fichier(s) mis à jour, {identical} déjà identiques "
         f"sur {len(files)} fichiers analysés ; {len(stale_files)} fichier(s) obsolète(s) "
         f"{'retiré(s)' if apply_mode else 'à retirer'}."
     )
-    if legacy_removed:
-        print(f"[OK] Ancien répertoire retiré : {legacy_dst_dir}")
 
     if apply_mode:
         # Re-vérification stricte
@@ -136,7 +125,7 @@ def main():
         if mcp_config_copied:
             time.sleep(2.5)
             print(
-                "[!] mcp_config.json modifié : tous les identifiants d'outils v2.0 respectent "
+                "[!] mcp_config.json modifié : tous les identifiants d'outils v3.0 respectent "
                 "désormais la limite native <= 64 caractères (cache Antigravity rafraîchi "
                 "automatiquement). Exécuter optionnellement "
                 "'python scripts/regenerer_cache_mcp.py --apply' pour reconstruire le cache "

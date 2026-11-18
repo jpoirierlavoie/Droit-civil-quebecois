@@ -137,10 +137,7 @@ def main():
         for existing in sorted(BASE_CACHE.iterdir()):
             if (
                 existing.is_dir()
-                and (
-                    existing.name.startswith("droit-civil-quebecois_")
-                    or existing.name.startswith("pratique-civile-quebecoise_")
-                )
+                and existing.name.startswith("droit-civil-quebecois_")
                 and existing.name not in active_folders
             ):
                 shutil.rmtree(existing)

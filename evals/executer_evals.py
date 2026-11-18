@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exécuteur et vérificateur de la suite d'évaluation comportementale (« evals »).
+"""Exécuteur et vérificateur de la suite d'évaluation comportementale (« evals ») v3.
 
 Bibliothèque standard Python uniquement, aucun appel réseau.
 Usages :
@@ -16,10 +16,13 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import struct
 import sys
 import tempfile
 from typing import Any
+import unittest
 import zipfile
+import zlib
 
 RACINE = Path(__file__).resolve().parent.parent
 SCENARIOS_PATH = Path(__file__).resolve().parent / "scenarios.json"
@@ -74,7 +77,18 @@ def evaluer_reponse(scenario: dict[str, Any], texte: str) -> dict[str, Any]:
     }
 
 
-def _creer_fixture_docx_commentaire(dest: Path) -> None:
+def _creer_fixture_docx_complet(
+    dest: Path,
+    *,
+    texte: str = "PROJET DE DÉFENSE — sans numéro de cour",
+    avec_commentaires: bool = True,
+    avec_revisions: bool = False,
+    pages_app: str = "7",
+    police: str = "Calibri",
+    taille_half_pt: str = "22",
+    marge_twips: str = "1440",
+    interligne_line: str = "240",
+) -> None:
     content_types = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -82,10 +96,18 @@ def _creer_fixture_docx_commentaire(dest: Path) -> None:
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Override PartName="/word/document.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        '<Override PartName="/word/comments.xml" '
-        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>'
-        '<Override PartName="/docProps/core.xml" '
+        '<Override PartName="/word/styles.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+        + (
+            '<Override PartName="/word/comments.xml" '
+            'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>'
+            if avec_commentaires
+            else ""
+        )
+        + '<Override PartName="/docProps/core.xml" '
         'ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+        '<Override PartName="/docProps/app.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
         "</Types>"
     )
     rels = (
@@ -97,13 +119,36 @@ def _creer_fixture_docx_commentaire(dest: Path) -> None:
         '<Relationship Id="rId2" '
         'Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" '
         'Target="docProps/core.xml"/>'
+        '<Relationship Id="rId3" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" '
+        'Target="docProps/app.xml"/>'
         "</Relationships>"
+    )
+    rev_xml = (
+        '<w:ins w:id="1" w:author="Me Tremblay" w:date="2026-09-10T14:20:00Z">'
+        "<w:r><w:t>Ajout suivi</w:t></w:r></w:ins>"
+        if avec_revisions
+        else ""
     )
     document = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        "<w:body><w:p><w:r><w:t>PROJET DE DÉFENSE — sans numéro de cour</w:t></w:r></w:p></w:body>"
-        "</w:document>"
+        "<w:body><w:p>"
+        f'<w:pPr><w:spacing w:line="{interligne_line}" w:lineRule="auto"/></w:pPr>'
+        f'<w:r><w:rPr><w:rFonts w:ascii="{police}" w:hAnsi="{police}"/><w:sz w:val="{taille_half_pt}"/></w:rPr>'
+        f"<w:t>{texte}</w:t></w:r>{rev_xml}</w:p>"
+        "<w:sectPr>"
+        '<w:pgSz w:w="12240" w:h="15840"/>'
+        f'<w:pgMar w:top="{marge_twips}" w:right="{marge_twips}" w:bottom="{marge_twips}" w:left="{marge_twips}"/>'
+        "</w:sectPr>"
+        "</w:body></w:document>"
+    )
+    styles = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        "<w:docDefaults><w:rPrDefault><w:rPr>"
+        f'<w:rFonts w:ascii="{police}" w:hAnsi="{police}"/><w:sz w:val="{taille_half_pt}"/>'
+        "</w:rPr></w:rPrDefault></w:docDefaults></w:styles>"
     )
     comments = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -120,22 +165,96 @@ def _creer_fixture_docx_commentaire(dest: Path) -> None:
         "<dc:creator>Me Tremblay</dc:creator>"
         "</cp:coreProperties>"
     )
+    app = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">'
+        f"<Pages>{pages_app}</Pages><Words>1200</Words>"
+        "</Properties>"
+    )
     with zipfile.ZipFile(dest, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml", content_types)
         zf.writestr("_rels/.rels", rels)
         zf.writestr("word/document.xml", document)
-        zf.writestr("word/comments.xml", comments)
+        zf.writestr("word/styles.xml", styles)
+        if avec_commentaires:
+            zf.writestr("word/comments.xml", comments)
         zf.writestr("docProps/core.xml", core)
+        zf.writestr("docProps/app.xml", app)
+
+
+def _creer_fixture_jpeg_exif(dest: Path) -> None:
+    """Construit un JPEG minimal avec segment APP1 Exif valide (Make + DateTimeOriginal)."""
+    # TIFF little-endian : header (8 bytes) + IFD0 (2 + 2*12 + 4 = 30 bytes) + strings + ExifIFD
+    make_b = b"Canon\x00"
+    date_b = b"2026:06:15 10:22:00\x00"
+    ifd0_offset = 8
+    # 2 entries in IFD0: 0x010F Make, 0x8769 ExifIFD
+    ifd0_size = 2 + 2 * 12 + 4
+    make_off = ifd0_offset + ifd0_size
+    exif_ifd_off = make_off + len(make_b)
+    exif_ifd_size = 2 + 1 * 12 + 4
+    date_off = exif_ifd_off + exif_ifd_size
+
+    tiff = bytearray()
+    tiff += b"II" + struct.pack("<HI", 42, ifd0_offset)
+    tiff += struct.pack("<H", 2)
+    tiff += struct.pack("<HHII", 0x010F, 2, len(make_b), make_off)
+    tiff += struct.pack("<HHII", 0x8769, 4, 1, exif_ifd_off)
+    tiff += struct.pack("<I", 0)
+    tiff += make_b
+    tiff += struct.pack("<H", 1)
+    tiff += struct.pack("<HHII", 0x9003, 2, len(date_b), date_off)
+    tiff += struct.pack("<I", 0)
+    tiff += date_b
+
+    app1_payload = b"Exif\x00\x00" + bytes(tiff)
+    app1_seg = b"\xff\xe1" + struct.pack(">H", len(app1_payload) + 2) + app1_payload
+    jpeg = b"\xff\xd8" + app1_seg + b"\xff\xd9"
+    dest.write_bytes(jpeg)
+
+
+def _creer_fixture_wav(dest: Path) -> None:
+    """Construit un WAV minimal PCM 1 s + chunk LIST INFO."""
+    sample_rate = 8000
+    channels = 1
+    bits = 16
+    byte_rate = sample_rate * channels * bits // 8
+    data_bytes = b"\x00" * byte_rate
+    fmt_chunk = struct.pack("<4sIHHIIHH", b"fmt ", 16, 1, channels, sample_rate, byte_rate, 2, bits)
+    data_chunk = struct.pack("<4sI", b"data", len(data_bytes)) + data_bytes
+    icrd_txt = b"2026-06-15\x00\x00"
+    info_body = b"INFO" + struct.pack("<4sI", b"ICRD", len(icrd_txt)) + icrd_txt
+    list_chunk = struct.pack("<4sI", b"LIST", len(info_body)) + info_body
+    riff_body = b"WAVE" + fmt_chunk + data_chunk + list_chunk
+    dest.write_bytes(struct.pack("<4sI", b"RIFF", len(riff_body)) + riff_body)
+
+
+def _creer_fixture_pdf_scan(dest: Path) -> None:
+    """Construit un PDF minimal sans couche texte ni /Outlines."""
+    pdf = (
+        b"%PDF-1.4\n"
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+        b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj\n"
+        b"%%EOF\n"
+    )
+    dest.write_bytes(pdf)
 
 
 def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
-    """Exécute les assertions déterministes attachées aux outils Python locaux."""
+    """Exécute les assertions déterministes attachées aux 4 outils Python locaux."""
     erreurs: list[str] = []
     calcul_mod = _charger_module(
-        "skills/administration-litige/scripts/calcul_delai.py", "calcul_delai"
+        "skills/gestion-du-mandat/scripts/calcul_delai.py", "calcul_delai"
     )
     inspect_mod = _charger_module(
-        "skills/analyse-juridique/scripts/inspecter_piece.py", "inspecter_piece"
+        "skills/analyse-et-strategie/scripts/inspecter_piece.py", "inspecter_piece"
+    )
+    ctrl_mod = _charger_module(
+        "skills/production-et-conformite/scripts/controler_document.py", "controler_document"
+    )
+    cotes_mod = _charger_module(
+        "skills/production-et-conformite/scripts/verifier_cotes.py", "verifier_cotes"
     )
 
     for sc in scenarios:
@@ -182,7 +301,7 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
             if spec.get("fixture") == "docx_avec_commentaire":
                 with tempfile.TemporaryDirectory() as tmp:
                     docx_path = Path(tmp) / "Defense_finale.docx"
-                    _creer_fixture_docx_commentaire(docx_path)
+                    _creer_fixture_docx_complet(docx_path, avec_commentaires=True)
                     res = inspect_mod.inspecter_fichier(docx_path)
                     att = spec["attendu"]
                     if res.get("statut") != att.get("statut"):
@@ -194,6 +313,225 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     nb_com = int(res.get("details", {}).get("nombre_commentaires", 0))
                     if nb_com < int(att.get("nombre_commentaires_min", 0)):
                         erreurs.append(f"{sid} : nombre_commentaires={nb_com} insuffisant")
+        elif outil == "inspecter_piece_journal":
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_dir = Path(tmp)
+                jpg_path = tmp_dir / "photo.jpg"
+                wav_path = tmp_dir / "enregistrement.wav"
+                journal_json = tmp_dir / "journal.json"
+                journal_md = tmp_dir / "journal.md"
+                _creer_fixture_jpeg_exif(jpg_path)
+                _creer_fixture_wav(wav_path)
+                r_jpg = inspect_mod.inspecter_fichier(jpg_path)
+                r_wav = inspect_mod.inspecter_fichier(wav_path)
+                att = spec["attendu"]
+                if att.get("jpeg_exif_detecte"):
+                    exif = r_jpg.get("details", {}).get("exif", {})
+                    if exif.get("fabricant") != "Canon" or "2026:06:15" not in exif.get("date_prise_de_vue", ""):
+                        erreurs.append(f"{sid} : EXIF Canon/date non extrait ({exif})")
+                if att.get("wav_duree_detectee"):
+                    if r_wav.get("details", {}).get("duree_secondes_estimee") != 1.0:
+                        erreurs.append(f"{sid} : durée WAV attendue 1.0, obtenu {r_wav.get('details')}")
+                inspect_mod.ecrire_journal_garde(journal_json, [r_jpg, r_wav], source="Client X")
+                inspect_mod.ecrire_journal_garde(journal_md, [r_jpg, r_wav], source="Client X")
+                j_data = json.loads(journal_json.read_text(encoding="utf-8"))
+                if len(j_data.get("entrees", [])) < int(att.get("journal_entrees_min", 2)):
+                    erreurs.append(f"{sid} : journal JSON incomplet ({j_data})")
+                if "enregistrement.wav" not in journal_md.read_text(encoding="utf-8"):
+                    erreurs.append(f"{sid} : journal Markdown ne contient pas enregistrement.wav")
+
+                # Cas limites : XML corrompu non bloquant, PNG iTXt compressé, journal corrompu préservé
+                bad_docx = tmp_dir / "corrompu.docx"
+                with zipfile.ZipFile(bad_docx, "w") as zf:
+                    zf.writestr("word/document.xml", "<w:document>BROKEN")
+                r_bad_docx = inspect_mod.inspecter_fichier(bad_docx)
+                if r_bad_docx.get("statut") != "ok" or "XML_CORROMPU" not in r_bad_docx.get("indicateurs", []):
+                    erreurs.append(f"{sid} : gestion XML corrompu inattendue ({r_bad_docx})")
+
+                ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+                def _png_chunk(ct: bytes, d: bytes) -> bytes:
+                    return struct.pack(">I", len(d)) + ct + d + struct.pack(">I", zlib.crc32(ct + d) & 0xFFFFFFFF)
+                itxt_comp = b"XML:com.adobe.xmp\x00\x01\x00\x00\x00" + zlib.compress(b"<xmp>Meta</xmp>")
+                png_path = tmp_dir / "meta.png"
+                png_path.write_bytes(b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"iTXt", itxt_comp) + _png_chunk(b"IEND", b""))
+                r_png = inspect_mod.inspecter_fichier(png_path)
+                if r_png.get("details", {}).get("chunks_texte", {}).get("XML:com.adobe.xmp") != "<xmp>Meta</xmp>":
+                    erreurs.append(f"{sid} : iTXt PNG compressé mal décodé ({r_png})")
+
+                corrupt_j = tmp_dir / "corrupt_journal.json"
+                corrupt_j.write_text("{CORRUPT_HISTORY", encoding="utf-8")
+                try:
+                    inspect_mod.ecrire_journal_garde(corrupt_j, [r_wav], source="Test")
+                    erreurs.append(f"{sid} : journal corrompu écrasé silencieusement")
+                except ValueError:
+                    if corrupt_j.read_text(encoding="utf-8") != "{CORRUPT_HISTORY":
+                        erreurs.append(f"{sid} : contenu du journal corrompu altéré")
+        elif outil == "controler_document":
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_dir = Path(tmp)
+                docx_path = tmp_dir / "Demande_simplifiee.docx"
+                pdf_path = tmp_dir / "cahier.pdf"
+                _creer_fixture_docx_complet(
+                    docx_path,
+                    avec_commentaires=True,
+                    avec_revisions=True,
+                    pages_app="7",
+                    police="Comic Sans MS",
+                    taille_half_pt="20",
+                    marge_twips="720",
+                )
+                _creer_fixture_pdf_scan(pdf_path)
+                seuils = {
+                    "max_pages": 5,
+                    "polices_attendues": ["Times New Roman", "Arial"],
+                    "taille_min_pt": 11.0,
+                    "marge_min_po": 1.0,
+                    "exiger_couche_texte": True,
+                    "exiger_signets": True,
+                }
+                res_docx = ctrl_mod.controler_fichier(docx_path, regles=seuils, etiquette_regles="C.Q. 535.3")
+                res_pdf = ctrl_mod.controler_fichier(pdf_path, regles=seuils, etiquette_regles="C.Q.")
+                att = spec["attendu"]
+                if res_docx.get("statut_conformite") != att.get("docx_statut_conformite"):
+                    erreurs.append(
+                        f"{sid} : docx statut_conformite={res_docx.get('statut_conformite')!r}"
+                    )
+                docx_codes = {a["code"] for a in res_docx.get("bon_de_travail", [])}
+                for code in att.get("docx_codes_contient", []):
+                    if code not in docx_codes:
+                        erreurs.append(f"{sid} : code bon de travail docx manquant {code!r} ({sorted(docx_codes)})")
+                pdf_codes = {a["code"] for a in res_pdf.get("bon_de_travail", [])}
+                for code in att.get("pdf_codes_contient", []):
+                    if code not in pdf_codes:
+                        erreurs.append(f"{sid} : code bon de travail pdf manquant {code!r} ({sorted(pdf_codes)})")
+
+                # Cas limites : styles Word inutilisés ignorés + PDF 1.5 /ObjStm + --regles introuvable
+                clean_docx = tmp_dir / "propre.docx"
+                with zipfile.ZipFile(clean_docx, "w") as zf:
+                    zf.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+                    zf.writestr(
+                        "word/document.xml",
+                        '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                        '<w:p><w:pPr><w:pStyle w:val="Normal"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'
+                        '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr><w:t>OK</w:t></w:r></w:p>'
+                        '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'
+                        "</w:body></w:document>",
+                    )
+                    zf.writestr(
+                        "word/styles.xml",
+                        '<?xml version="1.0"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                        '<w:style w:type="paragraph" w:styleId="Normal" w:default="1"><w:rPr><w:rFonts w:ascii="Times New Roman"/><w:sz w:val="24"/></w:rPr></w:style>'
+                        '<w:style w:type="paragraph" w:styleId="BalloonText"><w:rPr><w:rFonts w:ascii="Tahoma"/><w:sz w:val="16"/></w:rPr></w:style>'
+                        "</w:styles>",
+                    )
+                    zf.writestr("docProps/app.xml", '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Pages>3</Pages></Properties>')
+                r_clean = ctrl_mod.controler_fichier(
+                    clean_docx,
+                    regles={"max_pages": 5, "polices_attendues": ["Times New Roman"], "taille_min_pt": 12.0, "marge_min_po": 1.0, "interligne_min": 1.5},
+                )
+                if r_clean.get("statut_conformite") != "CONFORME":
+                    erreurs.append(f"{sid} : style inutilisé BalloonText a causé un faux négatif ({r_clean.get('constats')})")
+
+                obj_body = (
+                    b"<< /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >>\n"
+                    b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
+                    b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>\n"
+                    b"<< /Type /Outlines /First 5 0 R /Last 5 0 R /Count 1 >>\n"
+                    b"<< /Title (Onglet 1) /Parent 4 0 R >>\n"
+                )
+                comp_stm = zlib.compress(b"1 0\n" + obj_body)
+                pdf15_p = tmp_dir / "objstm.pdf"
+                pdf15_p.write_bytes(
+                    b"%PDF-1.5\n10 0 obj << /Type /ObjStm /N 5 /First 4 /Filter /FlateDecode /Length "
+                    + str(len(comp_stm)).encode("ascii")
+                    + b" >>\nstream\n"
+                    + comp_stm
+                    + b"\nendstream\nendobj\n%%EOF\n"
+                )
+                r_pdf15 = ctrl_mod.controler_fichier(pdf15_p, regles={"max_pages": 5, "exiger_signets": True})
+                if r_pdf15.get("details", {}).get("nombre_pages") != 1 or not r_pdf15.get("details", {}).get("signets_presents"):
+                    erreurs.append(f"{sid} : /ObjStm PDF 1.5 non détecté ({r_pdf15.get('details')})")
+                endos_pdf = tmp_dir / "endos.pdf"
+                endos_pdf.write_bytes(
+                    b"%PDF-1.4\n1 0 obj << /Type /Pages /Kids [2 0 R 3 0 R] /Count 2 >> endobj\n"
+                    b"2 0 obj << /Type /Page /Parent 1 0 R /MediaBox [0 0 612 792] >> endobj\n"
+                    b"3 0 obj << /Type /Page /Parent 1 0 R /MediaBox [0 0 792 612] >> endobj\n"
+                    b"4 0 obj << /Length 12 >>\nstream\nBT (Ok) Tj ET\nendstream\nendobj\n%%EOF\n"
+                )
+                r_endos = ctrl_mod.controler_fichier(endos_pdf, regles={"max_pages": 5})
+                fmt_endos = r_endos.get("details", {}).get("format_page_po", {})
+                if fmt_endos.get("us_letter") is not True or fmt_endos.get("orientations_detectees") != ["paysage", "portrait"]:
+                    erreurs.append(f"{sid} : endos US Letter paysage rejeté ({fmt_endos})")
+                jpg_scan_pdf = tmp_dir / "jpg_scan.pdf"
+                jpg_payload = b"\xFF\xD8\xFF\xE0\x00\x10JFIF BT (faux) Tj ET \xFF\xD9"
+                jpg_scan_pdf.write_bytes(
+                    b"%PDF-1.4\n1 0 obj << /Type /Pages /Kids [2 0 R] /Count 1 >> endobj\n"
+                    b"2 0 obj << /Type /Page /Parent 1 0 R /MediaBox [0 0 612 792] >> endobj\n"
+                    b"3 0 obj << /Type /XObject /Subtype /Image /Filter /DCTDecode /Length "
+                    + str(len(jpg_payload)).encode("ascii")
+                    + b" >>\nstream\n"
+                    + jpg_payload
+                    + b"\nendstream\nendobj\n%%EOF\n"
+                )
+                r_jpg_scan = ctrl_mod.controler_fichier(jpg_scan_pdf, regles={"max_pages": 5, "exiger_ocr": True})
+                if r_jpg_scan.get("details", {}).get("couche_texte") != "absente":
+                    erreurs.append(f"{sid} : flux image JPEG avec séquence BT..Tj pris à tort pour couche OCR ({r_jpg_scan.get('details')})")
+                try:
+                    ctrl_mod._charger_regles(str(tmp_dir / "absent.json"), {})
+                    erreurs.append(f"{sid} : --regles JSON absent ignoré silencieusement")
+                except FileNotFoundError:
+                    pass
+        elif outil == "verifier_cotes":
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_dir = Path(tmp)
+                acte_p = tmp_dir / "demande_modifiee.md"
+                bord_p = tmp_dir / "bordereau.md"
+                acte_p.write_text(
+                    "DEMANDE INTRODUCTIVE MODIFIÉE\n"
+                    "1. Voir Pièce P-3.\n"
+                    "2. Voir Pièce P-1.\n"
+                    "3. [Pièce P-2 retirée].\n"
+                    "4. Le contrat est invoqué tel qu'il appert d'une copie du courriel du 5 juin.\n",
+                    encoding="utf-8",
+                )
+                bord_p.write_text(
+                    "| Cote | Désignation |\n| P-1 | Contrat |\n| P-2 | Courriel actif |\n| P-3 | Facture |\n",
+                    encoding="utf-8",
+                )
+                res_c = cotes_mod.verifier_ensemble_cotes([acte_p], bordereau=bord_p, mode_modifie=True)
+                types_found = {a["type"] for a in res_c.get("anomalies", [])}
+                for exp_type in spec["attendu"].get("anomalies_types_contient", []):
+                    if exp_type not in types_found:
+                        erreurs.append(f"{sid} : anomalie attendue {exp_type!r} absente ({sorted(types_found)})")
+
+                # Cas limites : abréviation légale Acme Inc. + RLRQ/CQLR multi-chapitres + DA-1 + R-1 + P-01..P-02 + longue clause >250 car.
+                acte_ok = tmp_dir / "acte_abbrev.md"
+                acte_ok.write_text(
+                    "1. Tel qu'il appert de la facture de Acme Inc. (RLRQ, c. P-39 et R-20 ; CQLR, chapter I-3), produite sous la cote **Pièce P-01** ;\n"
+                    "2. Suite du dossier selon **Pièce P-02**, demande de permission sous **Pièce R-1** et pièce codéfendeur **Exhibit DA-1** ;\n"
+                    "3. Moreover, the Defendant duly executed the master commercial lease agreement dated May 14, 2024 governing all premises, maintenance duties, CAM reconciliations and renewal options between the landlord and corporate tenant across every suite, as appears from the executed copy produced in support hereof as **Exhibit P-03** ;\n",
+                    encoding="utf-8",
+                )
+                bord_ok = tmp_dir / "bordereau_abbrev.md"
+                bord_ok.write_text(
+                    "| Cote | Pièce |\n| P-1 | Facture |\n| P-2 | Contrat |\n| P-3 | Bail commercial |\n| R-1 | Décision |\n| DA-1 | Pièce codéfendeur |\n",
+                    encoding="utf-8",
+                )
+                res_ok = cotes_mod.verifier_ensemble_cotes([acte_ok], bordereau=bord_ok)
+                if res_ok.get("nombre_anomalies") != 0:
+                    erreurs.append(f"{sid} : faux positif sur abréviation/chapitre/DA-1/clause>250 ({res_ok.get('anomalies')})")
+
+                acte_reutil = tmp_dir / "acte_reutilisee.md"
+                acte_reutil.write_text(
+                    "DEMANDE MODIFIÉE\n"
+                    "1. Voir Pièce P-1.\n"
+                    "2. [Pièce P-2 retirée].\n"
+                    "3. Voir toujours la Pièce P-2 déjà produite.\n",
+                    encoding="utf-8",
+                )
+                res_reutil = cotes_mod.verifier_ensemble_cotes([acte_reutil], mode_modifie=True)
+                if "COTE_GELEE_REUTILISEE" not in {a["type"] for a in res_reutil.get("anomalies", [])}:
+                    erreurs.append(f"{sid} : réutilisation de cote retirée dans le même acte non détectée ({res_reutil})")
         else:
             erreurs.append(f"{sid} : outil de test inconnu {outil!r}")
     return erreurs
@@ -215,6 +553,17 @@ def auto_test() -> int:
                     erreurs.append(f"{sc['id']} ({champ}) : regex invalide {pat!r} ({exc})")
 
     erreurs.extend(executer_tests_outils(scenarios))
+
+    # Exécuter les tests unitaires sur fixtures du vérificateur statique
+    loader = unittest.TestLoader()
+    suite = loader.discover(str(Path(__file__).resolve().parent), pattern="test_*.py")
+    runner = unittest.TextTestRunner(verbosity=0)
+    unit_res = runner.run(suite)
+    if not unit_res.wasSuccessful():
+        erreurs.append(
+            f"Tests unitaires du vérificateur en échec : "
+            f"{len(unit_res.failures)} échec(s), {len(unit_res.errors)} erreur(s)"
+        )
 
     # Auto-vérification du moteur d'évaluation de réponses (positif et négatif)
     sc_rj01 = next((s for s in scenarios if s["id"] == "RJ-01"), None)
@@ -244,19 +593,42 @@ def auto_test() -> int:
         )
         if not ok_rd06["reussi"]:
             erreurs.append(f"Auto-test positif RD-06 a échoué : {ok_rd06}")
-        for variante_fautive in (
+        bad_rd06 = evaluer_reponse(
+            sc_rd06,
             "Avis d'assignation : 15 jours ou 30 jours (art. 490 C.p.c.). "
             "Selon l'art. 101 C.p.c. : notification au moins 5 jours à l'avance (3 jours si urgence), "
             "serment si la preuve n'est pas au dossier.",
-            "Avis d'assignation : 15 jours ou 30 jours (art. 490 C.p.c.). "
-            "Selon l'art. 101 C.p.c., notification au moins 5 jours à l'avance (3 jours si urgence), "
-            "serment si la preuve n'est pas au dossier.",
-        ):
-            bad_rd06 = evaluer_reponse(sc_rd06, variante_fautive)
-            if bad_rd06["reussi"]:
-                erreurs.append(
-                    "Auto-test négatif RD-06 aurait dû détecter l'attribution de 5 jours à l'art. 101."
-                )
+        )
+        if bad_rd06["reussi"]:
+            erreurs.append(
+                "Auto-test négatif RD-06 aurait dû détecter l'attribution de 5 jours à l'art. 101."
+            )
+
+    sc_rd11 = next((s for s in scenarios if s["id"] == "RD-11"), None)
+    if sc_rd11 is not None:
+        ok_rd11 = evaluer_reponse(
+            sc_rd11,
+            "Replace Statement of Claim with Originating Application and Affidavit of Documents "
+            "with List of Exhibits. Keep Affidavit (official English term under art. 105 C.C.P.). "
+            "Cite article 1457 C.C.Q. (never section, which applies to statutes) and translate the "
+            "endos into English.",
+        )
+        ok_rd11_sworn = evaluer_reponse(
+            sc_rd11,
+            "Originating Application, Table of Exhibits, Sworn Statement, article 1457 C.C.Q., "
+            "section 4 of the statutory act, and English endos.",
+        )
+        if not ok_rd11["reussi"] or not ok_rd11_sworn["reussi"]:
+            erreurs.append(f"Auto-test positif RD-11 a échoué : {ok_rd11} / {ok_rd11_sworn}")
+        bad_rd11 = evaluer_reponse(
+            sc_rd11,
+            "Originating Application with Affidavit of Documents, article 1457 C.C.Q., "
+            "section 3 of the statute, and English endos.",
+        )
+        if bad_rd11["reussi"]:
+            erreurs.append(
+                "Auto-test négatif RD-11 aurait dû rejeter Affidavit of Documents non remplacé."
+            )
 
     if erreurs:
         for err in erreurs:
@@ -265,7 +637,7 @@ def auto_test() -> int:
 
     print(
         f"Auto-test réussi : {len(scenarios)} scénarios validés, "
-        "assertions déterministes de calcul_delai.py et inspecter_piece.py conformes."
+        "assertions déterministes des 4 scripts locaux et tests unitaires du vérificateur conformes."
     )
     return 0
 
@@ -302,6 +674,7 @@ def main(argv: list[str] | None = None) -> int:
                             "competence": s["competence"],
                             "palier": s.get("palier"),
                             "titre": s["titre"],
+                            "declencheur_negatif": s.get("declencheur_negatif", False),
                         }
                         for s in scenarios
                     ],
@@ -312,7 +685,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             for sc in scenarios:
                 palier = f" | Palier {sc['palier']}" if sc.get("palier") else ""
-                print(f"{sc['id']} | {sc['competence']}{palier} | {sc['titre']}")
+                neg = " | [NEG]" if sc.get("declencheur_negatif") else ""
+                print(f"{sc['id']} | {sc['competence']}{palier}{neg} | {sc['titre']}")
         return 0
 
     if args.reponses is not None:

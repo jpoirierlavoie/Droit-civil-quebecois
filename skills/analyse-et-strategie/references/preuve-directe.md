@@ -1,0 +1,46 @@
+# Analyse de la preuve directe (écrits, courriels, photos, vidéos, enregistrements)
+
+[NON VALIDÉ PAR LA PRATIQUE] · [FICHE À RÉDIGER] *(compléter les cas particuliers de pratique lors du contrôle des sources via `lois`)*
+
+Encadre l'évaluation des éléments probatoires directs (contrats, lettres, courriels, photographies, vidéos, enregistrements audio) avec **honnêteté perceptuelle stricte** et **journal de garde**.
+
+## Qualification
+
+Identifier avec précision le moyen de preuve selon `lois.get_articles(law="ccq", numbers=["2811", "2813", "2826", "2831", "2832", "2837", "2854", "2855"])` et `law="c-1.1", numbers=["5", "7", "12", "16"]` :
+* **Acte écrit** (authentique, sous seing privé, écrit d'entreprise, autre écrit / courriel / texto);
+* **Document technologique** (`c-1.1`);
+* **Élément matériel** (`2854–2855 C.c.Q.` : photographie, vidéo, enregistrement sonore ou objet).
+
+## Authentification et intégrité
+
+### 1. Journal de garde à l'entrée (`inspecter_piece.py --journal`)
+Exécuter obligatoirement `python scripts/inspecter_piece.py <fichier> --journal <dossier>/journal-garde.json --source "<origine>" --json` dès la prise en charge d'un média ou d'une pièce numérique originale afin de consigner de façon immuable :
+* l'empreinte **SHA-256** et la taille exacte en octets;
+* la date système et les métadonnées internes extraites (EXIF appareil/GPS, `mvhd` vidéo, `ID3`/`INFO` audio, en-têtes `.eml`);
+* l'origine déclarée (`--source`).
+
+### 2. Honnêteté perceptuelle stricte (règle absolue sur photos, vidéos et enregistrements)
+* **Ne jamais décrire ni interpréter un contenu visuel ou sonore non effectivement perçu dans la session.**
+* Si le modèle n'a pas accès au canal audio/vidéo/image ou ne perçoit pas les images clés : **refuser de décrire la scène ou les propos**, exiger une **transcription** ou une **série de captures fixes** fournies par l'avocat, et étiqueter explicitement toute analyse ultérieure **`support secondaire`**.
+* **Avertissement sur les transcriptions IA :** Toute transcription générée par IA est une **aide de travail uniquement**, jamais un élément de preuve autonome (`[À VÉRIFIER SUR L'ENREGISTREMENT ORIGINAL]`).
+
+## Recevabilité
+
+* **Original et intégrité technologique (`2838–2840, 2860 C.c.Q.`; `c-1.1 art. 5, 7, 12, 16`) :** relever tout indice d'altération (recadrage, absence d'EXIF, fil de courriels tronqué, coupure audio, heure incohérente).
+* **Preuve d'authenticité distincte (`2855 C.c.Q.`) :** rappeler qu'une photo, vidéo ou bande audio exige la preuve distincte de son authenticité par témoin (auteur ou personne présente) à moins d'être un document technologique présentant les garanties d'intégrité requises.
+* **Captation illicite / vie privée (`2858 C.c.Q.`, `35–36 C.c.Q.`, `c-12 art. 5, 9`) :** signaler tout enregistrement clandestin ou obtenu en violation d'un droit fondamental ou du secret professionnel.
+
+## Force probante
+
+`[FICHE À RÉDIGER]` — Préciser l'appréciation de la force probante par type de support (contrat signé, échange de courriels complets, métadonnées photo/vidéo, enregistrement de conversation entre parties).
+
+## Protection
+
+* Contrôler la présence de tiers non parties, de données biométriques/médicales ou de vie privée (Loi 25, `108 C.p.c.`, `16 C.p.c.`) sur les photos, vidéos et enregistrements.
+* Preserver les fichiers natifs originaux sans recompression ni altération des métadonnées.
+
+## Ce que la pièce ne prouve pas
+
+* Une capture d'écran isolée ne prouve ni l'intégrité du fil complet ni l'identité réelle du compte expéditeur sans vérification complémentaire.
+* Une métadonnée EXIF ou horodatage modifiable ne prouve pas à lui seul la date réelle sans témoignage corroborant, et son absence (`EXIF_ABSENT_OU_STRIPPE`) signale un retraitement possible (réseau social, messagerie).
+* Une transcription non vérifiée mot à mot sur l'original ne prouve jamais les paroles exactes attribuées à un interlocuteur.

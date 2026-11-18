@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Compétences de litige civil et commercial québécois (Droit civil québécois)",
-    "version": "2.0.2"
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "droit-civil-quebecois",
-      "version": "2.0.2",
-      "description": "Recherche, analyse stratégique et probante, rédaction judiciaire, administration du litige et déontologie en droit civil et commercial québécois. Cinq compétences à découverte progressive branchées sur les connecteurs « lois », « juris » et « outils ».",
+      "version": "3.0.0",
+      "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement) et 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) branchés sur « lois », « juris » et « outils ».",
       "author": {
         "name": "Jason Poirier Lavoie",
         "email": "jason@poirierlavoie.ca"
@@ -29,6 +29,7 @@
         "recherche juridique",
         "rédaction juridique",
         "preuve",
+        "production",
         "déontologie"
       ],
       "source": "./"

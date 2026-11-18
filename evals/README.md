@@ -1,17 +1,19 @@
 # Suite d'évaluation comportementale (`evals/`)
 
-Vingt scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.0.2`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
+Suite de régression de **Droit civil québécois (`v3.0.0`)** couvrant les **10 compétences** (5 orchestrateurs de phase + 5 compétences de service), les **4 scripts locaux** (`calcul_delai.py`, `inspecter_piece.py`, `controler_document.py`, `verifier_cotes.py`), les portes bloquantes de phase, l'honnêteté perceptuelle, les précédents internes dé-identifiés et les **10 déclencheurs négatifs hors champ**.
 
 ## Fichiers
 
-- `evals/scenarios.json` — les vingt scénarios de référence, critères d'évaluation et assertions déterministes d'outillage.
-- `evals/executer_evals.py` — utilitaire autonome en bibliothèque standard Python pour lister les scénarios, valider les utilitaires locaux et noter des réponses produites hors ligne.
+- `evals/scenarios.json` — scénarios de référence (`feuilles_attendues`, `enchainement_attendu`, `declencheur_negatif`), critères d'évaluation et assertions déterministes d'outillage.
+- `evals/executer_evals.py` — utilitaire autonome en bibliothèque standard Python pour lister les scénarios, valider les 4 utilitaires locaux, exécuter les tests du vérificateur et noter des réponses produites hors ligne.
+- `evals/test_verifier.py` — tests unitaires sur fixtures des invariants v3 de `verifier.py`.
 
 ## Commandes
 
 ```powershell
 python evals/executer_evals.py --liste
 python evals/executer_evals.py --auto-test
+python -m unittest evals/test_verifier.py -v
 python evals/executer_evals.py --reponses chemin/vers/reponses.json
 ```
 

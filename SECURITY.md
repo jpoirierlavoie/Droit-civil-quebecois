@@ -27,15 +27,16 @@ Cette politique couvre le greffon **`droit-civil-quebecois`** ainsi que les dép
 
 ## Secret professionnel et posture de journalisation
 
-### Règles impératives des compétences (`SAFETY-KERNEL`)
+### Règles impératives des compétences (`SAFETY-KERNEL` v3)
 
-Toutes les compétences du greffon imposent les deux règles suivantes :
+Toutes les compétences du greffon imposent les règles suivantes :
 
 - **Zéro information nominative dans les recherches externes :** ne jamais inclure de noms de parties, faits identifiants, numéros de dossier ou extraits de pièces confidentielles dans une requête web ou de recherche doctrinale.
 - **Présomption `CONFIDENTIEL` par défaut :** aucun document ou élément probant non analysé n'est considéré public par défaut ; tout indice de privilège (secret professionnel `9 Charte`, litige, règlement `s.p.`, confidentialité `108 C.p.c.`) est signalé avant toute communication.
+- **Dé-identification des précédents internes :** tout précédent tiré d'un autre dossier et fourni par l'avocat doit être dé-identifié sans importer aucun fait, nom ni pièce dans le dossier courant, avec alerte de conflit le cas échéant.
 
-### Journalisation côté serveurs MCP
+### Journalisation côté serveurs MCP et scripts locaux
 
 - **`MCP-Outils` (`outils`) :** exécution **entièrement sans état ni journalisation applicative** des requêtes clients (aucune conservation des calculs `calendrier_deadlines`, `interets_1619`, `greffe_parse_number`, `registre_search`, `adresse_verify` ou `terminologie_scan`).
 - **`MCP-Legislation` (`lois`) et `MCP-Jurisprudence` (`juris`) :** ces Workers Cloudflare utilisent une base D1 avec une table de télémétrie technique (`search_log`) enregistrant des empreintes de requêtes de recherche (`find_relevant`, `search_text`, `find_case`) à des fins de diagnostic et de pertinence. **En conséquence, ne jamais soumettre d'éléments nominatifs, identifiants client ou faits confidentiels dans les paramètres de recherche libre `query`.**
-- **Scripts locaux Python :** `skills/analyse-juridique/scripts/inspecter_piece.py` et `skills/administration-litige/scripts/calcul_delai.py` n'utilisent que la bibliothèque standard Python, ne réalisent aucun appel réseau et n'écrivent aucun fichier hors du flux standard choisi par l'utilisateur.
+- **Scripts locaux Python :** `skills/analyse-et-strategie/scripts/inspecter_piece.py`, `skills/gestion-du-mandat/scripts/calcul_delai.py`, `skills/production-et-conformite/scripts/controler_document.py` et `skills/production-et-conformite/scripts/verifier_cotes.py` n'utilisent que la bibliothèque standard Python, ne réalisent aucun appel réseau et n'écrivent aucun fichier hors du journal de garde explicitement demandé par `--journal`.

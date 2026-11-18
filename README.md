@@ -1,35 +1,44 @@
-# Droit civil québécois (`v2.0.2`)
+# Droit civil québécois (`v3.0.0`)
 
-Greffon multiplateforme (Claude Code, Claude Desktop, claude.ai, Google Antigravity et Gemini CLI) regroupant **5 compétences de pratique juridique québécoise**, **17 feuilles de référence ciblées**, **2 scripts Python locaux** et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels) pour le litige et le conseil en droit civil et commercial québécois.
-
----
-
-## Philosophie de conception (`v2.0.0`)
-
-La version `2.0.0` (`droit-civil-quebecois`) remplace l'ancienne architecture monolithique orientée vers un seul gestionnaire de dossiers par une structure agnostique conçue pour la pratique réelle d'un avocat au Québec :
-
-1. **Découverte progressive à 3 niveaux (*3-Tier Progressive Discovery*) :**
-   - **Niveau 1 — En-têtes et routeurs (`SKILL.md`) :** 5 descriptions YAML compactes (`<= 850` car.) et 5 routeurs synthétiques (`<= 1 000` mots) partageant un noyau de garde-fous canonique (`SAFETY-KERNEL`, identique au bit près par empreinte SHA-256).
-   - **Niveau 2 — Feuilles terminales (« impasses ») :** 17 fiches ciblées (`<= 1 500` mots et `<= 12 Kio` chacune) chargées à la demande selon l'intention précise, sans renvois en chaîne infinis.
-   - **Niveau 3 — Outillage déterministe local et connecteurs MCP :** 2 scripts Python utilisant uniquement la bibliothèque standard (`inspecter_piece.py`, `calcul_delai.py`) et 32 outils MCP distants à schémas durcis.
-2. **Calibration de rigueur à 3 paliers :**
-   - **Palier 1 — Triage / Question ponctuelle :** orientation rapide sur règle vérifiée, sans surproduction documentaire.
-   - **Palier 2 — Travail de dossier / Analyse :** stratégie, remue-méninges, tri de preuve, matrices de concordance et plans d'argumentation.
-   - **Palier 3 — Acte ou état prêt au dépôt / Cour :** procédure complète par défaut (en-tête de cour, avis d'assignation, corps allégué, conclusions, avis de présentation, endos de cour) — avec mode explicite *« bloc de contenu seul à copier-coller »* lorsque demandé.
-3. **Sources primaires obligatoires (*fail-closed*) :** les connecteurs `lois`, `juris` et `outils` sont requis pour énoncer un article, un seuil indexé, un délai calculé ou une décision authentifiée. Si un connecteur requis est hors ligne ou non configuré (`401` / `404`), l'agent s'arrête, nomme le connecteur manquant et demande de le reconnecter ou de fournir le texte officiel. Au Palier 3, toute décision non lue intégralement en PDF CanLII utilise explicitement le marqueur de complétion `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
-4. **Budget d'identifiants natif (`<= 64` caractères) :** tous les identifiants composés respectent nativement la limite stricte de 64 caractères sans tronquer les schémas JSON (maximum **62/64** sous Claude Code, **52/64** sous Google Antigravity).
+Greffon multiplateforme (Claude Code, Claude Desktop, claude.ai, Google Antigravity et Gemini CLI) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)* regroupant **10 compétences** (5 orchestrateurs de phase et 5 compétences de service), **59 feuilles de référence granulaires**, **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels).
 
 ---
 
-## Les 5 compétences, 17 feuilles et 2 scripts (`skills/`)
+## Philosophie de conception (`v3.0.0`)
 
-| Compétence | Rôle principal | Feuilles (`references/`) et scripts locaux (`scripts/`) |
+1. **Orchestrateurs de phase + Services transversaux :**
+   - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, séquences, portes bloquantes, fichiers d'état persistés (`etat-dossier/<phase>.md`) et tables d'enchaînements vérifiées vers les services (`## Enchaînements`).
+   - **5 compétences de service :** détiennent l'ensemble des règles de fond, gabarits normalisés par famille et outillage déterministe, avec découvertes à 3 niveaux et chargement ciblé (socle + 1 ou 2 feuilles max, plafond `<= 64 Kio` par chargement).
+2. **Noyau de sécurité canonique v3 (`SAFETY-KERNEL`) :** Identique au bit près sur les **10** `SKILL.md` (5 garde-fous : confidentialité stricte, sources primaires obligatoires *fail-closed*, étanchéité bijuridique, protection asymétrique `CONFIDENTIEL`, **honnêteté perceptuelle et dé-identification des précédents internes**).
+3. **Calibration de rigueur à 3 paliers :**
+   - **Palier 1 — Triage / Question ponctuelle :** orientation rapide sur règle vérifiée, sans surproduction.
+   - **Palier 2 — Travail de dossier / Analyse :** stratégie, qualification probatoire, chronologie, matrice de concordance, note interne.
+   - **Palier 3 — Acte ou cahier prêt au dépôt / Cour :** procédure complète par défaut (avec mode explicite *« bloc pour gabarit du cabinet »*), contrôle intégral `lois`/`juris` (`Lue (intégrale) [par. X]` ou marqueur `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`), audit technique et bon de travail.
+4. **Vérifier, rapporter et émettre un bon de travail (`production-et-conformite`) :** Les 4 scripts locaux inspectent métadonnées, mise en page Word/PDF, OCR, signets et continuité des cotes en lecture seule, puis émettent un **bon de travail** précis pour les outils du cabinet (Microsoft Word, Adobe Acrobat / outil PDF).
+
+---
+
+## Cartographie des 10 compétences, 59 feuilles et 4 scripts (`skills/`)
+
+### A. Cinq orchestrateurs de phase (`phase-*`)
+
+| Phase | Rôle d'orchestration et portes | Feuilles de branche (`references/`) |
 |---|---|---|
-| **`recherche-juridique`** | Droit applicable, prescriptions, préalables procéduraux, jurisprudence et doctrine | `grille-prealables.md`, `strategie-sources.md`, `doctrine-et-livrables.md` |
-| **`analyse-juridique`** | Stratégie, remue-méninges, qualification de pièces, privilège/confidentialité, chronologies, préparation d'interrogatoire | `remue-meninges-et-strategie.md`, `tri-mentions-et-chronologie.md`, `preuve-et-protection.md`, `interrogatoire-prealable.md`, `scripts/inspecter_piece.py` |
-| **`redaction-juridique`** | Actes de procédure complets, mémoires/exposés en appel, mises en demeure, transactions, contrats, purge d'anglicismes | `actes-de-procedure.md`, `argumentation-appel-et-sources.md`, `correspondance-et-contrats.md`, `anti-contamination-bilingue.md` |
-| **`administration-litige`** | Délais et calendrier C.p.c., bordereaux de pièces (`145`, `174`, `247`, `250`), concordance, endos, tableaux de quantum/intérêts (`1619 C.c.Q.`), état des frais (`339–344`) | `echeanciers-cpc.md`, `bordereaux-concordance-et-endos.md`, `tableaux-quantum-et-frais.md`, `scripts/calcul_delai.py` |
-| **`deontologie-et-pratique`** | Conflits d'intérêts, identification du client, mandat/honoraires, fidéicommis, facturation, rapports avec la partie adverse et le tribunal | `radar-deontologique.md`, `identification-conflits-et-mandat.md`, `facturation-temps-et-fideicommis.md` |
+| **`phase-ouverture-dossier`** | Conflit (**porte bloquante**), identification/mandat, tri/garde des pièces, triage d'urgence, recherche préliminaire, note stratégique, mise en demeure ou suite | — |
+| **`phase-introduction-reponse`** | Préalables et délai de réponse (**porte bloquante**), théorie/matrice, rédaction d'acte ou mesure urgente, bordereau/signification (**porte**), protocole | `branche-demandeur.md`, `branche-defendeur.md`, `branche-urgence.md` |
+| **`phase-interrogatoires-instruction`** | Communication/caviardage, plan d'interrogatoire, séance, transcription (**porte**), engagements et objections `5 j` `228 al. 2` (**porte**), expertises, modifications `206–208` | — |
+| **`phase-preparation-audience`** | Mise en état `173` (**porte bloquante**), CRA/règlement, témoins/fiches, cahiers (sources, pièces, procédures), plan d'argumentation, admissions, contrôle complet de production (**porte bloquante**) | `branche-audience-interlocutoire.md` |
+| **`phase-jugement-et-suites`** | Réception du jugement, délai de rigueur appel/permission/rétractation (**porte bloquante**), analyse, rapport client, appel/rétractation, exécution, frais/intérêts `1619`, clôture et fidéicommis | — |
+
+### B. Cinq compétences de service
+
+| Service | Rôle principal | Feuilles (`references/`) et scripts (`scripts/`) |
+|---|---|---|
+| **`recherche-juridique`** | Préalables, législation (`lois`), jurisprudence (`juris`), doctrine admissible, précédents internes dé-identifiés (Q5), livrables et statuts de lecture | `grille-prealables.md`, `recherche-legislative.md`, `recherche-jurisprudentielle.md`, `recherche-doctrinale.md`, `recherche-precedents-internes.md`, `recherche-livrables.md` |
+| **`analyse-et-strategie`** | Réception/qualification, preuve directe (honnêteté perceptuelle & journal de garde), preuve indirecte, documents judiciaires, recevabilité, privilèges/caviardage, théorie de la cause, notes, matrice, fiche témoins, chronologie, interrogatoires | `piece-reception-et-qualification.md`, `preuve-directe.md`, `preuve-indirecte.md`, `preuve-documents-judiciaires.md`, `preuve-recevabilite-force-probante.md`, `preuve-privilege-confidentialite-caviardage.md`, `produit-theorie-de-la-cause.md`, `produit-note-et-memo.md`, `produit-matrice-allegations.md`, `produit-fiche-preuve-et-temoins.md`, `produit-chronologie.md`, `produit-interrogatoire.md`, `scripts/inspecter_piece.py` |
+| **`redaction-juridique`** | Actes de procédure complets (12 familles : demande introductive, défense/exposé, cours d'instance/206–208, moyens préliminaires, reconvention/garantie, injonction, saisie avant jugement, mesures provisionnelles, contrôle judiciaire, appel, rétractation, exécution), argumentation/mémoires (4), correspondance & contrats (7), socle et purge bilingue | `fondamentaux-actes.md`, `anti-contamination-bilingue.md`, `acte-*` (`12`), `arg-*` (`4`), `corr-*` (`3`), `contrat-*` (`4`) |
+| **`production-et-conformite`** | Contrôle formel d'actes et correspondance, audit PDF (OCR, signets, liens, métadonnées, commentaires), cahier des sources, bordereaux & cahier des pièces, cahier des procédures, endos/dépôt/signification et bon de travail | `controle-acte-de-procedure.md`, `controle-correspondance.md`, `controle-pdf-et-metadonnees.md`, `cahier-des-sources.md`, `cahier-des-pieces-et-bordereaux.md`, `cahier-des-procedures.md`, `controle-endos-depot-signification.md`, `scripts/controler_document.py`, `scripts/verifier_cotes.py` |
+| **`gestion-du-mandat`** | Ouverture/conflits/identification/mandat, radar déontologique (11 moments, 19 silences, IA), feuilles de temps et fidéicommis (`b-1-r.5`), échéanciers et délais C.p.c., tableaux quantum/Scott, intérêts `1619 C.c.Q.` et état des frais (`339–344`) | `conformite-ouverture-conflits-mandat.md`, `conformite-radar-deontologique.md`, `conformite-facturation-fideicommis.md`, `conformite-echeanciers-cpc.md`, `conformite-quantum-interets-frais.md`, `scripts/calcul_delai.py` |
 
 ---
 
@@ -41,32 +50,13 @@ La version `2.0.0` (`droit-civil-quebecois`) remplace l'ancienne architecture mo
 | **`juris`** | `https://jurisprudence.poirierlavoie.ca/mcp` | `Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}` (`401 WWW-Authenticate`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
 | **`outils`** | `https://outils.poirierlavoie.ca/mcp` | Accès public libre (sans secret) | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
-### Catalogue exact des 32 outils (`v2.0.0`)
-
-| Serveur (`lois`, 10 outils) | Serveur (`juris`, 10 outils) | Serveur (`outils`, 12 outils) |
-|---|---|---|
-| `list_laws` | `verify_citations` | `calendrier_holidays` |
-| `list_subjects` | `find_case` | `calendrier_deadlines` |
-| `related_laws` | `get_case` | `interets_1619` |
-| `find_relevant` | `citator` | `greffe_parse_number` |
-| `get_article` | `subsequent_history` | `palais_list` |
-| `get_articles` | `browse_cases` | `palais_get` |
-| `get_structure` | `list_databases` | `registre_search` |
-| `get_division` | `browse_legislation` | `registre_get_entity` |
-| `search_text` | `get_legislation` | `adresse_verify` |
-| `resolve_reference` | `parse_citation` | `terminologie_lookup` |
-| — | — | `termino_attestations` |
-| — | — | `terminologie_scan` |
-
-> Les deux serveurs authentifiés (`lois` et `juris`) sont configurés par variables d'environnement uniquement (`MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`). Aucun secret n'est stocké dans le dépôt.
+> Les deux serveurs authentifiés (`lois` et `juris`) sont configurés par variables d'environnement uniquement (`MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`). Aucun secret n'est stocké dans le dépôt. Tous les identifiants composés d'outils respectent nativement le plafond `<= 64` caractères (max **62/64** sous Claude Code, **52/64** sous Antigravity).
 
 ---
 
 ## Installation par plateforme
 
 ### 1. Claude Code
-
-Définir d'abord les secrets dans l'environnement utilisateur, puis installer depuis la place de marché du dépôt :
 
 ```bash
 export MCP_LEGISLATION_SECRET="<votre-secret-legislation>"
@@ -80,45 +70,32 @@ export MCP_JURISPRUDENCE_SECRET="<votre-secret-jurisprudence>"
 
 ### 2. Claude Desktop & `claude.ai`
 
-1. Dans les connecteurs personnalisés, ajouter les trois URL MCP en les nommant **`lois`** (`https://legislation.poirierlavoie.ca/mcp`), **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp`) et **`outils`** (`https://outils.poirierlavoie.ca/mcp`), avec l'en-tête `Authorization: Bearer <secret>` pour `lois` et `juris` (depuis `v2.0.1`, les compétences reconnaissent aussi les alias d'interface et chargent les outils différés par recherche d'outils).
+1. Dans les connecteurs personnalisés, ajouter **`lois`** (`https://legislation.poirierlavoie.ca/mcp`), **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp`) et **`outils`** (`https://outils.poirierlavoie.ca/mcp`), avec l'en-tête `Authorization: Bearer <secret>` pour `lois` et `juris`.
 2. Importer les compétences depuis `skills/` ou installer le bundle `.claude-plugin/plugin.json`.
 
-### 3. Google Antigravity
-
-Synchroniser le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` et configurer `MCP_LEGISLATION_SECRET` / `MCP_JURISPRUDENCE_SECRET` dans le gestionnaire de greffons (tous les outils respectent nativement le plafond `<= 64` caractères, max 52 caractères sous Antigravity) :
+### 3. Google Antigravity & Gemini CLI
 
 ```powershell
+# Google Antigravity (synchronisation locale)
 python scripts/synchroniser_plugin_gemini.py --apply
-python scripts/regenerer_cache_mcp.py --apply   # optionnel : reconstruit le cache depuis les dépôts locaux
+python scripts/regenerer_cache_mcp.py --apply   # optionnel depuis les dépôts locaux
 ```
-
-### 4. Gemini CLI
 
 ```bash
+# Gemini CLI
 gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecois
 ```
-
-`gemini-extension.json` déclare `sensitive: true` sur `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et fixe `"contextFileName": []` afin que les consignes de développement (`GEMINI.md`) n'alourdissent jamais le contexte juridique de l'avocat.
-
----
-
-## Migration depuis `v1.x` (`pratique-civile-quebecoise`) -> `v2.0.0` (`droit-civil-quebecois`)
-
-En `v2.0.0`, le greffon change de nom (`droit-civil-quebecois`), de clés de serveurs (`lois`, `juris`, `outils`) et d'identifiants d'outils pour corriger le bogue de troncature `> 64` caractères et supprimer l'ancien couplage applicatif :
-
-- **Claude Code :** désinstaller l'ancien greffon (`/plugin uninstall pratique-civile-quebecoise`), retirer l'ancienne place de marché si nécessaire, puis installer `jpoirierlavoie/droit-civil-quebecois`.
-- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` ; le script déploie `droit-civil-quebecois`, retire automatiquement l'ancien dossier `~/.gemini/config/plugins/pratique-civile-quebecoise` et purge les fichiers obsolètes. Si le cache local est régénéré via `python scripts/regenerer_cache_mcp.py --apply`, les anciens répertoires `pratique-civile-quebecoise_*` sont supprimés.
-- **Gemini CLI :** exécuter `gemini extensions uninstall pratique-civile-quebecoise` puis installer `droit-civil-quebecois`.
 
 ---
 
 ## Vérification et qualité
 
 ```powershell
-python verifier.py                                  # Contrôle statique strict (sortie muette, code 0)
-python verifier.py --stats                          # Bilan de taille des compétences (< 140 KB)
-python evals/executer_evals.py --auto-test          # Validation déterministe des 19 scénarios & 2 scripts
-python verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale (79 vérifications)
+python verifier.py                                  # Contrôle statique strict (muet, code 0)
+python verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
+python verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
+python evals/executer_evals.py --auto-test          # Validation des scénarios, 4 scripts locaux et fixtures vérificateur
+python verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
 python verifier_tout.py --mode live                 # Vérification distante (requiert les 2 secrets env)
 ```
 

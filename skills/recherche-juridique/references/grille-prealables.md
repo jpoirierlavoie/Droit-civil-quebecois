@@ -20,7 +20,7 @@ Carte opérationnelle des neuf verrous préalables. **Ne jamais réciter les tex
 | 6 | **Compétence territoriale / DIP** | District (art. 41 vs 42 C.p.c.), élection de for, litispendance, livre X C.c.Q. (art. 3148) |
 | 7 | **Qualité, intérêt, capacité** | Titulaire du droit (art. 85 C.p.c.), mise en cause obligatoire, représentation par avocat |
 | 8 | **Fins de non-recevoir** | Chose jugée, transaction, quittance, renonciation |
-| 9 | **Moyens préliminaires** | Déclinatoire, irrecevabilité, abus (art. 51, 166–168 C.p.c.) — délais renvoyés à l'administration du litige |
+| 9 | **Moyens préliminaires** | Déclinatoire, irrecevabilité, abus (art. 51, 166–168 C.p.c.) — délais renvoyés à la gestion du mandat |
 
 ## 2. Vecteurs groupés à charger via `lois.get_articles`
 
@@ -49,4 +49,4 @@ Lorsqu'un litige touche une municipalité, un accident, un bâtiment, un emploi 
 |---|---|---|
 | **Avis préalables** | `"avis préalable"`, `"à peine de déchéance"`, `"quinze jours"` | `c-19` (cités et villes), `c-27.1` (Code municipal), `b-1.1-r.8` |
 | **Régimes exclusifs** | `"recours exclusif"`, `"aucun recours"`, `"immunité"` | Lois sectorielles ou fédérales selon la matière |
-| **Délais de procédure** | *Hors recherche substantielle* | Renvoyer la chaîne et le calcul à `administration-litige` (`outils.calendrier_deadlines`) |
+| **Délais de procédure** | *Hors recherche substantielle* | Renvoyer la chaîne et le calcul à `gestion-du-mandat` (`outils.calendrier_deadlines`) |
