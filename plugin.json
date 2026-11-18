@@ -1,7 +1,7 @@
 {
   "name": "droit-civil-quebecois",
   "displayName": "Droit civil québécois",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Recherche, analyse stratégique et probante, rédaction judiciaire, administration du litige et déontologie en droit civil et commercial québécois. Cinq compétences à découverte progressive branchées sur les connecteurs « lois », « juris » et « outils ».",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
