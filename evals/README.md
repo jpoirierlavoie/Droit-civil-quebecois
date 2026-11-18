@@ -1,6 +1,6 @@
 # Suite d'évaluation comportementale (`evals/`)
 
-Vingt scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.0.2`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
+Vingt scénarios de régression couvrant les cinq compétences de **Droit civil québécois** (`v2.1.0`) et leurs paliers de rigueur : recherche législative/jurisprudentielle et statut de lecture, analyse stratégique et probante (commentaires Word cachés, caviardage Loi 25, interrogatoires), rédaction judiciaire complète vs mode bloc pour gabarit et cahier des sources, administration du litige (délais C.p.c., concordance, endos, état des frais) et déontologie/pratique (feuilles de temps, art. 110, fidéicommis).
 
 ## Fichiers
 

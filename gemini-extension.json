@@ -1,18 +1,18 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Recherche, analyse, rédaction, administration du litige et déontologie en droit civil et commercial québécois. Connecteurs « lois », « juris » et « outils ».",
   "contextFileName": [],
   "settings": [
     {
-      "name": "Secret partagé MCP Législation",
-      "description": "Secret partagé de l'instance MCP Législation (https://legislation.poirierlavoie.ca/mcp), transmis dans l'en-tête Authorization: Bearer.",
+      "name": "Jeton individuel MCP Législation",
+      "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'legislation'), transmis dans l'en-tête Authorization: Bearer vers https://legislation.poirierlavoie.ca/mcp.",
       "envVar": "MCP_LEGISLATION_SECRET",
       "sensitive": true
     },
     {
-      "name": "Secret partagé MCP Jurisprudence",
-      "description": "Secret partagé de l'instance MCP Jurisprudence (https://jurisprudence.poirierlavoie.ca/mcp), transmis dans l'en-tête Authorization: Bearer.",
+      "name": "Jeton individuel MCP Jurisprudence",
+      "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'jurisprudence', avec clé API CanLII personnelle active), transmis dans l'en-tête Authorization: Bearer vers https://jurisprudence.poirierlavoie.ca/mcp.",
       "envVar": "MCP_JURISPRUDENCE_SECRET",
       "sensitive": true
     }

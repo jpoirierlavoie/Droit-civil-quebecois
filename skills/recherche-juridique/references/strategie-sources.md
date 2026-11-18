@@ -46,5 +46,7 @@ Lorsque l'avocat fournit des décisions tirées de SOQUIJ, CAIJ ou CanLII :
 
 ## 5. Modes d'échec et arrêt obligatoire
 
-* **`401`, `404`, `429`, `INDÉTERMINÉE` ou `INTERROMPU` :** S'arrêter sur le volet touché, nommer le connecteur et le code/cause retourné, et **ne jamais basculer silencieusement sur la mémoire ni sur le web** pour combler un texte législatif ou une vérification de citation.
+* **`401`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` :** S'arrêter sur le volet touché, nommer le connecteur et le code/cause retourné, et **ne jamais basculer silencieusement sur la mémoire ni sur le web** pour combler un texte législatif ou une vérification de citation.
+* **`[CLEF_ABSENTE]` ou `[CLEF_REFUSEE]` sur `juris` :** L'interrogation de `juris` (y compris la lecture de son index local partagé) exige strictement la clé API CanLII personnelle active du praticien (BYOK). S'arrêter sur la vérification jurisprudentielle et inviter l'avocat à déposer ou renouveler sa clé CanLII dans `acces.poirierlavoie.ca/moi` (ou par en-tête `X-Clef-CanLII`).
+* **`hybride_desactive: true` sur `lois.search_text` :** Lorsque le compte titulaire a désactivé la recherche vectorielle hybride (`hybride_permis = 0` dans `acces.poirierlavoie.ca/moi`), `search_text` s'exécute strictement en mode lexical `FTS5` local ; combiner alors synonymes exacts du texte et `find_relevant`.
 * **Contradiction web vs connecteur :** Le connecteur primaire l'emporte sans discussion; signaler la divergence.
