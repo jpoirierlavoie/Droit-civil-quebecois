@@ -151,7 +151,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 En `v2.x`, le greffon adopte l'identifiant `droit-civil-quebecois`, les clés `lois`/`juris`/`outils`, les 32 noms d'outils compacts `<= 64` caractères et l'authentification individuelle par titulaire sur `acces.poirierlavoie.ca` :
 
 - **Claude Code :** désinstaller l'ancien greffon (`/plugin uninstall pratique-civile-quebecoise`), installer `jpoirierlavoie/droit-civil-quebecois` et exporter votre jeton `acces.poirierlavoie.ca` dans `MCP_LEGISLATION_SECRET` / `MCP_JURISPRUDENCE_SECRET`.
-- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` (retire automatiquement `~/.gemini/config/plugins/pratique-civile-quebecoise` et met à jour les variables du gestionnaire).
+- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` (retire automatiquement `~/.gemini/config/plugins/pratique-civile-quebecoise` et copie les gabarits `v2.1.0`), puis remplacer manuellement les valeurs de `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` dans le gestionnaire de greffons ou vos variables d'environnement par votre jeton individuel `acces.poirierlavoie.ca`.
 - **Gemini CLI :** exécuter `gemini extensions uninstall pratique-civile-quebecoise` puis installer `droit-civil-quebecois`.
 
 ---

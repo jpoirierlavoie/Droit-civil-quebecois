@@ -646,7 +646,7 @@ class MockMcpServer:
             return 403, {"Content-Type": "application/json"}, b'{"error":"Forbidden: Cloudflare WAF bot block"}'
 
         # 1. CORS Preflight OPTIONS (doit répondre avant auth, statut 204 No Content)
-        if method == "OPTIONS":
+        if method == "OPTIONS" and not path.startswith("/.well-known/oauth-protected-resource"):
             origin = headers.get("origin") or headers.get("Origin") or "*"
             return 204, {
                 "Access-Control-Allow-Origin": origin,
