@@ -19,6 +19,7 @@ Produit des tableaux structurés (Markdown et export `.csv` UTF-8 avec BOM `utf-
 ### 1. Décompte des intérêts légaux et indemnité additionnelle (`art. 1617–1620 C.c.Q.`)
 **Ne jamais calculer les intérêts à la main ni extrapoler un trimestre futur non publié.**
 * Exécuter obligatoirement `outils.interets_1619(end_date, tranches=[...], mode=...)` : calcule au jour exact (`Exact/Exact`, intérêt simple `1620 C.c.Q.`) l'intérêt légal (`5 %`) et l'indemnité additionnelle (`art. 28 L.A.F.`) sur une ou plusieurs tranches de capital datées (ex. mise en demeure, débours successifs, paiements partiels).
+* **Usage strictement restreint de `rate_overrides` :** `rate_overrides` est **interdit** sur tout trimestre déjà publié dans la table embarquée du serveur (l'outil rejette l'appel). Il ne sert qu'à injecter un taux art. 28 L.A.F. nouvellement publié par Revenu Québec / *Gazette officielle du Québec* pour un trimestre postérieur à `laf_table_last_quarter` avant la mise à jour du connecteur, et exige alors une vérification humaine sur la source officielle.
 
 ### 2. Tableaux de dommages et tableaux comparatifs (construction / commercial / *Scott*)
 * **Ventilation des dommages :** `| Poste / Chef de réclamation | Période / Date | Base contractuelle ou factuelle | Pièce(s) au soutien | Montant réclamé ($) | Point de départ intérêts | Notes / risque de preuve |`

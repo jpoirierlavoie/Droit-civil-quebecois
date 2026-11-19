@@ -214,6 +214,13 @@ def ajuster_ancrage_technologique(
         )
         return suivant, notes
 
+    if heure_acte is None:
+        notes.append(
+            "Notification technologique sans heure précisée (--heure) : l'art. 111 al. 2 C.p.c. "
+            "reporte au jour ouvrable suivant toute notification faite après 17 h 00 ; par défaut, "
+            "l'envoi est présumé ≤ 17 h 00 — confirmer l'horodatage exact de transmission/réception."
+        )
+
     if heure_acte == time(17, 0):
         notes.append(
             "Notification technologique reçue exactement à 17:00 : vérifier la seconde "
@@ -536,7 +543,7 @@ def main(argv: list[str] | None = None) -> int:
             regime=args.regime,
             reporter_samedi=args.reporter_samedi,
         )
-    except ValueError as exc:
+    except (ValueError, OverflowError) as exc:
         print(f"Erreur : {exc}", file=sys.stderr)
         return 2
 

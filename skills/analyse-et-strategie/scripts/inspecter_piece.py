@@ -1416,8 +1416,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(_format_texte(resultats), end="")
 
-    has_error = any(r.get("statut") != "ok" for r in resultats)
-    return 1 if has_error else 0
+    if any(r.get("statut") != "ok" for r in resultats):
+        return 2
+    if any(r.get("indicateurs") for r in resultats):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
