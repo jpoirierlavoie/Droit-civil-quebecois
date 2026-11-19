@@ -2,7 +2,7 @@ name: Vérification
 
 on:
   push:
-    branches: [main, v3.0]
+    branches: [main]
   pull_request:
 
 permissions:

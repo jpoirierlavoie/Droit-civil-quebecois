@@ -170,7 +170,7 @@ Toute modification doit passer `python verifier.py` (sortie strictement muette, 
    - Feuilles `references/*.md` : `<= 24 576` octets (`24 KB`), zéro `../`, titres conformes à la famille.
    - Plafond par chargement : `SKILL.md` + ses 2 plus grandes feuilles `<= 65 536` octets (`64 KB`).
    - Fichiers par compétence : `<= 100`.
-5. **Marqueurs de rédaction et mode publication (`--release`) :** `[FICHE À RÉDIGER]` et `[NON VALIDÉ PAR LA PRATIQUE]` autorisés sur la branche de travail `v3.0` ; **interdits** avec `python verifier.py --release` (qui exige aussi la couverture complète des scénarios `evals/`).
+5. **Marqueurs de rédaction et mode publication (`--release`) :** `[FICHE À RÉDIGER]` et `[NON VALIDÉ PAR LA PRATIQUE]` autorisés hors mode publication ; **interdits** avec `python verifier.py --release` (qui exige aussi la couverture complète des scénarios `evals/`).
 6. **Isolation DMS et anti-dérive (`BANNED_PATTERNS`, `RETIRED_*`) :** interdiction absolue de tout nom d'outil de gestionnaire de dossiers (`get_dossier`, `create_note`, etc.), codes DMS fermés, mentions de l'ancienne application, identifiants retirés (`v1`/`v2`, anciens outils/dépôts), `$ARGUMENTS`, `${CLAUDE_...}`, `mcp__`, `qclaw_`, `canlii_`.
 
 ---
