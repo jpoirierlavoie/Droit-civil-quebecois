@@ -316,6 +316,16 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
             res_jan2_li = calcul_mod.calculer_delai(date(2025, 1, 2), 1, "ans", regime="prescription")
             if res_jan2_cpc.get("echeance") != "2026-01-05" or res_jan2_li.get("echeance") != "2026-01-02":
                 erreurs.append(f"{sid} : divergence 2 janvier cpc vs prescription inattendue ({res_jan2_cpc.get('echeance')} / {res_jan2_li.get('echeance')})")
+
+            res_tech_sans_h = calcul_mod.calculer_delai(
+                date(2026, 6, 15), 10, "jours", mode_notification="technologique", heure_notification=None
+            )
+            if not any("sans heure précisée" in a for a in res_tech_sans_h.get("notes_ancrage", [])):
+                erreurs.append(f"{sid} : mode technologique sans heure doit avertir ({res_tech_sans_h})")
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_overflow = calcul_mod.main(["9999-12-31", "--jours", "10", "--json"])
+            if rc_overflow != 2:
+                erreurs.append(f"{sid} : débordement date 9999-12-31 attendu rc=2, obtenu {rc_overflow}")
         elif outil == "inspecter_piece":
             if spec.get("fixture") == "docx_avec_commentaire":
                 with tempfile.TemporaryDirectory() as tmp:
@@ -389,6 +399,23 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                             erreurs.append(f"{sid} : plafond de décompression inspecter_piece non appliqué ({r_cap})")
                     finally:
                         inspect_mod._MAX_ZIP_MEMBER_BYTES = old_cap
+
+                    propre_docx = tmp_dir / "propre_insp.docx"
+                    with zipfile.ZipFile(propre_docx, "w") as zf:
+                        zf.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+                        zf.writestr(
+                            "word/document.xml",
+                            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                            '<w:p><w:r><w:t>OK</w:t></w:r></w:p></w:body></w:document>',
+                        )
+                    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                        rc_insp_clean = inspect_mod.main([str(propre_docx), "--json"])
+                        rc_insp_ind = inspect_mod.main([str(docx_path), "--json"])
+                        rc_insp_err = inspect_mod.main([str(tmp_dir / "introuvable.docx"), "--json"])
+                    if (rc_insp_clean, rc_insp_ind, rc_insp_err) != (0, 1, 2):
+                        erreurs.append(
+                            f"{sid} : codes de sortie CLI inspecter_piece attendus (0, 1, 2), obtenu {(rc_insp_clean, rc_insp_ind, rc_insp_err)}"
+                        )
         elif outil == "inspecter_piece_journal":
             with tempfile.TemporaryDirectory() as tmp:
                 tmp_dir = Path(tmp)
@@ -664,6 +691,15 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                 res_reutil = cotes_mod.verifier_ensemble_cotes([acte_reutil], mode_modifie=True)
                 if "COTE_GELEE_REUTILISEE" not in {a["type"] for a in res_reutil.get("anomalies", [])}:
                     erreurs.append(f"{sid} : réutilisation de cote retirée dans le même acte non détectée ({res_reutil})")
+
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    rc_cotes_clean = cotes_mod.main(["--acte", str(acte_ok), "--bordereau", str(bord_ok), "--json"])
+                    rc_cotes_anom = cotes_mod.main(["--acte", str(acte_p), "--bordereau", str(bord_p), "--modifie", "--json"])
+                    rc_cotes_err = cotes_mod.main(["--acte", str(tmp_dir / "absent_acte.md"), "--json"])
+                if (rc_cotes_clean, rc_cotes_anom, rc_cotes_err) != (0, 1, 2):
+                    erreurs.append(
+                        f"{sid} : codes de sortie CLI verifier_cotes attendus (0, 1, 2), obtenu {(rc_cotes_clean, rc_cotes_anom, rc_cotes_err)}"
+                    )
         else:
             erreurs.append(f"{sid} : outil de test inconnu {outil!r}")
     return erreurs

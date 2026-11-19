@@ -17,7 +17,7 @@ Encadre la méthode de la boule de neige sur `juris`, le contrôle des citations
 2. **Authentifier en lot :** `juris.verify_citations` accepte jusqu'à **25 citations** en un appel (avec `refresh=false` par défaut pour ménager le quota CanLII). Transmettre systématiquement `{citation, expected_title, expected_year}` dès qu'un intitulé ou une année figurent au texte (ou en tête de citation neutre) afin de déjouer les combinaisons fabriquées.
 3. **Interpréter les 6 verdicts :**
    * `CONFIRMÉE` : citation exacte; enchaîner sur `juris.get_case` pour lire l'intitulé, la date exacte et les **mots-clés** (source riche d'arrêts de principe et d'articles liés).
-   * `DISCORDANTE` : la citation existe mais désigne une autre décision que celle annoncée — **alerte critique d'hallucination IA**, écarter entièrement la source qui l'a produite.
+   * `DISCORDANTE` : la citation existe mais désigne une autre décision que celle annoncée — **alerte critique d'hallucination IA**. Toutefois, devant un `appariement partiel` où la **citation neutre** (année, tribunal et numéro) concorde mais que l'intitulé diverge par une abréviation ou variante courante (`St`/`Saint`, `P.G.`/`Procureure générale`, forme féminine, `Cie`/`Compagnie`), comparer d'abord les noms complets des parties et vérifier la fiche `juris.get_case` avant d'écarter l'arrêt.
    * `NON CONSTRUCTIBLE` : renvoi de recueil (`R.C.S.`, `R.J.Q.`, `C.A.`) ou d'éditeur (`J.E.`, `REJB`, `EYB`, `AZ`) — enchaîner avec `juris.find_case` sur le nom des parties.
    * `INTROUVABLE` : couverture historique ou délai de diffusion CanLII; ne prouve pas l'inexistence.
    * `ILLISIBLE` / `INDÉTERMINÉE` : vérification **non effectuée** (quota `429` ou panne); ne jamais assimiler à `INTROUVABLE`.

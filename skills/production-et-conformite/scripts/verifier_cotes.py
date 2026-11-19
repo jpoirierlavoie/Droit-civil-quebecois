@@ -456,7 +456,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(res, ensure_ascii=False, indent=2))
     else:
         print(_format_texte(res))
-    return 0
+    return 1 if res.get("nombre_anomalies", 0) > 0 else 0
 
 
 if __name__ == "__main__":
