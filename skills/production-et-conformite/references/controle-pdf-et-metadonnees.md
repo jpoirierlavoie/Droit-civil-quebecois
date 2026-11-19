@@ -6,7 +6,7 @@ Vérifie la conformité technique des fichiers `.pdf` et `.docx` destinés au gr
 
 Lire via `lois` les règles de dépôt technologique et de présentation du tribunal saisi :
 * `law="cpc"` : `numbers=["107", "108", "109", "110", "250"]`;
-* Règlements et directives applicables : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.), `c-25.01-r.0.2.01` (C.A.Q.) quant au format PDF/A ou OCR, signets, hyperliens et taille des fichiers au greffe numérique.
+* Règlements et directives applicables : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.), `c-25.01-r.0.2.01` (C.A.Q.) ainsi que les directives C.S./C.Q. Vague 1 (`fonction='directive'`, `fr`-only : `qccs-dist-mtl` avec `rel_type='preseance-sur'` `qccs-div-mtl`, `qccs-div-qc`, `qccq-regles-simplifiees`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`, `qccq-daa-jurisprudence`, incluant `articles.links` sur annexes `ps:*` ; directives C.A.Q. hors corpus à vérifier séparément) quant au format PDF/A ou OCR, signets, hyperliens et taille des fichiers au greffe numérique.
 
 ## Contrôles automatisés
 
@@ -18,6 +18,7 @@ Exécuter `python scripts/controler_document.py <fichier.pdf|docx> [--exiger-cou
 * **Métadonnées et caviardage (`108 C.p.c.`) :** inspecter relevés bancaires, spécimens de chèque et autorisations de paiement (transit/institution/compte), NAS, cartes de crédit et en-têtes `Cci:` / `Bcc:` de courriels avant toute fusion, puis confirmer que les caviardages sont irréversiblement aplatis ;
 * **Métadonnées & fuites (`.docx` / `.pdf`) :** relève `Author`, `Creator`, `Producer`, commentaires Word (`word/comments.xml`) et marques de révision (`w:ins` / `w:del`);
 * **Format papier (`/MediaBox` / `w:pgSz`) :** accepte le format US Letter **portrait (`8,5 × 11 po`)** et **paysage (`11 × 8,5 po`)** employé pour l'*endos* (*backing*), tout en signalant les pages **A4 (`8,27 × 11,69 po`)** des portails administratifs (ex. reçus TAL), le format **Legal (`8,5 × 14 po`)** des pièces anciennes et les numérisations irrégulières à normaliser en US Letter avant dépôt.
+* **Dégradation nuage sans Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** lorsque `controler_document.py` ne peut pas s'exécuter localement, **divulguer explicitement** que les vérifications automatisées sur octets, flux PDF (couche texte OCR, `/Outlines`, `/Encrypt`, `/Subtype /Link`, `/MediaBox`) et XML Word (`comments.xml`, révisions, propriétés) ont été **omises**, et les reporter intégralement au bon de travail manuel.
 
 ## Contrôles humains
 
@@ -27,7 +28,7 @@ Exécuter `python scripts/controler_document.py <fichier.pdf|docx> [--exiger-cou
 
 ## Bon de travail
 
-Ne jamais modifier les fichiers binaires en place : produire un **bon de travail structuré** listant dans l'ordre chaque intervention requise dans les outils du cabinet (`Microsoft Word`, `Adobe Acrobat` / outil PDF du cabinet) :
+Ne jamais modifier les fichiers binaires en place : produire un **bon de travail structuré** listant dans l'ordre chaque intervention requise dans les outils du cabinet (`Microsoft Word`, `Adobe Acrobat` / outil PDF du cabinet) — **en commençant par toute vérification octets/XML/PDF omise lorsque les scripts Python locaux n'ont pas pu être exécutés** :
 1. Purge des commentaires, révisions et métadonnées personnelles avant export PDF;
 2. Exécution de l'OCR sur les pièces numérisées;
 3. Aplatissement définitif des zones caviardées;

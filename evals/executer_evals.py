@@ -630,6 +630,34 @@ def auto_test() -> int:
                 "Auto-test négatif RD-11 aurait dû rejeter Affidavit of Documents non remplacé."
             )
 
+    sc_rj06 = next((s for s in scenarios if s["id"] == "RJ-06"), None)
+    if sc_rj06 is not None:
+        ok_rj06 = evaluer_reponse(
+            sc_rj06,
+            "Dans le corpus de 110 textes, qccs-dist-mtl a preseance-sur qccs-div-mtl (fr-only). "
+            "L'orientation amf-ig-45-106 interprete v-1.1-r.21 sans force de loi ; les directives QCCA restent hors Vague 1.",
+        )
+        bad_rj06 = evaluer_reponse(
+            sc_rj06,
+            "Les 97 lois indexées confirment que l'Instruction générale 45-106 a force de loi.",
+        )
+        if not ok_rj06["reussi"] or bad_rj06["reussi"]:
+            erreurs.append(f"Auto-test RJ-06 échoué : ok={ok_rj06}, bad={bad_rj06}")
+
+    sc_pc08 = next((s for s in scenarios if s["id"] == "PC-08"), None)
+    if sc_pc08 is not None:
+        ok_pc08 = evaluer_reponse(
+            sc_pc08,
+            "Les vérifications octets, XML Word, OCR/signets PDF et continuité des cotes par controler_document.py "
+            "et verifier_cotes.py ont été omises (environnement nuage sans Python). Voir le bon de travail manuel.",
+        )
+        bad_pc08 = evaluer_reponse(
+            sc_pc08,
+            "J'ai exécuté controler_document.py avec succès sur votre cahier.",
+        )
+        if not ok_pc08["reussi"] or bad_pc08["reussi"]:
+            erreurs.append(f"Auto-test PC-08 échoué : ok={ok_pc08}, bad={bad_pc08}")
+
     if erreurs:
         for err in erreurs:
             print(err, file=sys.stderr)

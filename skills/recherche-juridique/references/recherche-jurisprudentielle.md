@@ -39,5 +39,6 @@ Au Palier 3, toute décision non lue intégralement en session reste sous le mar
 
 ## Modes d'échec
 
-* **`401`, `429`, `INDÉTERMINÉE` ou `INTERROMPU` sur `juris` :** **Arrêt obligatoire sur la vérification jurisprudentielle.** Nommer le connecteur `juris` et le code/cause retourné; ne jamais inventer un arrêt ni substituer un aperçu web à une lecture intégrale.
+* **`401`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `juris` :** **Arrêt obligatoire sur la vérification jurisprudentielle.** Nommer le connecteur `juris` et le code/cause retourné, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ; ne jamais inventer un arrêt ni substituer un aperçu web à une lecture intégrale.
+* **`[CLEF_ABSENTE]` ou `[CLEF_REFUSEE]` sur `juris` :** L'interrogation de `juris` (y compris la lecture de son index local partagé) exige strictement la clé API CanLII personnelle active du praticien (BYOK). S'arrêter sur la vérification jurisprudentielle et inviter l'avocat à déposer ou renouveler sa clé CanLII dans `acces.poirierlavoie.ca/moi` (ou par en-tête `X-Clef-CanLII`).
 * **Contradiction web vs `juris` :** La fiche et la citation authentifiée sur `juris` l'emportent sans discussion.

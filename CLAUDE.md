@@ -1,14 +1,14 @@
 # droit-civil-quebecois — Architecture, principes et consignes de travail
 
-Directives de développement, architecture à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.0.0`). Ce document gouverne de façon identique Claude et Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
+Directives de développement, architecture multi-dépôts à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.0.0`). Ce document gouverne de façon identique Claude et Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
 
 > **Note Gemini CLI (`gemini-extension.json`) :** La racine déclare `"contextFileName": []` afin que `GEMINI.md` ne soit **jamais** injecté comme contexte système dans les sessions d'usage juridique normal des utilisateurs finaux. Il s'applique exclusivement aux agents qui modifient ce dépôt.
 
 ---
 
-## 1. Architecture v3.0.0 à trois couches et topologie (10 compétences)
+## 1. Architecture v3.0.0 multi-dépôts et topologie (10 compétences)
 
-`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, claude.ai, Google Antigravity, Gemini CLI) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils`, 32 outils) :
+`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé :
 
 ```
              ┌────────────────────────────────────────────────────────┐
@@ -16,19 +16,24 @@ Directives de développement, architecture à trois couches et règles anti-dér
              │   5 orchestrateurs phase-* · 5 services · 59 feuilles  │
              │              4 scripts Python stdlib                   │
              └──────┬───────────────────────┬──────────────────┬──────┘
-                    │                       │                  │
-        (serveur `lois`, 10 outils)  (serveur `juris`, 10)  (serveur `outils`, 12)
-                    │                       │                  │
+                    │ /mcp (404)            │ /mcp (404)       │ /mcp (public)
+                    │ /mcp/oauth (401 OAuth)│ /mcp/oauth (401) │
                     ▼                       ▼                  ▼
          ┌─────────────────────┐ ┌─────────────────────┐ ┌──────────────────────────┐
          │   MCP-Legislation   │ │  MCP-Jurisprudence  │ │        MCP-Outils        │
-         │  (Worker Cloudflare │ │ (Worker Cloudflare  │ │    (Worker Cloudflare    │
-         │  D1 + Vectorize +   │ │  D1 cache CanLII    │ │   public, D1 lecture     │
-         │    Workers AI)      │ │  authentifié Bearer │ │   seule, zéro secret)    │
+         │  D1 + Vectorize +   │ │  D1 cache CanLII    │ │   Public, 3 D1 lecture   │
+         │  Workers AI +       │ │  BYOK CanLII strict │ │   seule, zéro secret,    │
+         │  hybride_permis     │ │  sans fetched_at    │ │   zéro journalisation    │
          └──────────┬──────────┘ └──────────┬──────────┘ └──────────────────────────┘
                     │                       │
-                    └───────────┬───────────┘
-                                ▼ (dépendance de dev MCP-Socle, zéro runtime dep)
+                    ├───────────┬───────────┴────┐
+                    │           ▼ (MCP-Socle)    ▼ (D1 partagée `mcp-identite`)
+                    │  ┌──────────────────┐  ┌──────────────────────────────────────┐
+                    │  │    MCP-Socle     │  │              MCP-Acces               │
+                    │  │ Transport 2026   │  │     https://acces.poirierlavoie.ca   │
+                    └──│ Auth · OAuth 2.1 │◄─┤ Admission Barreau · Coffre AES-GCM · │
+                       │ Coffre · Gouverne│  │ Portail /moi · Serveur OAuth PKCE    │
+                       └──────────────────┘  └──────────────────────────────────────┘
 ```
 
 ### Cartographie des 10 compétences, 59 feuilles et 4 scripts (`skills/`)
@@ -75,7 +80,7 @@ Conception **Découverte progressive à 3 niveaux** + **Calibration de rigueur �
 
 ### Noyau de sécurité canonique v3 (`SAFETY-KERNEL`)
 
-Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END -->` (5 garde-fous : Confidentialité stricte, Sources primaires obligatoires, Étanchéité bijuridique, Protection et déclencheurs déontologiques, **Perception et précédents**). Ce bloc reste en tête de chaque `SKILL.md` afin de survivre à la compaction de contexte. Crochets normalisés : `[À CONFIRMER]`, `[DATE À CONFIRMER]`, `[À COMPLÉTER]`, `[À VÉRIFIER VIA LOIS]`, `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END -->` (5 garde-fous : Confidentialité stricte, Sources primaires obligatoires avec redirection vers `acces.poirierlavoie.ca/moi` sur `401`/`404`/`429`/`[CLEF_ABSENTE]`/`[CLEF_REFUSEE]`/`QUOTA_EPUISE`/hors ligne, Étanchéité bijuridique, Protection et déclencheurs déontologiques, **Perception et précédents**). Ce bloc reste en tête de chaque `SKILL.md` afin de survivre à la compaction de contexte et correspond au préambule Deep Research dans `README.md`. Crochets normalisés : `[À CONFIRMER]`, `[DATE À CONFIRMER]`, `[À COMPLÉTER]`, `[À VÉRIFIER VIA LOIS]`, `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 
 ### Gabarit 1 — Orchestrateur (`phase-*/SKILL.md`)
 
@@ -83,7 +88,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 - Titre `# <Phase>` + `SAFETY-KERNEL` v3.
 - Sections obligatoires dans l'ordre :
   1. `## Entrées requises` *(ce que l'avocat doit fournir ; sinon `[À CONFIRMER]`)*
-  2. `## État de la phase` *(créer ou relire `etat-dossier/<phase>.md`)*
+  2. `## État de la phase` *(créer ou relire `etat-dossier/<phase>.md` ; bloc Markdown en ligne sur surface sans disque inscriptible)*
   3. `## Parcours` *(étapes numérotées `### Étape n — <nom>`, chacune avec Objectif · Livrable · Porte)*
   4. `## Enchaînements` *(tableau vérifiable — interdit dans les services)*
   5. `## Branches` *(ex. demandeur / défendeur / urgence ; 0 à 3 feuilles `references/branche-*.md`, listes de contrôle sans règles de fond)*
@@ -102,7 +107,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 ### Suivi d'état de phase (`etat-dossier/<phase>.md`)
 
-- **Emplacement :** `etat-dossier/<phase>.md` dans le répertoire du dossier client (Claude Code, Antigravity, Gemini CLI) ; sur `claude.ai`, produire un bloc prêt à enregistrer par l'avocat.
+- **Emplacement :** `etat-dossier/<phase>.md` dans le répertoire du dossier client lorsque le disque est inscriptible (Claude Code, Antigravity, Gemini CLI). Sur surfaces sans disque inscriptible (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research), produire directement un **bloc d'état Markdown en ligne** complet à sauvegarder sans prétendre avoir écrit sur disque.
 - **En-tête :** `phase`, `branche`, `date`, `palier`, `dernière mise à jour`.
 - **Corps :** tableau `| Étape | Statut (À faire / En cours / Franchie / Bloquée) | Livrable | Porte | Notes |`.
 - **Règles :** relu au début de chaque tour de la phase ; jamais copié hors du dossier ; faits étiquetés `Établi`, `Rapporté`, `Déduit` ou `[À CONFIRMER]`.
@@ -130,10 +135,12 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 ### Règles transversales de fond (`v3.0.0`)
 
+- **BYOK CanLII, double montage et zéro-log :** `/mcp` retourne uniformément `404` à corps vide sur `lois` et `juris`, tandis que `/mcp/oauth` retourne `401` RFC 9728 PKCE `S256` via `acces.poirierlavoie.ca`. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
+- **Corpus PDF Vague 1 (`lois`, `110` textes) :** inclut les directives QCCS/QCCQ (`fonction='directive'`, `unit='paragraphe'`, `par.`/`dir.`, `fr`-only ; `QCCA` absent de la Vague 1) et les règlements/orientations AMF (`v-1.1-r.*`, `amf-ig-*`, `fonction='orientation'`), reliés par `rel_type='preseance-sur'|'interprete'` et `articles.links` (`kind='annexe'`, `ps:*`).
 - **Aucune décharge statutaire figée :** privilégier les vecteurs `lois.get_articles`, paires confondables et silences ; ne jamais copier le texte intégral d'articles ni coder de seuils réglementaires en dur dans les scripts.
-- **Production (`production-et-conformite`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis pour les transformations effectuées dans les outils du cabinet (OCR, fusion, signets, timbrage de cotes).
+- **Production et dégradation nuage (`production-et-conformite` & `analyse-et-strategie`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis. Lorsque les scripts `.py` locaux (`controler_document.py`, `verifier_cotes.py`, `inspecter_piece.py`) ne peuvent pas s'exécuter (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research), **divulguer explicitement** que les contrôles octets/XML/PDF/cotes ont été omis et les inscrire en tête du **bon de travail** manuel.
 - **Précédents internes (`recherche-precedents-internes.md`) :** uniquement fournis par l'avocat, dé-identifiés obligatoirement, savoir-faire et structure uniquement, alerte de conflit, actes publics/jugements classés au-dessus des notes internes.
-- **Honnêteté perceptuelle (`preuve-directe.md`) :** n'analyser un média (audio, vidéo, image) que s'il a été effectivement perçu ; sinon exiger une transcription ou des captures et étiqueter « support secondaire » ; une transcription IA est une aide de travail, jamais une preuve ; empreinte SHA-256 + métadonnées à la réception (`inspecter_piece.py --journal`).
+- **Honnêteté perceptuelle (`preuve-directe.md`) :** n'analyser un média (audio, vidéo, image) que s'il a été effectivement perçu ; sinon exiger transcription ou captures et étiqueter « support secondaire » ; transcription IA = aide de travail uniquement ; empreinte SHA-256 + métadonnées à la réception (`inspecter_piece.py --journal`, ou bloc en ligne `[SHA-256 : À CALCULER LOCALEMENT]` en nuage).
 
 ---
 
@@ -143,10 +150,10 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 | # | Axe d'impact | Éléments à inspecter |
 |---|---|---|
-| 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `evals/test_verifier.py`, `verifier.py` |
-| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0`), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
-| 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP** | `src/site.ts` / `site.i18n.ts` / `server-card` dans `MCP-Legislation`, `MCP-Jurisprudence` et `MCP-Outils` |
-| 4 | **Impacts inter-dépôts (`Cross-repository`)** | Alignement des 32 outils, serveurs `lois`/`juris`/`outils` (inchangés en `v3.0.0`) et synchronisation locale Antigravity / Gemini CLI |
+| 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `evals/test_verifier.py`, `verifier.py`, `verifier_tout.py` |
+| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0` + autorisation de pratique professionnelle), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
+| 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP** | `src/site.ts` / `site.i18n.ts` / `server-card` / `/.well-known/oauth-protected-resource/mcp/oauth` dans `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils` et `MCP-Acces` |
+| 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Socle`**, **`MCP-Acces`**, **`MCP-Legislation`**, **`MCP-Jurisprudence`** et **`MCP-Outils`** (identité `mcp-identite`, BYOK, OAuth 2.1 `/mcp/oauth`, 32 outils, synchronisation Antigravity / Gemini CLI) |
 
 ---
 
@@ -154,12 +161,12 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
-1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement (sauf `LICENSE`).
-2. **Parité exacte des manifestes et licence (`3.0.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `CC-BY-NC-SA-4.0`, semver identique partout (`3.0.0`), `"contextFileName": []` dans `gemini-extension.json`.
-3. **Serveurs MCP et plafond `<= 64` caractères :** `lois`, `juris`, `outils` (32 outils inchangés), secrets par variables d'environnement (`MCP_LEGISLATION_SECRET`, `MCP_JURISPRUDENCE_SECRET`), `sensitive: true` sous Gemini CLI, aucune clé `eager`, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity).
+1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE`.
+2. **Parité exacte des manifestes et licence (`3.0.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `CC-BY-NC-SA-4.0` assortie de l'Autorisation complémentaire de pratique professionnelle du droit (`LICENSE`), semver identique partout (`3.0.0`), `"contextFileName": []` dans `gemini-extension.json`.
+3. **Serveurs MCP et plafond `<= 64` caractères :** `lois`, `juris`, `outils` (32 outils inchangés), jetons individuels par variables d'environnement (`MCP_LEGISLATION_SECRET`, `MCP_JURISPRUDENCE_SECRET`), `sensitive: true` sous Gemini CLI, aucune clé `eager`, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity).
 4. **Budgets et structure des compétences (`skills/`) :**
    - Descriptions YAML : `<= 450` car. (phases), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale du greffon `<= 6 000` car.**, incluant `En anglais` et `Ne pas utiliser pour`, sans `<`/`>`.
-   - `SKILL.md` : corps `<= 2 200` mots et `<= 16 384` octets (`16 KB`), ouverture par `# `, parité SHA-256 du `SAFETY-KERNEL` v3 sur les 10 `SKILL.md`, correspondance 1:1 avec `references/*.md` et `scripts/*.py`.
+   - `SKILL.md` : corps `<= 2 200` mots et `<= 16 384` octets (`16 KB`), ouverture par `# `, parité SHA-256 du `SAFETY-KERNEL` v3 (règle 2 `acces.poirierlavoie.ca/moi` + règle 5 `Perception et précédents`) sur les 10 `SKILL.md`, correspondance 1:1 avec `references/*.md` et `scripts/*.py`.
    - Feuilles `references/*.md` : `<= 24 576` octets (`24 KB`), zéro `../`, titres conformes à la famille.
    - Plafond par chargement : `SKILL.md` + ses 2 plus grandes feuilles `<= 65 536` octets (`64 KB`).
    - Fichiers par compétence : `<= 100`.
@@ -182,8 +189,9 @@ python -m unittest evals/test_verifier.py
 
 # 3. Suite E2E multi-paliers (simulation locale ou réseau réel)
 python verifier_tout.py --mode mock
-# python verifier_tout.py --mode live
+# python verifier_tout.py --mode live --require-antigravity-cache
 
-# 4. Déploiement local Antigravity / Gemini CLI (après validation release)
-# python scripts/synchroniser_plugin_gemini.py --apply
+# 4. Déploiement local Antigravity / Gemini CLI
+python scripts/synchroniser_plugin_gemini.py --apply
+python scripts/regenerer_cache_mcp.py --apply
 ```

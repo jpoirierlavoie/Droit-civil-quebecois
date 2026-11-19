@@ -6,19 +6,20 @@ Encadre l'assemblage du **cahier de procès** / **cahier d'audience interlocutoi
 
 ## Règles applicables
 
-* **Cahier de procès / Cahier d'audience de première instance (`c-25.01-r.0.2.1`, `c-25.01-r.9`) :** Assembler dans un volume unique (ou par volumes séparés si volumineux) selon l'ordre pratique de l'audience :
+* **Cahier de procès / Cahier d'audience de première instance (`c-25.01-r.0.2.1`, `c-25.01-r.9`, directives Vague 1 `qccs-*` / `qccq-*` en `fonction='directive'`, `fr`-only) :** Assembler dans un volume unique (ou par volumes séparés si volumineux) selon l'ordre pratique de l'audience :
   1. Page couverture + **Table des matières** détaillée par onglet ;
   2. Plan de plaidoirie / plan d'argumentation (lorsque versé dans le cahier d'audience) ;
   3. Actes de procédure finaux déposés (demande introductive, défense/exposé sommaire, actes modifiés, protocole de l'instance, demandes incidentes) ;
   4. Liste/bordereau des pièces + pièces pertinentes (avec intercalaires/timbres `PIÈCE P-1`) ;
   5. Cahier des autorités (ou onglet dédié avec surlignement jaune) ;
   6. **Endos paysage (`11 × 8,5 po`)** conforme en clôture du cahier.
-* **Annexes d'appel (`c-25.01-r.0.2.01`, `372–373 C.p.c.`) :** `[FICHE À RÉDIGER]` — Lire via `lois` les règles exactes du *Règlement de la Cour d'appel en matière civile* quant au format, à la pagination continue et au contenu obligatoire des Annexes I (jugement entrepris et avis), II (procédures et dispositions législatives) et III (extraits nécessaires de preuve et dépositions).
+* **Annexes d'appel (`c-25.01-r.0.2.01`, `372–373 C.p.c.`) :** `[FICHE À RÉDIGER]` — Lire via `lois` les règles exactes du *Règlement de la Cour d'appel en matière civile* quant au format, à la pagination continue et au contenu obligatoire des Annexes I (jugement entrepris et avis), II (procédures et dispositions législatives) et III (extraits nécessaires de preuve et dépositions) *(les directives C.A.Q. restent hors corpus Vague 1)*.
 
 ## Contrôles automatisés
 
 1. Exécuter `python scripts/controler_document.py <cahier.pdf> --exiger-couche-texte --exiger-signets --json` pour vérifier pagination, couche texte OCR, signets (`/Outlines`) et format US Letter portrait/paysage sans verrou `/Encrypt`.
 2. Exécuter `python scripts/verifier_cotes.py` sur l'ensemble des actes modifiés inclus pour confirmer l'intégrité des cotes gelées.
+3. **Dégradation nuage sans Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** si les scripts ne peuvent pas s'exécuter localement, **divulguer explicitement** que les vérifications scriptées octets/PDF/OCR/signets et cotes ont été **omises** et les inscrire en tête du bon de travail.
 
 ## Contrôles humains
 
@@ -30,4 +31,4 @@ Encadre l'assemblage du **cahier de procès** / **cahier d'audience interlocutoi
 Produire le bon de travail ordonné pour l'outil PDF du cabinet :
 1. Aplatir tout document chiffré (`/Encrypt`, formulaires XFA ou signatures Adobe) et exécuter l'OCR sur les pièces numérisées ;
 2. Fusionner dans l'ordre exact de la Table des matières avec intercalaires/onglets numérotés et endos paysage final (`11 × 8,5 po`) ;
-3. Générer les signets navigables (`/Outlines`) par section et par cote, puis contrôler le poids total pour dépôt électronique. *(Annexes I, II et III d'appel : `[FICHE À RÉDIGER]` — valider les gabarits spécifiques de pagination continue C.A.Q.)*
+3. Générer les signets navigables (`/Outlines`) par section et par cote, puis contrôler le poids total pour dépôt électronique *(en listant explicitement les contrôles PDF/cotes omis si les scripts locaux n'ont pas pu être exécutés)*. *(Annexes I, II et III d'appel : `[FICHE À RÉDIGER]` — valider les gabarits spécifiques de pagination continue C.A.Q.)*

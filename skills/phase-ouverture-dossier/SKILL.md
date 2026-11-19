@@ -18,7 +18,7 @@ Orchestre la prise en charge initiale du dossier, du contrôle de conflit jusqu'
 ## Garde-fous impératifs
 
 1. **Confidentialité stricte :** Ne jamais inclure de noms de clients, faits identifiants, extraits de pièces ou numéros de dossier dans une recherche web ni dans un champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`). Sont seuls permis : les dénominations, adresses et numéros de greffe soumis aux outils sans journalisation de `outils` (`registre_search`, `adresse_verify`, `greffe_parse_number`) et les intitulés de décisions publiées dans `juris` (`find_case`, `verify_citations`).
-2. **Sources primaires obligatoires (arrêt sur le volet touché) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Repérer les trois connecteurs par leurs outils signatures — y compris s'ils sont différés (les charger par recherche d'outils avant de conclure à leur absence) ou nommés sous un alias client (`legis` / `Législation`, `Jurisprudence`, `Outils`) : `lois` (`get_article`, `get_articles`), `juris` (`verify_citations`, `get_case`) et `outils` (`calendrier_deadlines`, `interets_1619`). Si le connecteur requis échoue (`401`, `404`, hors ligne) sans repli local prévu par la compétence, **s'arrêter sur le volet touché**, nommer le connecteur et demander à l'avocat de le reconnecter ou de fournir le texte officiel.
+2. **Sources primaires obligatoires (arrêt sur le volet touché) :** Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Repérer les trois connecteurs par leurs outils signatures — y compris s'ils sont différés (les charger par recherche d'outils avant de conclure à leur absence) ou nommés sous un alias client (`legis` / `Législation`, `Jurisprudence`, `Outils`) : `lois` (`get_article`, `get_articles`), `juris` (`verify_citations`, `get_case`) et `outils` (`calendrier_deadlines`, `interets_1619`). Si le connecteur requis échoue (`401`, `404`, `429`, `[CLEF_ABSENTE]`, `[CLEF_REFUSEE]`, `QUOTA_EPUISE`, hors ligne) sans repli local prévu par la compétence, **s'arrêter sur le volet touché**, nommer le connecteur et demander à l'avocat de rétablir l'accès (`acces.poirierlavoie.ca/moi`) ou de fournir le texte officiel.
 3. **Étanchéité bijuridique :** Écarter tout droit étranger (`.fr`, Belgique, Suisse; art. 1240, 2224, 1641) et purger les calques de common law (*duty of care*, *consideration*, *estoppel*, dommages punitifs sans loi habilitante sous l'art. 1621 C.c.Q.). En anglais, employer exclusivement la terminologie officielle anglaise du C.c.Q. et du C.p.c. (`get_article(lang="en")`, `terminologie_lookup`).
 4. **Protection et déclencheurs déontologiques :** Présumer tout document non coté `CONFIDENTIEL` (jamais `PUBLIC` par défaut). Signaler au texte via `lois` (`b-1-r.3.1`, `b-1-r.5`, `cpc` art. 108, 192–194) une obligation déontologique ou de caviardage uniquement devant un fait déclencheur concret, sans mise en garde générique.
 5. **Perception et précédents :** Ne jamais décrire un média, une image ou un document non effectivement perçu dans la session (sinon demander une transcription ou un extrait visuel et marquer l'analyse « support secondaire »). Un précédent interne n'est utilisé que s'il est fourni par l'avocat, dé-identifié, sans jamais importer un fait, un nom ni une pièce de l'autre dossier.
@@ -33,7 +33,7 @@ Orchestre la prise en charge initiale du dossier, du contrôle de conflit jusqu'
 
 ## État de la phase
 
-* **Emplacement :** `etat-dossier/phase-ouverture-dossier.md` dans le répertoire du dossier (Claude Code, Antigravity, Gemini CLI); sur `claude.ai`, produire un bloc structuré à enregistrer par l'avocat.
+* **Emplacement :** `etat-dossier/phase-ouverture-dossier.md` dans le répertoire du dossier lorsque le disque est inscriptible (Claude Code, Antigravity, Gemini CLI). **Dégradation gracieuse (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** si `etat-dossier/` n'est pas inscriptible, livrer directement un **bloc d'état Markdown en ligne** complet à copier-sauvegarder sans prétendre avoir écrit de fichier.
 * **En-tête :** `phase: phase-ouverture-dossier` · `branche` · `date` · `palier` · `dernière mise à jour`.
 * **Corps :** tableau `| Étape | Statut (À faire / En cours / Franchie / Bloquée) | Livrable | Porte | Notes |`.
 * **Règles :** relire le fichier au début de chaque tour de cette phase; ne jamais le copier hors du dossier; étiqueter tout fait `Établi`, `Rapporté`, `Déduit` ou `[À CONFIRMER]`.
@@ -102,6 +102,6 @@ Orchestre la prise en charge initiale du dossier, du contrôle de conflit jusqu'
 
 ## Contrôle de sortie de phase
 
-1. Conflit dégagé, mandat/portée clarifiés et `etat-dossier/phase-ouverture-dossier.md` mis à jour.
+1. Conflit dégagé, mandat/portée clarifiés et `etat-dossier/phase-ouverture-dossier.md` mis à jour *(ou bloc d'état en ligne livré si disque non inscriptible)*.
 2. Prescription, avis préalables et compétence contrôlés.
 3. **Suite suggérée (texte brut) :** passer à `phase-introduction-reponse` (ou à la clôture si consultation unique sans mandat).

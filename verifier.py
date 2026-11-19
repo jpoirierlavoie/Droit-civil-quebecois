@@ -621,7 +621,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             continue
         erreurs.append(f"fichier hors inventaire autorisé : {rel}")
 
-    # 2. Encoding (UTF-8 without BOM, LF only except LICENSE)
+    # 2. Encoding (UTF-8 without BOM, LF only across all files)
     decoded: dict[str, str] = {}
     for rel in files:
         raw = (racine / rel).read_bytes()
@@ -633,9 +633,19 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         except UnicodeDecodeError:
             erreurs.append(f"{rel} : encodage UTF-8 invalide")
             continue
-        if rel != "LICENSE" and "\r" in text:
+        if "\r" in text:
             erreurs.append(f"{rel} : fins de ligne CR/CRLF interdites (LF requis)")
         decoded[rel] = text
+
+    license_text = decoded.get("LICENSE")
+    if license_text is not None:
+        for req_marker in (
+            EXPECTED_LICENSE,
+            "AUTORISATION COMPLÉMENTAIRE DE PRATIQUE PROFESSIONNELLE DU DROIT",
+            "COMPANION PROFESSIONAL LEGAL PRACTICE GRANT",
+        ):
+            if req_marker not in license_text:
+                erreurs.append(f"LICENSE : mention obligatoire absente ({req_marker})")
 
     # 3. Byte-for-byte CLAUDE.md / GEMINI.md parity
     if "CLAUDE.md" in decoded and "GEMINI.md" in decoded:
@@ -1043,6 +1053,11 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 erreurs.append(
                     f"{skill_rel} : SAFETY-KERNEL v3 doit inclure la règle 5 (Perception et précédents)"
                 )
+            for req_k in ("acces.poirierlavoie.ca/moi", "[CLEF_ABSENTE]", "[CLEF_REFUSEE]", "QUOTA_EPUISE"):
+                if req_k not in k_content:
+                    erreurs.append(
+                        f"{skill_rel} : SAFETY-KERNEL règle 2 doit inclure '{req_k}'"
+                    )
 
         if _SIBLING_SKILL_MD_RE.search(text):
             erreurs.append(

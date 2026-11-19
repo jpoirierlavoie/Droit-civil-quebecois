@@ -5,7 +5,7 @@
 ## Vecteur législatif
 
 * `law="cpc"` : `numbers=["49", "84", "99", "101", "105", "158", "166", "173", "175", "176", "177", "192", "193", "194", "206", "207", "208", "213", "220", "227", "228", "246", "248", "527"]`
-* Règlements : `c-25.01-r.0.2.1` (C.S. art. 10 s.), `c-25.01-r.9` (C.Q. art. 47 s.).
+* Règlements et directives : `c-25.01-r.0.2.1` (C.S. art. 10 s.), `c-25.01-r.9` (C.Q. art. 47 s.), plus directives C.S./C.Q. Vague 1 (`fonction='directive'`, `par.`/`dir.`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-regles-simplifiees`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin` ; directives C.A.Q. hors corpus).
 
 ## Conditions et préalables
 
@@ -15,7 +15,7 @@
 
 ## Forum et compétence
 
-Mentionner sous le titre la disposition habilitante du C.p.c. et du règlement du tribunal saisi (`c-25.01-r.0.2.1` art. 10 en C.S., `c-25.01-r.9` art. 47 en C.Q.) et diriger la présentation devant la chambre/salle appropriée (`outils.palais_get`).
+Mentionner sous le titre la disposition habilitante du C.p.c., du règlement du tribunal saisi (`c-25.01-r.0.2.1` art. 10 en C.S., `c-25.01-r.9` art. 47 en C.Q.) et de la directive de pratique applicable le cas échéant (`qccs-*`, `qccq-*`, textes non législatifs `fr`-only ; directives C.A.Q. hors corpus Vague 1), et diriger la présentation devant la chambre/salle appropriée (`outils.palais_get`).
 
 ## Structure obligatoire
 

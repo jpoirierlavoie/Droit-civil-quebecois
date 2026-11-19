@@ -6,6 +6,7 @@ Tables compactes de détection et de correction pour tout projet français ou an
 
 1. **Analyse automatisée (`outils.terminologie_scan`) :** Exécuter sur tout projet fini (jusqu'à 32 000 caractères; scinder au-delà) pour repérer automatiquement francismes de France, calques de common law et archaïsmes procéduraux antérieurs au C.p.c. de 2016.
 2. **Vérification bilingue officielle :** Ne jamais traduire littéralement un concept civil ou procédural en anglais. Appeler `lois.get_article(law="ccq"|"cpc", article="...", lang="en")` ou `outils.terminologie_lookup` et `outils.termino_attestations`.
+3. **Textes PDF publiés en français seulement (`langs: ['fr']`) :** Les directives de pratique QCCS/QCCQ et textes AMF de la Vague 1 (`fonction='directive'|'orientation'`, `v-1.1-r.*`) retournent une erreur explicite sous `lang='en'` (*published in French only (`langs: ['fr']`)*). Pour un écrit anglais citant ces directives ou orientations, lire la source avec `lang='fr'` dans `lois` puis vérifier à la source si le tribunal ou l'AMF publie une désignation anglaise officielle avant de traduire.
 
 ## 2. Marqueurs français à purger (procédure, droit substantiel, sociétés)
 

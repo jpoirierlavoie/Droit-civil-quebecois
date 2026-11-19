@@ -5,7 +5,7 @@
 ## Vecteur législatif
 
 * `law="cpc"` : `numbers=["33", "35", "41", "42", "43", "99", "100", "141", "142", "145", "146", "148", "180", "229", "490", "535.1", "535.2", "535.3", "535.4", "535.5", "535.6", "535.7", "535.8", "535.9", "535.15"]`
-* Règlements : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.), `c-25.01-r.2` (avis d'assignation ministériel), `t-16-r.10` (droits de greffe).
+* Règlements et directives : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.), `c-25.01-r.2` (avis d'assignation ministériel), `t-16-r.10` (droits de greffe), plus directives C.S./C.Q. Vague 1 (`fonction='directive'`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-regles-simplifiees`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`).
 
 ## Conditions et préalables
 
@@ -23,7 +23,7 @@
 * **Instance ordinaire (`141 s.`) :** Cartouche + Désignation des parties + Titre `(Articles 141 et suivants du Code de procédure civile)` + `LES PARTIES` + `LES FAITS` + caractérisation + `LES DOMMAGES` + `LA COMPÉTENCE DU TRIBUNAL` + `POUR CES MOTIFS, PLAISE AU TRIBUNAL :` + signature/coordonnées `[À COMPLÉTER]`.
 * **Variante régime simplifié C.Q. (`535.1–535.15`) :**
   * **Aucun protocole de l'instance (`535.2`)**;
-  * **Plafond strict de `5 pages` maximum (`535.3`)** : rédaction resserrée (avertir expressément qu'un texte non paginé exige vérification du nombre de pages final dans Word ou via `production-et-conformite` / `controler_document.py`).
+  * **Plafond strict de `5 pages` maximum (`535.3`)** : rédaction resserrée (avertir expressément qu'un texte non paginé exige vérification du nombre de pages final dans Word ou via `production-et-conformite` / `controler_document.py`, ou inscription explicite de ce contrôle au bon de travail manuel si les scripts locaux ne peuvent pas s'exécuter).
 
 ## Pièces jointes et formalités
 

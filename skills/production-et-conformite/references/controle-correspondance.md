@@ -11,7 +11,7 @@ Charger selon le cas `lois.get_articles` sur :
 
 ## Contrôles automatisés
 
-1. Exécuter `python scripts/controler_document.py <piece_jointe.docx|pdf> --json` (ou `inspecter_piece.py` dans `analyse-et-strategie`) sur toute pièce jointe afin d'exclure commentaires cachés, marques de révision ou métadonnées compromises.
+1. Exécuter `python scripts/controler_document.py <piece_jointe.docx|pdf> --json` (ou `inspecter_piece.py` dans `analyse-et-strategie`) sur toute pièce jointe afin d'exclure commentaires cachés, marques de révision ou métadonnées compromises. *(Sur surface nuage sans Python — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que les contrôles octets/XML/PDF par script ont été omis et les reporter au bon de travail.)*
 2. Exécuter `outils.terminologie_scan` sur le texte de la correspondance (vérification FR/EN, `UNDER ALL RESERVES` vs `WITHOUT PREJUDICE`).
 
 ## Contrôles humains
@@ -27,4 +27,4 @@ Charger selon le cas `lois.get_articles` sur :
 Produire un bon de travail court avant l'envoi :
 1. Vérifier ou corriger la légende en tête de lettre (`CONFIDENTIEL`, `SOUS TOUTES RÉSERVES` / `WITHOUT PREJUDICE` ou lettre ouverte) ;
 2. Valider la liste des destinataires et des copies conformes (`Code 120–121`) ;
-3. Purger les métadonnées, commentaires et révisions des pièces jointes et confirmer l'aplatissement des caviardages (`108 C.p.c.`) avant expédition.
+3. Purger les métadonnées, commentaires et révisions des pièces jointes et confirmer l'aplatissement des caviardages (`108 C.p.c.`) avant expédition *(en listant explicitement les vérifications XML/PDF omises si `controler_document.py` n'a pas pu s'exécuter)*.

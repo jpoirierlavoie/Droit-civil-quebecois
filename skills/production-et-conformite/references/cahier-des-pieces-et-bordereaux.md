@@ -18,6 +18,7 @@ Dresse les listes et bordereaux formels exigés par le C.p.c., applique le contr
 
 1. Exécuter `python scripts/verifier_cotes.py --acte <acte> --bordereau <bordereau> [--matrice <matrice>] [--modifie] --json` pour vérifier la continuité des cotes (`P-1..P-n`, `P-01..P-n`, `D-1..D-n`, `R-1..R-n`, `I-`, `A-`, `MC-`), le gel des cotes retirées (`206–208`) et la concordance exacte avec l'acte.
 2. Exécuter `python scripts/controler_document.py <cahier_pieces.pdf> --exiger-couche-texte --exiger-signets --json` sur le cahier PDF assemblé.
+3. **Dégradation nuage sans Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** si `verifier_cotes.py` ou `controler_document.py` ne peuvent pas s'exécuter, **divulguer explicitement** que l'audit scripté de continuité/gel des cotes et le contrôle octets/OCR/signets PDF ont été **omis**, puis les inscrire au bon de travail manuel.
 
 ## Contrôles humains
 
@@ -28,4 +29,4 @@ Dresse les listes et bordereaux formels exigés par le C.p.c., applique le contr
 
 ## Bon de travail
 
-Émettre le bon de travail pour l'assemblage du cahier des pièces dans les outils du cabinet : ordre continu des cotes, insertion des pages intercalaires ou timbrage visible de chaque cote (`PIÈCE P-1`, `PIÈCE P-2`), aplatissement des caviardages (`108 C.p.c.`), normalisation US Letter et OCR sur chaque pièce numérisée, création des signets par cote et préparation de l'endos paysage (`controle-endos-depot-signification.md`).
+Émettre le bon de travail pour l'assemblage du cahier des pièces dans les outils du cabinet : ordre continu des cotes, insertion des pages intercalaires ou timbrage visible de chaque cote (`PIÈCE P-1`, `PIÈCE P-2`), aplatissement des caviardages (`108 C.p.c.`), normalisation US Letter et OCR sur chaque pièce numérisée, création des signets par cote et préparation de l'endos paysage (`controle-endos-depot-signification.md`) — **incluant explicitement les contrôles scriptés de cotes et d'octets/PDF omis si Python local est indisponible**.

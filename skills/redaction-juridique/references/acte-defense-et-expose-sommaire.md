@@ -30,7 +30,7 @@ Soulever toute contestation de compétence matérielle ou territoriale par moyen
    * regrouper uniquement les paragraphes consécutifs ayant exactement la même réponse; vérifier chaque allégation critique (faute, demeure, dommage, solidarité).
 5. **Version des faits / moyens de défense** en poursuivant la numérotation continue : faits positifs d'exonération, absence de faute, faute d'un tiers, absence de préjudice ou de lien causal, prescription, paiement, compensation, fin de non-recevoir.
 6. **Cotes de pièces :** attribuer la série **`D-1..D-n`** en ordre continu de première invocation (ou **`DA-1..DA-n`**, `D` + initiales, lorsque plusieurs défendeurs distincts produisent des bordereaux séparés).
-7. **Régime simplifié C.Q. (`535.6`) :** Plafond strict de **`<= 2 pages`** (ou **`<= 7 pages`** si une demande reconventionnelle est jointe); avertir de vérifier la pagination finale dans Word / `controler_document.py`.
+7. **Régime simplifié C.Q. (`535.6`) :** Plafond strict de **`<= 2 pages`** (ou **`<= 7 pages`** si une demande reconventionnelle est jointe); avertir de vérifier la pagination finale dans Word / `controler_document.py` *(ou signaler l'omission du contrôle scripté et l'inscrire au bon de travail manuel sur surface sans Python)*.
 
 ## Pièces jointes et formalités
 

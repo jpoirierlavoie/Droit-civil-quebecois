@@ -19,7 +19,7 @@ Vecteurs à charger via `lois.get_articles` :
 
 ## Authentification et intégrité
 
-Exécuter `scripts/inspecter_piece.py` sur les fichiers locaux afin de révéler les commentaires Word (`COMMENTAIRES_WORD`), marques de révision (`MARQUES_DE_REVISION`), `Bcc` (`COPIE_CONFORME_INVISIBLE`) ou brouillons (`BROUILLON_PROBABLE`) susceptibles d'exposer des avis internes ou privilégiés.
+Exécuter `scripts/inspecter_piece.py` sur les fichiers locaux afin de révéler les commentaires Word (`COMMENTAIRES_WORD`), marques de révision (`MARQUES_DE_REVISION`), `Bcc` (`COPIE_CONFORME_INVISIBLE`) ou brouillons (`BROUILLON_PROBABLE`) susceptibles d'exposer des avis internes ou privilégiés. *(Sur surface sans exécution Python — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que la détection scriptée octets/XML/en-têtes a été omise, maintenir `CONFIDENTIEL`, et inscrire ces vérifications au bon de travail manuel avant toute communication.)*
 
 ## Recevabilité
 

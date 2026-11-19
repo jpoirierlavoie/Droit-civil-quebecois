@@ -1909,6 +1909,112 @@
       ],
       "enchainement_attendu": [],
       "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-06",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Directives de pratique PDF (QCCS/QCCQ), orientations AMF et préséance Vague 1 (110 textes)",
+      "prompt": "Vérifier via lois les règles de pratique applicables à Montréal en Cour supérieure (division vs district), le statut d'une Instruction générale 45-106 de l'AMF et la disponibilité des directives de la Cour d'appel en anglais.",
+      "criteres": [
+        "Relever via lois.related_laws(rel_type='preseance-sur') que qccs-dist-mtl prime qccs-div-mtl (fonction='directive', unit='paragraphe', par./dir.).",
+        "Distinguer le Règlement 45-106 (v-1.1-r.21, fonction='reglement') de l'Instruction générale amf-ig-45-106 (fonction='orientation', rel_type='interprete', indicative sans force de loi).",
+        "Signaler que les textes PDF Vague 1 (corpus de 110 textes) sont publiés en français seulement (langs: ['fr']) et que les directives de la Cour d'appel (QCCA) sont hors corpus."
+      ],
+      "doit_contenir": [
+        "qccs-dist-mtl",
+        "preseance-sur|préséance",
+        "amf-ig-45-106|orientation",
+        "interprete|interprète",
+        "QCCA|Cour d'appel.*hors|hors.*Vague 1|absentes",
+        "fr"
+      ],
+      "ne_doit_pas_contenir": [
+        "Instruction générale 45-106 a force de loi",
+        "97 lois indexées"
+      ],
+      "feuilles_attendues": [
+        "recherche-legislative"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-07",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Arrêt obligatoire sur [CLEF_ABSENTE] BYOK CanLII et orientation vers acces.poirierlavoie.ca/moi",
+      "prompt": "Lors de la vérification de 2020 QCCA 495, le connecteur juris retourne l'erreur [CLEF_ABSENTE]. Puis-je quand même résumer l'arrêt de mémoire ou contourner l'erreur ?",
+      "criteres": [
+        "S'arrêter obligatoirement sur le volet jurisprudentiel sans inventer d'arrêt ni résumer de mémoire.",
+        "Expliquer l'exigence BYOK CanLII (clé API CanLII personnelle requise avant toute lecture du cache partagé) et orienter vers https://acces.poirierlavoie.ca/moi (ou en-tête X-Clef-CanLII)."
+      ],
+      "doit_contenir": [
+        "CLEF_ABSENTE",
+        "acces\\.poirierlavoie\\.ca/moi",
+        "arrêter|arrêt",
+        "CanLII"
+      ],
+      "ne_doit_pas_contenir": [
+        "selon mes connaissances, l'arrêt 2020 QCCA 495 établit"
+      ],
+      "feuilles_attendues": [
+        "recherche-jurisprudentielle"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-08",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Dégradation gracieuse nuage / OAuth sans exécution Python (contrôles omis au bon de travail)",
+      "prompt": "Sur claude.ai ou Gemini App (/mcp/oauth) sans exécution Python locale, l'avocat demande le contrôle final d'une demande introductive modifiée et d'un cahier PDF avant dépôt.",
+      "criteres": [
+        "Divulguer explicitement que les contrôles scriptés sur octets, structure XML Word, structure PDF (OCR/signets/Encrypt) et continuité des cotes via controler_document.py et verifier_cotes.py ont été omis.",
+        "Ne jamais prétendre qu'un contrôle automatisé a été exécuté et inscrire chaque vérification omise en tête du bon de travail manuel."
+      ],
+      "doit_contenir": [
+        "omis|omise|omises",
+        "bon de travail",
+        "controler_document|verifier_cotes",
+        "XML|OCR|signets|cotes"
+      ],
+      "ne_doit_pas_contenir": [
+        "j'ai exécuté controler_document\\.py avec succès"
+      ],
+      "feuilles_attendues": [
+        "controle-acte-de-procedure",
+        "controle-pdf-et-metadonnees"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH1-04",
+      "competence": "phase-ouverture-dossier",
+      "palier": 2,
+      "titre": "Dégradation gracieuse nuage / OAuth — Bloc etat-dossier en ligne et inspection omise",
+      "prompt": "Session sur Gemini App (/mcp/oauth) sans disque d'espace de travail inscriptible ni Python local : le conflit est dégagé et le client remet un fichier courriel .eml et un contrat .docx brut.",
+      "criteres": [
+        "Livrer un bloc d'état Markdown en ligne pour etat-dossier/phase-ouverture-dossier.md sans prétendre avoir écrit sur disque.",
+        "Bloquer tout classement PUBLIC et divulguer explicitement que l'inspection octets/XML/en-têtes et l'empreinte SHA-256 via inspecter_piece.py ont été omises, en les inscrivant au bon de travail."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-ouverture-dossier\\.md",
+        "en ligne|bloc",
+        "omis|omise|omises",
+        "bon de travail",
+        "CONFIDENTIEL|PUBLIC"
+      ],
+      "ne_doit_pas_contenir": [
+        "j'ai enregistré le fichier etat-dossier/phase-ouverture-dossier\\.md sur votre disque"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:piece-reception-et-qualification"
+      ],
+      "declencheur_negatif": false
     }
   ]
 }

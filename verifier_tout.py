@@ -646,7 +646,7 @@ class MockMcpServer:
             return 403, {"Content-Type": "application/json"}, b'{"error":"Forbidden: Cloudflare WAF bot block"}'
 
         # 1. CORS Preflight OPTIONS (doit répondre avant auth, statut 204 No Content)
-        if method == "OPTIONS":
+        if method == "OPTIONS" and not path.startswith("/.well-known/oauth-protected-resource"):
             origin = headers.get("origin") or headers.get("Origin") or "*"
             return 204, {
                 "Access-Control-Allow-Origin": origin,
@@ -702,7 +702,7 @@ class MockMcpServer:
                 else [
                     {
                         "name": "Authorization",
-                        "description": "Secret partagé (« Bearer <secret> »).",
+                        "description": "Jeton individuel de titulaire (« Bearer <jeton> ») ou connexion OAuth 2.1 sur /mcp/oauth via acces.poirierlavoie.ca.",
                         "isRequired": True,
                         "isSecret": True,
                     }
@@ -725,30 +725,80 @@ class MockMcpServer:
                         {
                             "type": "streamable-http",
                             "url": URL_SERVEURS[self.server_name],
-                            "supportedProtocolVersions": ["2025-11-25", "2025-06-18", "2025-03-26"],
+                            "supportedProtocolVersions": ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"],
                             "headers": card_headers,
                         }
                     ],
                 }).encode("utf-8"),
             )
 
-        # 5. Authentification selon doctrine (Legislation 404, Jurisprudence 401, Outils public)
-        # S8 : Sur Législation, l'absence de porteur rend 404 AVANT toute vérification de méthode HTTP.
+        # 4b. Métadonnées RFC 9728 (OAuth 2.1 sur /mcp/oauth uniquement ; racine en 404)
+        if path == "/.well-known/oauth-protected-resource":
+            return 404, {"Content-Type": "text/plain; charset=utf-8"}, b"Not found"
+        if path == "/.well-known/oauth-protected-resource/mcp/oauth":
+            if self.server_name == "outils":
+                return 404, {"Content-Type": "text/plain; charset=utf-8"}, b"Not found"
+            if method == "OPTIONS":
+                return (
+                    204,
+                    {
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                        "Access-Control-Allow-Headers": "Accept, Content-Type, MCP-Protocol-Version",
+                        "Access-Control-Max-Age": "86400",
+                    },
+                    b"",
+                )
+            if method not in ("GET", "HEAD"):
+                return (
+                    405,
+                    {"Content-Type": "application/json; charset=utf-8", "Allow": "GET, HEAD, OPTIONS"},
+                    b'{"error":"method_not_allowed"}',
+                )
+            srv_slug = SLUGS_CARTE_SERVEUR[self.server_name]
+            doc = {
+                "resource": f"https://{srv_slug}.poirierlavoie.ca/mcp/oauth",
+                "authorization_servers": ["https://acces.poirierlavoie.ca"],
+                "bearer_methods_supported": ["header"],
+                "scopes_supported": ["les_deux", srv_slug],
+                "resource_documentation": f"https://{srv_slug}.poirierlavoie.ca/",
+            }
+            return (
+                200,
+                {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"},
+                b"" if method == "HEAD" else json.dumps(doc).encode("utf-8"),
+            )
+
+        # 5. Authentification selon doctrine Phase 3 :
+        # - Montage direct /mcp sur lois et juris : refus uniforme 404 sans corps ni WWW-Authenticate
+        # - Montage OAuth /mcp/oauth sur lois et juris : refus 401 RFC 9728 avec WWW-Authenticate
+        # - Outils : accès public sans secret
+        est_oauth_mount = path == "/mcp/oauth"
+        if path.startswith("/mcp/oauth/"):
+            return 404, {"Content-Type": "application/json"}, b""
+
         auth_header = headers.get("authorization") or headers.get("Authorization") or ""
         is_authenticated = bool(auth_header) and (
             auth_header in (f"Bearer {self.secret_token}", "Bearer mock-secret-token")
         ) and not auth_header.startswith("Bearer invalid")
 
-        if self.server_name == "lois" and not is_authenticated:
-            # S8 : 404 Not Found non-oracle
-            return 404, {"Content-Type": "application/json"}, b""
-
-        if self.server_name == "juris" and not is_authenticated:
-            return (
-                401,
-                {"Content-Type": "application/json", "WWW-Authenticate": "Bearer"},
-                json.dumps({"error": "unauthorized"}).encode("utf-8"),
-            )
+        if self.server_name in ("lois", "juris") and not is_authenticated:
+            if est_oauth_mount:
+                srv_slug = SLUGS_CARTE_SERVEUR[self.server_name]
+                www_auth = (
+                    f'Bearer resource_metadata="https://{srv_slug}.poirierlavoie.ca/.well-known/oauth-protected-resource/mcp/oauth", '
+                    f'scope="{srv_slug} les_deux"'
+                )
+                return (
+                    401,
+                    {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "WWW-Authenticate": www_auth,
+                        "Cache-Control": "no-store",
+                    },
+                    json.dumps({"error": "unauthorized"}).encode("utf-8"),
+                )
+            return 404, {"Cache-Control": "no-store"}, b""
 
         # 6. Vérification méthode HTTP (après identité pour S8 non-oracle)
         if method not in ("GET", "POST", "HEAD"):
@@ -2635,8 +2685,8 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     ):
         results.append(TestResult(tid, name, 2, srv, passed, ms, err))
 
-    # --- 2.1 Authentification ---
-    # T2.1.1 : Jurisprudence non authentifié -> 401 WWW-Authenticate
+    # --- 2.1 Authentification & Double Montage (/mcp 404 uniforme + /mcp/oauth 401 RFC 9728) ---
+    # T2.1.1 : Jurisprudence /mcp non authentifié -> 404 vide sans WWW-Authenticate
     if target_server in ("all", "juris"):
         t0 = time.perf_counter()
         try:
@@ -2648,11 +2698,39 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 auth_token="OMIT",
             )
             has_www = any(k.lower() == "www-authenticate" for k in hdrs)
-            ok = status == 401 and has_www
+            ok = status == 404 and not has_www and body == b""
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T2.1.1",
-                "Rejet HTTP 401 sur Jurisprudence sans jeton",
+                "Garde non-oracle HTTP 404 sur Jurisprudence /mcp sans jeton",
+                "juris",
+                ok,
+                elapsed,
+                None if ok else f"Statut reçu {status}, en-têtes {hdrs}, corps {body[:60]!r}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.1.1", "Garde 404 Jurisprudence", "juris", False, elapsed, str(ex))
+
+    # T2.1.2 : Jurisprudence /mcp jeton invalide -> 404 sans WWW-Authenticate
+    if target_server in ("all", "juris"):
+        t0 = time.perf_counter()
+        try:
+            status, hdrs, _ = client.send_http(
+                "juris",
+                path="/mcp",
+                method="POST",
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
+                auth_token="invalid_token_1234567890",
+            )
+            has_www = any(k.lower() == "www-authenticate" for k in hdrs)
+            ok = status == 404 and not has_www
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.1.2",
+                "Garde non-oracle HTTP 404 sur Jurisprudence /mcp avec jeton erroné",
                 "juris",
                 ok,
                 elapsed,
@@ -2662,47 +2740,21 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.1", "Rejet 401 Jurisprudence", "juris", False, elapsed, str(ex))
-
-    # T2.1.2 : Jurisprudence jeton invalide -> 401
-    if target_server in ("all", "juris"):
-        t0 = time.perf_counter()
-        try:
-            status, _, _ = client.send_http(
-                "juris",
-                path="/mcp",
-                method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
-                auth_token="invalid_token_1234567890",
-            )
-            ok = status == 401
-            elapsed = (time.perf_counter() - t0) * 1000
-            add_result(
-                "T2.1.2",
-                "Rejet HTTP 401 sur Jurisprudence avec jeton erroné",
-                "juris",
-                ok,
-                elapsed,
-                None if ok else f"Statut reçu {status}",
-            )
-        except ConnectionError:
-            raise
-        except Exception as ex:
-            elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.2", "Rejet 401 Jurisprudence jeton erroné", "juris", False, elapsed, str(ex))
+            add_result("T2.1.2", "Garde 404 Jurisprudence jeton erroné", "juris", False, elapsed, str(ex))
 
     # T2.1.3 : Législation non authentifié -> 404 (S8 non-oracle)
     if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
-            status, _, _ = client.send_http(
+            status, hdrs, _ = client.send_http(
                 "lois",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
                 auth_token="OMIT",
             )
-            ok = status == 404
+            has_www = any(k.lower() == "www-authenticate" for k in hdrs)
+            ok = status == 404 and not has_www
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T2.1.3",
@@ -2722,14 +2774,15 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
-            status, _, _ = client.send_http(
+            status, hdrs, _ = client.send_http(
                 "lois",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
                 auth_token="invalid_token_abcdef",
             )
-            ok = status == 404
+            has_www = any(k.lower() == "www-authenticate" for k in hdrs)
+            ok = status == 404 and not has_www
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T2.1.4",
@@ -2771,6 +2824,64 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
             add_result("T2.1.5", "Accès public outils", "outils", False, elapsed, str(ex))
+
+    # T2.1.6 & T2.1.7 : Découverte OAuth 2.1 / RFC 9728 sur /mcp/oauth (lois & juris)
+    for tid_idx, srv_key in ((6, "lois"), (7, "juris")):
+        if target_server not in ("all", srv_key):
+            continue
+        t0 = time.perf_counter()
+        tid = f"T2.1.{tid_idx}"
+        slug = SLUGS_CARTE_SERVEUR[srv_key]
+        try:
+            st_oauth, hdrs_oauth, _ = client.send_http(
+                srv_key,
+                path="/mcp/oauth",
+                method="POST",
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
+                auth_token="OMIT",
+            )
+            www_val = {k.lower(): v for k, v in hdrs_oauth.items()}.get("www-authenticate", "")
+            expected_meta_url = f"https://{slug}.poirierlavoie.ca/.well-known/oauth-protected-resource/mcp/oauth"
+            oauth_401_ok = st_oauth == 401 and expected_meta_url in www_val
+
+            st_meta, _, body_meta = client.send_http(
+                srv_key,
+                path="/.well-known/oauth-protected-resource/mcp/oauth",
+                method="GET",
+                auth_token="OMIT",
+            )
+            meta_json = json.loads(body_meta.decode("utf-8")) if body_meta else {}
+            meta_ok = (
+                st_meta == 200
+                and meta_json.get("authorization_servers") == ["https://acces.poirierlavoie.ca"]
+                and meta_json.get("resource") == f"https://{slug}.poirierlavoie.ca/mcp/oauth"
+            )
+
+            st_root_meta, _, _ = client.send_http(
+                srv_key,
+                path="/.well-known/oauth-protected-resource",
+                method="GET",
+                auth_token="OMIT",
+            )
+            root_404_ok = st_root_meta == 404
+
+            ok = oauth_401_ok and meta_ok and root_404_ok
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                tid,
+                f"Monture OAuth 2.1 /mcp/oauth + RFC 9728 sur {srv_key}",
+                srv_key,
+                ok,
+                elapsed,
+                None
+                if ok
+                else f"/mcp/oauth={st_oauth} (www={www_val!r}), meta={st_meta} ({meta_json}), root_meta={st_root_meta}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(tid, f"Monture OAuth 2.1 RFC 9728 {srv_key}", srv_key, False, elapsed, str(ex))
 
     # --- 2.2 Transport & Header Boundaries ---
     # T2.2.1 : Outils accepte Accept: application/json
@@ -4080,7 +4191,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     ):
         results.append(TestResult(tid, name, 5, srv, passed, ms, err))
 
-    # T5.1.1 : S8 Stealth non-oracle sur Législation (méthode non autorisée sans authentification -> 404)
+    # T5.1.1 : S8 Stealth non-oracle sur Législation & Jurisprudence (méthode non autorisée sans authentification -> 404)
     if target_server in ("all", "lois"):
         t0 = time.perf_counter()
         try:
@@ -4095,7 +4206,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T5.1.1",
-                "S8 Stealth non-oracle : DELETE non authentifié rend 404 (non 405)",
+                "S8 Stealth non-oracle : DELETE non authentifié rend 404 sur lois (non 405)",
                 "lois",
                 ok,
                 elapsed,
@@ -4105,7 +4216,33 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T5.1.1", "S8 Stealth non-oracle", "lois", False, elapsed, str(ex))
+            add_result("T5.1.1", "S8 Stealth non-oracle lois", "lois", False, elapsed, str(ex))
+
+    if target_server in ("all", "juris"):
+        t0 = time.perf_counter()
+        try:
+            status, _, _ = client.send_http(
+                "juris",
+                path="/mcp",
+                method="DELETE",
+                body_data=b"",
+                auth_token="OMIT",
+            )
+            ok = status == 404
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T5.1.1b",
+                "S8 Stealth non-oracle : DELETE non authentifié rend 404 sur juris (non 405)",
+                "juris",
+                ok,
+                elapsed,
+                None if ok else f"Statut reçu {status} au lieu de 404",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T5.1.1b", "S8 Stealth non-oracle juris", "juris", False, elapsed, str(ex))
 
     # T5.1.2 : Host Header Security whitelist (rejet DNS rebinding sur domaines non autorisés -> 403)
     if target_server in ("all", "outils"):

@@ -23,7 +23,7 @@ KERNEL_V3 = """<!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
 
 1. **Confidentialité stricte :** Ne jamais inclure de noms de clients dans une requête `query`.
-2. **Sources primaires obligatoires :** Lire `lois` (`get_article`), `juris` (`verify_citations`), `outils` (`calendrier_deadlines`).
+2. **Sources primaires obligatoires :** Lire `lois` (`get_article`), `juris` (`verify_citations`), `outils` (`calendrier_deadlines`). En cas d'échec (`401`, `404`, `429`, `[CLEF_ABSENTE]`, `[CLEF_REFUSEE]`, `QUOTA_EPUISE`, hors ligne), s'arrêter sur le volet touché et diriger vers `acces.poirierlavoie.ca/moi`.
 3. **Étanchéité bijuridique :** Écarter tout droit étranger.
 4. **Protection et déclencheurs déontologiques :** Présumer `CONFIDENTIEL`.
 5. **Perception et précédents :** Ne jamais décrire un média non perçu dans la session (support secondaire). Précédents dé-identifiés fournis par l'avocat.
@@ -167,6 +167,13 @@ def _build_valid_v3_fixture(root: Path) -> None:
             _write_lf(target, json.dumps({"mcpServers": verifier.EXPECTED_MCP_SERVERS}) + "\n")
         elif rel in ("CLAUDE.md", "GEMINI.md"):
             _write_lf(target, "# Contrat v3\n")
+        elif rel == "LICENSE":
+            _write_lf(
+                target,
+                f"SPDX: {verifier.EXPECTED_LICENSE}\n"
+                "AUTORISATION COMPLÉMENTAIRE DE PRATIQUE PROFESSIONNELLE DU DROIT\n"
+                "COMPANION PROFESSIONAL LEGAL PRACTICE GRANT\n",
+            )
         elif rel == "evals/scenarios.json":
             continue
         elif rel.endswith(".py"):
@@ -456,6 +463,24 @@ class VerifierV3Tests(unittest.TestCase):
             self.assertTrue(any("script local introuvable" in e for e in errs_norm))
             errs_rel, _ = verifier.verifier(root, release_mode=True)
             self.assertTrue(any("analyse-et-strategie/references/preuve-directe.md (0 trouvé(s))" in e for e in errs_rel))
+
+    def test_license_markers_lf_and_kernel_rule_2(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            (root / "LICENSE").write_bytes(b"CC-BY-NC-SA-4.0\r\n")
+            errs, _ = verifier.verifier(root)
+            self.assertTrue(any("LICENSE : fins de ligne CR/CRLF" in e for e in errs))
+            self.assertTrue(any("AUTORISATION COMPLÉMENTAIRE" in e for e in errs))
+            self.assertTrue(any("COMPANION PROFESSIONAL" in e for e in errs))
+
+            p_skill = root / "skills" / "recherche-juridique" / "SKILL.md"
+            _write_lf(
+                p_skill,
+                p_skill.read_text(encoding="utf-8").replace("acces.poirierlavoie.ca/moi", "reconnecter"),
+            )
+            errs2, _ = verifier.verifier(root)
+            self.assertTrue(any("acces.poirierlavoie.ca/moi" in e for e in errs2))
 
 
 if __name__ == "__main__":

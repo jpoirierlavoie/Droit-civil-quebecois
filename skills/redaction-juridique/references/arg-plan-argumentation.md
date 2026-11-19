@@ -4,7 +4,7 @@ Rédige les plans d'argumentation remis au juge de première instance — où le
 
 ## Destinataire et format
 
-Document remis au **juge** (jamais substituable à une conclusion absente de la procédure : une conclusion oubliée exige un amendement, pas une plaidoirie). Consulter les règlements de pratique via `lois` (`c-25.01-r.0.2.1` C.S., `c-25.01-r.0.2.2`/`r.0.2.3`, `c-25.01-r.9` C.Q.) pour les limites de pages et délais de remise.
+Document remis au **juge** (jamais substituable à une conclusion absente de la procédure : une conclusion oubliée exige un amendement, pas une plaidoirie). Consulter les règlements de pratique via `lois` (`c-25.01-r.0.2.1` C.S., `c-25.01-r.0.2.2`/`r.0.2.3`, `c-25.01-r.9` C.Q.) ainsi que les directives de la C.S. et de la C.Q. en Vague 1 (`fonction='directive'`, `par.`/`dir.`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`, `qccq-daa-jurisprudence`) pour les limites de pages et délais de remise.
 
 Choisir le niveau de détail selon l'audience et le palier :
 * **Plan simple (sommaire d'audience / gestion / incident court) :** Titres synthétiques, puces factuelles avec cotes exactes, textes et arrêts clés cités en un paragraphe chacun, conclusions reprises mot pour mot.

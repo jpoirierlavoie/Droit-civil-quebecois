@@ -4,7 +4,7 @@ Dresse l'endos de cour québécois conforme, contrôle les formalités de dépô
 
 ## Règles applicables
 
-Vérifier les règles de forme et de dépôt du tribunal saisi via `lois` (`cpc` art. `107`, `109–111`, `116–129`, `130–140`, `c-25.01-r.0.2.1` C.S. art. 3–14, `c-25.01-r.9` C.Q., `c-25.01-r.0.2.01` C.A.Q., `t-16-r.10` droits de greffe) ainsi que les coordonnées du palais via `outils.greffe_parse_number` et `outils.palais_get`/`palais_list`.
+Vérifier les règles de forme et de dépôt du tribunal saisi via `lois` (`cpc` art. `107`, `109–111`, `116–129`, `130–140`, `c-25.01-r.0.2.1` C.S. art. 3–14, `c-25.01-r.9` C.Q., `c-25.01-r.0.2.01` C.A.Q., `t-16-r.10` droits de greffe) ainsi que les directives de pratique de la C.S. et de la C.Q. Vague 1 (`fonction='directive'`, `qccs-dist-mtl` avec `rel_type='preseance-sur'` `qccs-div-mtl`, `qccs-div-qc`, `qccq-regles-simplifiees`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`, `qccq-daa-jurisprudence`, en `par.`/`unit='paragraphe'`, `fr`-only, avec `links` sur les annexes `ps:*` ; directives C.A.Q. hors corpus Vague 1 à vérifier séparément) et les coordonnées du palais via `outils.greffe_parse_number` et `outils.palais_get`/`palais_list`.
 *(Avertissement obligatoire : les tables MJQ d'adresses datent du relevé local sans n° de téléphone et doivent être revérifiées auprès du Ministère avant signification ou dépôt.)*
 
 * **Structure complète d'un endos québécois (format US Letter paysage `11 × 8,5 po`) :**
@@ -20,7 +20,7 @@ Vérifier les règles de forme et de dépôt du tribunal saisi via `lois` (`cpc`
 
 1. `outils.greffe_parse_number` : confirmer la validité du numéro de dossier de cour, le code de greffe, la chambre (`17`, `22`, `09`, etc.) et l'année.
 2. `outils.palais_get` : obtenir la désignation officielle du palais ou point de service (à confirmer auprès du MJQ avant déplacement).
-3. `python scripts/controler_document.py <document.docx|pdf> --json` : confirmer le format US Letter **portrait (`8,5 × 11 po`) et/ou paysage (`11 × 8,5 po` pour l'endos)** et l'absence de verrous techniques avant dépôt.
+3. `python scripts/controler_document.py <document.docx|pdf> --json` : confirmer le format US Letter **portrait (`8,5 × 11 po`) et/ou paysage (`11 × 8,5 po` pour l'endos)** et l'absence de verrous techniques avant dépôt. *(Si Python local indisponible — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que la vérification octets/XML/PDF du format et des verrous a été omise et l'inscrire au bon de travail.)*
 
 ## Contrôles humains
 
@@ -34,4 +34,4 @@ Vérifier les règles de forme et de dépôt du tribunal saisi via `lois` (`cpc`
 
 ## Bon de travail
 
-Produire un bon de travail court avant envoi/dépôt : vérification finale de l'endos (Original vs Copie), émission du mandat à l'huissier ou préparation de l'envoi de notification technologique avec accusé de réception, et confirmation du paiement des droits de greffe (`t-16-r.10`).
+Produire un bon de travail court avant envoi/dépôt : vérification finale de l'endos (Original vs Copie), émission du mandat à l'huissier ou préparation de l'envoi de notification technologique avec accusé de réception, confirmation du paiement des droits de greffe (`t-16-r.10`), et **toute vérification octets/PDF omise lorsque `controler_document.py` n'a pas pu s'exécuter localement**.
