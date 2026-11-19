@@ -31,6 +31,10 @@ _PNG_EXTS = {".png"}
 _WAV_EXTS = {".wav"}
 _MP3_EXTS = {".mp3"}
 _MP4_EXTS = {".mp4", ".m4a", ".mov"}
+_MAX_ZIP_MEMBER_BYTES = 64 * 1024 * 1024
+_MAX_ZIP_TOTAL_BYTES = 128 * 1024 * 1024
+_VANISH_TAGS = ("vanish", "specVanish", "webHidden")
+_XML_OFF_VALUES = frozenset({"0", "false", "off"})
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _DC_NS = "http://purl.org/dc/elements/1.1/"
@@ -76,12 +80,64 @@ def _truncate(text: str, limit: int = 120) -> str:
     return cleaned[: limit - 1] + "…"
 
 
-def _parse_xml_from_zip(
-    zf: zipfile.ZipFile, member: str, xml_errors: list[str] | None = None
-) -> ET.Element | None:
+class _ZipLimitExceeded(ValueError):
+    """Levée lorsqu'un membre OOXML dépasse le plafond de décompression sécurisé."""
+
+
+def _is_w_flag_enabled(el: ET.Element) -> bool:
+    raw = el.attrib.get(f"{{{_W_NS}}}val")
+    if raw is None:
+        raw = el.attrib.get("val")
+    if raw is None:
+        return True
+    return raw.strip().lower() not in _XML_OFF_VALUES
+
+
+def _read_zip_member_bounded(
+    zf: zipfile.ZipFile, member: str, total_budget: list[int] | None = None
+) -> bytes | None:
     try:
-        data = zf.read(member)
+        info = zf.getinfo(member)
     except KeyError:
+        return None
+    if info.file_size > _MAX_ZIP_MEMBER_BYTES:
+        raise _ZipLimitExceeded(
+            f"Membre OOXML trop volumineux ({info.file_size} octets > {_MAX_ZIP_MEMBER_BYTES}) : {member}."
+        )
+    if total_budget is not None and (total_budget[0] + info.file_size) > _MAX_ZIP_TOTAL_BYTES:
+        raise _ZipLimitExceeded(
+            f"Décompression OOXML totale dépassant {_MAX_ZIP_TOTAL_BYTES} octets sur {member}."
+        )
+    chunks: list[bytes] = []
+    member_size = 0
+    with zf.open(info, "r") as fh:
+        while True:
+            chunk = fh.read(65536)
+            if not chunk:
+                break
+            member_size += len(chunk)
+            if member_size > _MAX_ZIP_MEMBER_BYTES:
+                raise _ZipLimitExceeded(
+                    f"Membre OOXML trop volumineux à la décompression (> {_MAX_ZIP_MEMBER_BYTES} octets) : {member}."
+                )
+            if total_budget is not None:
+                total_budget[0] += len(chunk)
+                if total_budget[0] > _MAX_ZIP_TOTAL_BYTES:
+                    raise _ZipLimitExceeded(
+                        f"Décompression OOXML totale dépassant {_MAX_ZIP_TOTAL_BYTES} octets sur {member}."
+                    )
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _parse_xml_from_zip(
+    zf: zipfile.ZipFile,
+    member: str,
+    xml_errors: list[str] | None = None,
+    total_budget: list[int] | None = None,
+) -> ET.Element | None:
+    data = _read_zip_member_bounded(zf, member, total_budget=total_budget)
+    if data is None:
         return None
     try:
         return ET.fromstring(data)
@@ -91,9 +147,13 @@ def _parse_xml_from_zip(
         return None
 
 
-def _extract_ooxml_props(zf: zipfile.ZipFile) -> dict[str, str]:
+def _extract_ooxml_props(
+    zf: zipfile.ZipFile,
+    xml_errors: list[str] | None = None,
+    total_budget: list[int] | None = None,
+) -> dict[str, str]:
     props: dict[str, str] = {}
-    core = _parse_xml_from_zip(zf, "docProps/core.xml")
+    core = _parse_xml_from_zip(zf, "docProps/core.xml", xml_errors, total_budget)
     if core is not None:
         mapping = {
             f"{{{_DC_NS}}}creator": "auteur_initial",
@@ -109,7 +169,7 @@ def _extract_ooxml_props(zf: zipfile.ZipFile) -> dict[str, str]:
             if el is not None and el.text and el.text.strip():
                 props[label] = el.text.strip()
 
-    app = _parse_xml_from_zip(zf, "docProps/app.xml")
+    app = _parse_xml_from_zip(zf, "docProps/app.xml", xml_errors, total_budget)
     if app is not None:
         app_map = {
             f"{{{_APP_NS}}}Application": "application",
@@ -137,77 +197,142 @@ def _inspect_docx(path: Path) -> dict[str, object]:
             "erreur": "Archive OOXML invalide ou corrompue (.docx).",
         }
 
-    with zf_ctx as zf:
-        xml_errors: list[str] = []
-        details["proprietes"] = _extract_ooxml_props(zf)
+    try:
+        with zf_ctx as zf:
+            total_budget = [0]
+            xml_errors: list[str] = []
+            details["proprietes"] = _extract_ooxml_props(zf, xml_errors, total_budget)
 
-        comments_root = _parse_xml_from_zip(zf, "word/comments.xml", xml_errors)
-        commentaires: list[dict[str, str]] = []
-        if comments_root is not None:
-            for com in comments_root.findall(f".//{{{_W_NS}}}comment"):
-                author = com.attrib.get(f"{{{_W_NS}}}author", "")
-                cdate = com.attrib.get(f"{{{_W_NS}}}date", "")
-                texte = "".join(com.itertext()).strip()
-                commentaires.append(
-                    {
-                        "auteur": author,
-                        "date": cdate,
-                        "extrait": _truncate(texte),
-                    }
-                )
-        details["nombre_commentaires"] = len(commentaires)
-        if commentaires:
-            indicateurs.append("COMMENTAIRES_WORD")
-            details["commentaires_apercu"] = commentaires[:15]
+            comments_root = _parse_xml_from_zip(zf, "word/comments.xml", xml_errors, total_budget)
+            commentaires: list[dict[str, str]] = []
+            if comments_root is not None:
+                for com in comments_root.findall(f".//{{{_W_NS}}}comment"):
+                    author = com.attrib.get(f"{{{_W_NS}}}author", "")
+                    cdate = com.attrib.get(f"{{{_W_NS}}}date", "")
+                    texte = "".join(com.itertext()).strip()
+                    commentaires.append(
+                        {
+                            "auteur": author,
+                            "date": cdate,
+                            "extrait": _truncate(texte),
+                        }
+                    )
+            details["nombre_commentaires"] = len(commentaires)
+            if commentaires:
+                indicateurs.append("COMMENTAIRES_WORD")
+                details["commentaires_apercu"] = commentaires[:15]
 
-        insertions = 0
-        suppressions = 0
-        rev_authors: set[str] = set()
-        xml_targets = [
-            name
-            for name in zf.namelist()
-            if name == "word/document.xml"
-            or (name.startswith("word/header") and name.endswith(".xml"))
-            or (name.startswith("word/footer") and name.endswith(".xml"))
-        ]
-        for member in xml_targets:
-            root = _parse_xml_from_zip(zf, member, xml_errors)
-            if root is None:
-                continue
-            for tag_local, counter_kind in (("ins", "ins"), ("del", "del")):
-                for node in root.findall(f".//{{{_W_NS}}}{tag_local}"):
-                    if counter_kind == "ins":
-                        insertions += 1
-                    else:
-                        suppressions += 1
-                    author = node.attrib.get(f"{{{_W_NS}}}author")
-                    if author:
-                        rev_authors.add(author)
+            insertions = 0
+            suppressions = 0
+            rev_authors: set[str] = set()
+            vanish_occurrences = 0
+            vanish_tags: set[str] = set()
+            vanish_excerpts: list[str] = []
 
-        details["marques_revision"] = {
-            "insertions": insertions,
-            "suppressions": suppressions,
-            "auteurs": sorted(rev_authors),
+            xml_targets = [
+                name
+                for name in zf.namelist()
+                if name == "word/document.xml"
+                or (name.startswith("word/header") and name.endswith(".xml"))
+                or (name.startswith("word/footer") and name.endswith(".xml"))
+                or name in ("word/footnotes.xml", "word/endnotes.xml")
+            ]
+            parsed_targets: dict[str, ET.Element] = {}
+            for member in xml_targets:
+                root = _parse_xml_from_zip(zf, member, xml_errors, total_budget)
+                if root is not None:
+                    parsed_targets[member] = root
+
+            styles_root = _parse_xml_from_zip(zf, "word/styles.xml", xml_errors, total_budget)
+            used_style_ids: set[str] = set()
+            for root in parsed_targets.values():
+                for st_tag in ("pStyle", "rStyle", "tblStyle"):
+                    for el in root.findall(f".//{{{_W_NS}}}{st_tag}"):
+                        sval = el.attrib.get(f"{{{_W_NS}}}val")
+                        if sval:
+                            used_style_ids.add(sval)
+
+            style_roots_used: list[ET.Element] = []
+            if styles_root is not None:
+                doc_defs = styles_root.find(f"{{{_W_NS}}}docDefaults")
+                if doc_defs is not None:
+                    style_roots_used.append(doc_defs)
+                for st_el in styles_root.findall(f"{{{_W_NS}}}style"):
+                    sid = st_el.attrib.get(f"{{{_W_NS}}}styleId")
+                    if sid and (sid in used_style_ids or st_el.attrib.get(f"{{{_W_NS}}}default") == "1"):
+                        style_roots_used.append(st_el)
+
+            for member, root in parsed_targets.items():
+                if member in ("word/footnotes.xml", "word/endnotes.xml"):
+                    continue
+                for tag_local, counter_kind in (("ins", "ins"), ("del", "del")):
+                    for node in root.findall(f".//{{{_W_NS}}}{tag_local}"):
+                        if counter_kind == "ins":
+                            insertions += 1
+                        else:
+                            suppressions += 1
+                        author = node.attrib.get(f"{{{_W_NS}}}author")
+                        if author:
+                            rev_authors.add(author)
+
+            for root in [*parsed_targets.values(), *style_roots_used]:
+                for v_tag in _VANISH_TAGS:
+                    for el in root.findall(f".//{{{_W_NS}}}{v_tag}"):
+                        if _is_w_flag_enabled(el):
+                            vanish_occurrences += 1
+                            vanish_tags.add(f"w:{v_tag}")
+
+            for root in parsed_targets.values():
+                for run in root.findall(f".//{{{_W_NS}}}r"):
+                    rpr = run.find(f"{{{_W_NS}}}rPr")
+                    if rpr is None:
+                        continue
+                    if any(
+                        _is_w_flag_enabled(fl)
+                        for v_tag in _VANISH_TAGS
+                        for fl in rpr.findall(f"{{{_W_NS}}}{v_tag}")
+                    ):
+                        txt = "".join(t.text or "" for t in run.findall(f".//{{{_W_NS}}}t")).strip()
+                        if txt and len(vanish_excerpts) < 10:
+                            vanish_excerpts.append(_truncate(txt))
+
+            details["texte_masque"] = {
+                "occurrences": vanish_occurrences,
+                "balises": sorted(vanish_tags),
+                "extraits": vanish_excerpts,
+            }
+            if vanish_occurrences > 0:
+                indicateurs.append("TEXTE_MASQUE_DOCX")
+
+            details["marques_revision"] = {
+                "insertions": insertions,
+                "suppressions": suppressions,
+                "auteurs": sorted(rev_authors),
+            }
+            if insertions or suppressions:
+                indicateurs.append("MARQUES_DE_REVISION")
+
+            rels_root = _parse_xml_from_zip(zf, "word/_rels/settings.xml.rels", xml_errors, total_budget)
+            attached_templates: list[str] = []
+            if rels_root is not None:
+                for rel in rels_root:
+                    rel_type = rel.attrib.get("Type", "")
+                    if rel_type.endswith("/attachedTemplate"):
+                        target = rel.attrib.get("Target", "")
+                        if target:
+                            attached_templates.append(target)
+            if attached_templates:
+                indicateurs.append("MODELE_ATTACHE")
+                details["modeles_attaches"] = attached_templates
+
+            if xml_errors:
+                indicateurs.append("XML_CORROMPU")
+                details["membres_xml_invalides"] = xml_errors
+    except _ZipLimitExceeded as exc:
+        return {
+            "statut": "erreur",
+            "erreur": str(exc),
         }
-        if insertions or suppressions:
-            indicateurs.append("MARQUES_DE_REVISION")
-
-        rels_root = _parse_xml_from_zip(zf, "word/_rels/settings.xml.rels", xml_errors)
-        attached_templates: list[str] = []
-        if rels_root is not None:
-            for rel in rels_root:
-                rel_type = rel.attrib.get("Type", "")
-                if rel_type.endswith("/attachedTemplate"):
-                    target = rel.attrib.get("Target", "")
-                    if target:
-                        attached_templates.append(target)
-        if attached_templates:
-            indicateurs.append("MODELE_ATTACHE")
-            details["modeles_attaches"] = attached_templates
-
-        if xml_errors:
-            indicateurs.append("XML_CORROMPU")
-            details["membres_xml_invalides"] = xml_errors
 
     return {
         "statut": "ok",
@@ -228,110 +353,143 @@ def _inspect_xlsx(path: Path) -> dict[str, object]:
             "erreur": "Archive OOXML invalide ou corrompue (.xlsx).",
         }
 
-    with zf_ctx as zf:
-        xml_errors: list[str] = []
-        details["proprietes"] = _extract_ooxml_props(zf)
+    try:
+        with zf_ctx as zf:
+            total_budget = [0]
+            xml_errors: list[str] = []
+            details["proprietes"] = _extract_ooxml_props(zf, xml_errors, total_budget)
 
-        wb_root = _parse_xml_from_zip(zf, "xl/workbook.xml", xml_errors)
-        rels_root = _parse_xml_from_zip(zf, "xl/_rels/workbook.xml.rels", xml_errors)
-        rel_targets: dict[str, str] = {}
-        if rels_root is not None:
-            for rel in rels_root:
-                rid = rel.attrib.get("Id")
-                target = rel.attrib.get("Target", "")
-                if rid:
-                    norm = target.lstrip("/")
-                    if not norm.startswith("xl/"):
-                        norm = f"xl/{norm}"
-                    rel_targets[rid] = norm
+            wb_root = _parse_xml_from_zip(zf, "xl/workbook.xml", xml_errors, total_budget)
+            rels_root = _parse_xml_from_zip(zf, "xl/_rels/workbook.xml.rels", xml_errors, total_budget)
+            rel_targets: dict[str, str] = {}
+            if rels_root is not None:
+                for rel in rels_root:
+                    rid = rel.attrib.get("Id")
+                    target = rel.attrib.get("Target", "")
+                    if rid:
+                        norm = target.lstrip("/")
+                        if not norm.startswith("xl/"):
+                            norm = f"xl/{norm}"
+                        rel_targets[rid] = norm
 
-        feuilles: list[dict[str, str]] = []
-        target_to_sheet: dict[str, str] = {}
-        has_hidden = False
-        if wb_root is not None:
-            for sheet in wb_root.findall(f".//{{{_MAIN_SS_NS}}}sheet"):
-                name = sheet.attrib.get("name", "")
-                state = sheet.attrib.get("state", "visible")
-                rid = sheet.attrib.get(f"{{{_REL_NS}}}id", "")
-                if state != "visible":
-                    has_hidden = True
-                feuilles.append({"nom": name, "etat": state})
-                if rid in rel_targets:
-                    target_to_sheet[rel_targets[rid]] = name
+            feuilles: list[dict[str, str]] = []
+            target_to_sheet: dict[str, str] = {}
+            has_hidden = False
+            if wb_root is not None:
+                for sheet in wb_root.findall(f".//{{{_MAIN_SS_NS}}}sheet"):
+                    name = sheet.attrib.get("name", "")
+                    state = sheet.attrib.get("state", "visible")
+                    rid = sheet.attrib.get(f"{{{_REL_NS}}}id", "")
+                    if state != "visible":
+                        has_hidden = True
+                    feuilles.append({"nom": name, "etat": state})
+                    if rid in rel_targets:
+                        target_to_sheet[rel_targets[rid]] = name
 
-        details["feuilles"] = feuilles
-        if has_hidden:
-            indicateurs.append("FEUILLES_CACHEES")
+            details["feuilles"] = feuilles
+            if has_hidden:
+                indicateurs.append("FEUILLES_CACHEES")
 
-        sheet_members = sorted(
-            name
-            for name in zf.namelist()
-            if name.startswith("xl/worksheets/") and name.endswith(".xml")
-        )
-        formula_count = 0
-        formula_samples: list[dict[str, str]] = []
-        cell_count = 0
-        for member in sheet_members:
-            ws_root = _parse_xml_from_zip(zf, member, xml_errors)
-            if ws_root is None:
-                continue
-            sheet_label = target_to_sheet.get(member, Path(member).stem)
-            for cell in ws_root.findall(f".//{{{_MAIN_SS_NS}}}c"):
-                cell_count += 1
-                f_el = cell.find(f"{{{_MAIN_SS_NS}}}f")
-                if f_el is not None:
-                    formula_count += 1
-                    if len(formula_samples) < 15:
-                        ref = cell.attrib.get("r", "?")
-                        expr = f_el.text or "(formule partagée ou matricielle)"
-                        formula_samples.append(
-                            {
-                                "cellule": f"{sheet_label}!{ref}",
-                                "formule": _truncate(f"={expr}", 100),
-                            }
-                        )
-
-        details["nombre_cellules"] = cell_count
-        details["nombre_formules"] = formula_count
-        if formula_samples:
-            details["echantillon_formules"] = formula_samples
-        if formula_count > 0:
-            indicateurs.append("FORMULES_PRESENTES")
-
-        ext_links: list[str] = []
-        for name in zf.namelist():
-            if name.startswith("xl/externalLinks/_rels/") and name.endswith(".rels"):
-                ext_root = _parse_xml_from_zip(zf, name, xml_errors)
-                if ext_root is not None:
-                    for rel in ext_root:
-                        target = rel.attrib.get("Target")
-                        if target:
-                            ext_links.append(target)
-        details["liens_externes"] = ext_links
-        if ext_links:
-            indicateurs.append("LIENS_EXTERNES")
-
-        comment_files = [
-            name
-            for name in zf.namelist()
-            if (name.startswith("xl/comments") or name.startswith("xl/threadedComments/"))
-            and name.endswith(".xml")
-        ]
-        comment_count = 0
-        for member in comment_files:
-            c_root = _parse_xml_from_zip(zf, member, xml_errors)
-            if c_root is None:
-                continue
-            comment_count += len(c_root.findall(f".//{{{_MAIN_SS_NS}}}comment"))
-            comment_count += len(
-                [el for el in c_root.iter() if el.tag.endswith("}threadedComment")]
+            sheet_members = sorted(
+                name
+                for name in zf.namelist()
+                if name.startswith("xl/worksheets/") and name.endswith(".xml")
             )
-        details["nombre_commentaires"] = comment_count
-        if comment_count > 0:
-            indicateurs.append("COMMENTAIRES_TABLEUR")
-        if xml_errors:
-            indicateurs.append("XML_CORROMPU")
-            details["membres_xml_invalides"] = xml_errors
+            formula_count = 0
+            formula_samples: list[dict[str, str]] = []
+            cell_count = 0
+            hidden_rows_count = 0
+            hidden_rows_refs: list[str] = []
+            hidden_cols_count = 0
+            hidden_cols_refs: list[str] = []
+            for member in sheet_members:
+                ws_root = _parse_xml_from_zip(zf, member, xml_errors, total_budget)
+                if ws_root is None:
+                    continue
+                sheet_label = target_to_sheet.get(member, Path(member).stem)
+                for row_el in ws_root.findall(f".//{{{_MAIN_SS_NS}}}row"):
+                    if row_el.attrib.get("hidden", "").strip().lower() in ("1", "true"):
+                        hidden_rows_count += 1
+                        if len(hidden_rows_refs) < 20:
+                            hidden_rows_refs.append(f"{sheet_label}:row:{row_el.attrib.get('r', '?')}")
+                for col_el in ws_root.findall(f".//{{{_MAIN_SS_NS}}}col"):
+                    if col_el.attrib.get("hidden", "").strip().lower() in ("1", "true"):
+                        hidden_cols_count += 1
+                        if len(hidden_cols_refs) < 20:
+                            cmin = col_el.attrib.get("min", "?")
+                            cmax = col_el.attrib.get("max", cmin)
+                            hidden_cols_refs.append(f"{sheet_label}:col:{cmin}-{cmax}")
+                for cell in ws_root.findall(f".//{{{_MAIN_SS_NS}}}c"):
+                    cell_count += 1
+                    f_el = cell.find(f"{{{_MAIN_SS_NS}}}f")
+                    if f_el is not None:
+                        formula_count += 1
+                        if len(formula_samples) < 15:
+                            ref = cell.attrib.get("r", "?")
+                            expr = f_el.text or "(formule partagée ou matricielle)"
+                            formula_samples.append(
+                                {
+                                    "cellule": f"{sheet_label}!{ref}",
+                                    "formule": _truncate(f"={expr}", 100),
+                                }
+                            )
+
+            details["nombre_cellules"] = cell_count
+            details["nombre_formules"] = formula_count
+            details["lignes_masquees"] = {
+                "nombre": hidden_rows_count,
+                "apercu": hidden_rows_refs,
+            }
+            details["colonnes_masquees"] = {
+                "nombre": hidden_cols_count,
+                "apercu": hidden_cols_refs,
+            }
+            if hidden_rows_count > 0 or hidden_cols_count > 0:
+                indicateurs.append("LIGNES_OU_COLONNES_MASQUEES")
+            if formula_samples:
+                details["echantillon_formules"] = formula_samples
+            if formula_count > 0:
+                indicateurs.append("FORMULES_PRESENTES")
+
+            ext_links: list[str] = []
+            for name in zf.namelist():
+                if name.startswith("xl/externalLinks/_rels/") and name.endswith(".rels"):
+                    ext_root = _parse_xml_from_zip(zf, name, xml_errors, total_budget)
+                    if ext_root is not None:
+                        for rel in ext_root:
+                            target = rel.attrib.get("Target")
+                            if target:
+                                ext_links.append(target)
+            details["liens_externes"] = ext_links
+            if ext_links:
+                indicateurs.append("LIENS_EXTERNES")
+
+            comment_files = [
+                name
+                for name in zf.namelist()
+                if (name.startswith("xl/comments") or name.startswith("xl/threadedComments/"))
+                and name.endswith(".xml")
+            ]
+            comment_count = 0
+            for member in comment_files:
+                c_root = _parse_xml_from_zip(zf, member, xml_errors, total_budget)
+                if c_root is None:
+                    continue
+                comment_count += len(c_root.findall(f".//{{{_MAIN_SS_NS}}}comment"))
+                comment_count += len(
+                    [el for el in c_root.iter() if el.tag.endswith("}threadedComment")]
+                )
+            details["nombre_commentaires"] = comment_count
+            if comment_count > 0:
+                indicateurs.append("COMMENTAIRES_TABLEUR")
+            if xml_errors:
+                indicateurs.append("XML_CORROMPU")
+                details["membres_xml_invalides"] = xml_errors
+    except _ZipLimitExceeded as exc:
+        return {
+            "statut": "erreur",
+            "erreur": str(exc),
+        }
 
     return {
         "statut": "ok",

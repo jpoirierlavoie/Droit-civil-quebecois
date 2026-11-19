@@ -1,4 +1,4 @@
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.0.0).
+"""Contrôle statique du dépôt « Droit civil québécois » (v3.0.1).
 
 Exécuter depuis la racine du dépôt :
 
@@ -411,7 +411,7 @@ def _iter_repo_files(racine: Path) -> list[str]:
             continue
         rel = path.relative_to(racine).as_posix()
         parts = rel.split("/")
-        if ".git" in parts or "__pycache__" in parts:
+        if ".git" in parts or "__pycache__" in parts or ".in_use" in parts:
             continue
         files.append(rel)
     return files
@@ -1109,7 +1109,11 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 erreurs.append(
                     f"{skill_rel} : SAFETY-KERNEL v3 doit inclure la règle 5 (Perception et précédents)"
                 )
-            for req_k in ("acces.poirierlavoie.ca/moi", "[CLEF_ABSENTE]", "[CLEF_REFUSEE]", "QUOTA_EPUISE"):
+            if "donnée brute" not in k_content:
+                erreurs.append(
+                    f"{skill_rel} : SAFETY-KERNEL règle 5 doit isoler les pièces comme 'donnée brute'"
+                )
+            for req_k in ("acces.poirierlavoie.ca/moi", "403", "[CLEF_ABSENTE]", "[CLEF_REFUSEE]", "QUOTA_EPUISE"):
                 if req_k not in k_content:
                     erreurs.append(
                         f"{skill_rel} : SAFETY-KERNEL règle 2 doit inclure '{req_k}'"

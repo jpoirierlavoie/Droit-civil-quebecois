@@ -37,7 +37,7 @@ Lot recommandé : `numbers=["2878", "2884", "2892", "2895", "2896", "2904", "290
 ### Compétence, seuils et moyens préliminaires (`law="cpc"` et `"ccq"`)
 Lot recommandé (`cpc`) : `numbers=["33", "35", "41", "42", "51", "85", "166", "167", "168", "490", "491", "535.1", "535.2", "535.3", "535.15"]`; plus `law="ccq"`, `numbers=["1458", "3148"]`.
 
-* **Seuil indexé art. 35 `[À VÉRIFIER VIA LOIS]` :** Cour du Québec exclusive sous `75 000 $`, concurrente de `75 000 $` à moins de `100 000 $` hors intérêts, indexée par tranches de `5 000 $` à la *Gazette officielle*. En Cour du Québec sous art. 35, le **régime simplifié (art. 535.1–535.15)** s'impose (sans protocole, demande `<= 5 pages`, expertise commune sous `50 000 $`). Vérifier le seuil courant à la *Gazette officielle* si le montant approche une borne.
+* **Seuil indexé art. 35 `[À VÉRIFIER À LA G.O.Q. — SEUIL INDEXÉ]` :** Cour du Québec exclusive sous `75 000 $`, concurrente de `75 000 $` à moins de `100 000 $` hors intérêts, indexée par tranches de `5 000 $` à la *Gazette officielle* (`art. 35 al. 4 C.p.c.`, non reflétée dans `lois` avant refonte). En Cour du Québec sous art. 35, le **régime simplifié (art. 535.1–535.15)** s'impose (sans protocole, demande `<= 5 pages`, expertise commune sous `50 000 $`). Vérifier le seuil courant à la *Gazette officielle* si le montant approche une borne.
 * **Confusion 41 / 42 C.p.c. :** Le domicile du défendeur relève de **41**; **42** n'ajoute que trois fors additionnels au choix du demandeur (contrat, fait générateur/préjudice, immeuble). Élection de for nulle en contrat d'adhésion (art. 41 al. 2).
 * **Irrecevabilité (168) :** Non couverte du seul fait de ne pas l'avoir soulevée avant la première conférence de gestion.
 
@@ -49,4 +49,4 @@ Lorsqu'un litige touche une municipalité, un accident, un bâtiment, un emploi 
 |---|---|---|
 | **Avis préalables** | `"avis préalable"`, `"à peine de déchéance"`, `"quinze jours"` | `c-19` (cités et villes), `c-27.1` (Code municipal), `b-1.1-r.8` |
 | **Régimes exclusifs** | `"recours exclusif"`, `"aucun recours"`, `"immunité"` | Lois sectorielles ou fédérales selon la matière |
-| **Délais de procédure** | *Hors recherche substantielle* | Renvoyer la chaîne et le calcul à `gestion-du-mandat` (`outils.calendrier_deadlines`) |
+| **Délais de procédure & calcul d'échéance** | *Hors recherche substantielle* | Renvoyer la chaîne et le calcul à `gestion-du-mandat` (`outils.calendrier_deadlines` en régime `qc_prescription` pour la prescription `art. 2879 al. 2 C.c.Q.`, distinct de `qc_li` dont `rollover_saturday=false` par défaut hors `art. 52 al. 2 L.I.`, ou `calcul_delai.py --ans ... --regime prescription`) |

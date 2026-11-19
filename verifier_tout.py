@@ -32,7 +32,7 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "3.0.0"
+VERSION_ATTENDUE = "3.0.1"
 USER_AGENT_VERIFICATEUR = (
     "DroitCivilQuebecois-Verifier/3.0 (DroitCivil; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
@@ -109,6 +109,7 @@ class TestResult:
     duration_ms: float
     error_message: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
+    skipped: bool = False
 
 
 # ============================================================================
@@ -355,6 +356,7 @@ class MockMcpServer:
                         "citation": {"type": "string"},
                         "database_id": {"type": "string"},
                         "case_id": {"type": "string"},
+                        "lang": {"type": "string", "enum": ["fr", "en"]},
                         "limit": {"type": "integer"},
                         "offset": {"type": "integer"},
                         "refresh": {"type": "boolean"},
@@ -372,6 +374,7 @@ class MockMcpServer:
                         "citation": {"type": "string"},
                         "database_id": {"type": "string"},
                         "case_id": {"type": "string"},
+                        "lang": {"type": "string", "enum": ["fr", "en"]},
                         "limit": {"type": "integer"},
                         "refresh": {"type": "boolean"},
                     },
@@ -461,7 +464,8 @@ class MockMcpServer:
                     "type": "object",
                     "properties": {
                         "year": {"type": "integer"},
-                        "regime": {"type": "string", "enum": ["qc_cpc", "qc_li", "ca_li"]},
+                        "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
+                        "province": {"type": "string"},
                     },
                     "required": ["year"],
                     "additionalProperties": False,
@@ -477,7 +481,8 @@ class MockMcpServer:
                         "deadlines": {"type": "array"},
                         "event_time": {"type": "string"},
                         "notification_mode": {"type": "string", "enum": ["none", "technological", "physical"]},
-                        "regime": {"type": "string", "enum": ["qc_cpc", "qc_li", "ca_li"]},
+                        "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
+                        "province": {"type": "string"},
                         "rollover_saturday": {"type": "boolean"},
                         "extra_non_juridical_dates": {"type": "array", "items": {"type": "string"}},
                     },
@@ -2209,7 +2214,7 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 3.0.0
+    # T1.1.4 : Parité semver 3.0.1
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):
@@ -2806,7 +2811,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.0.0"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.0.1"}}}',
                 auth_token="OMIT",
             )
             ok = status == 200
@@ -3486,9 +3491,15 @@ def run_tier_3_tests(
     results: List[TestResult] = []
 
     def add_result(
-        tid: str, name: str, srv: str, passed: bool, ms: float, err: Optional[str] = None
+        tid: str,
+        name: str,
+        srv: str,
+        passed: bool,
+        ms: float,
+        err: Optional[str] = None,
+        skipped: bool = False,
     ):
-        results.append(TestResult(tid, name, 3, srv, passed, ms, err))
+        results.append(TestResult(tid, name, 3, srv, passed, ms, err, skipped=skipped))
 
     # --- 3.1 Server Key & Transport Uniformity ---
     t0 = time.perf_counter()
@@ -3588,7 +3599,7 @@ def run_tier_3_tests(
                 ("T3.2.4", "Intégrité approfondie des 32 schémas (ignoré : cache Antigravity absent hors local)", "all"),
                 ("T3.2.5", "Présence instructions.md (ignoré : cache Antigravity absent hors local)", "all"),
             ]:
-                add_result(tid, name, srv, True, 0.0, None)
+                add_result(tid, name, srv, True, 0.0, None, skipped=True)
     else:
         # T3.2.1 : Partition Législation sur disque (10 outils)
         t0 = time.perf_counter()
@@ -3943,7 +3954,7 @@ def run_tier_3_tests(
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T3.4.2", "Exécution verifier.py", "all", False, elapsed, str(ex))
 
-    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.0.0)
+    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.0.1)
     t0 = time.perf_counter()
     script_calc = repo_root / "skills" / "gestion-du-mandat" / "scripts" / "calcul_delai.py"
     script_insp = repo_root / "skills" / "analyse-et-strategie" / "scripts" / "inspecter_piece.py"
@@ -4476,19 +4487,24 @@ def format_report_terminal(
         lines.append(f"{'ID':<8} {'Statut':<8} {'Durée':<10} {'Description':<52}")
         lines.append("-" * 80)
         for r in tier_results:
-            stat_str = "SUCCÈS" if r.passed else "ÉCHEC"
+            stat_str = "IGNORÉ" if r.skipped else ("SUCCÈS" if r.passed else "ÉCHEC")
             dur_str = f"{r.duration_ms:.1f}ms"
             desc = r.name[:50]
             lines.append(f"{r.test_id:<8} {stat_str:<8} {dur_str:<10} {desc:<52}")
-            if not r.passed and r.error_message:
+            if not r.passed and not r.skipped and r.error_message:
                 lines.append(f"         └─ ERREUR : {r.error_message}")
 
     total_count = len(results)
-    passed_count = sum(1 for r in results if r.passed)
-    succ_rate = (passed_count / total_count * 100) if total_count else 0.0
+    skipped_count = sum(1 for r in results if r.skipped)
+    passed_count = sum(1 for r in results if r.passed and not r.skipped)
+    executed_count = total_count - skipped_count
+    succ_rate = (passed_count / executed_count * 100) if executed_count else 0.0
 
+    skip_note = f", {skipped_count} ignoré(s)" if skipped_count else ""
     lines.append("\n" + "=" * 80)
-    lines.append(f"  BILAN FINAL : {passed_count}/{total_count} tests réussis ({succ_rate:.1f}%) en {total_duration_s:.2f}s")
+    lines.append(
+        f"  BILAN FINAL : {passed_count}/{executed_count} tests exécutés réussis ({succ_rate:.1f}%{skip_note}) en {total_duration_s:.2f}s"
+    )
     lines.append("=" * 80 + "\n")
     return "\n".join(lines)
 
@@ -4497,16 +4513,21 @@ def format_report_json(
     results: List[TestResult], mode: str, total_duration_s: float
 ) -> str:
     """Génère un rapport JSON structuré pour intégration machine."""
-    passed_count = sum(1 for r in results if r.passed)
+    skipped_count = sum(1 for r in results if r.skipped)
+    passed_count = sum(1 for r in results if r.passed and not r.skipped)
+    failed_count = sum(1 for r in results if not r.passed and not r.skipped)
+    executed_count = len(results) - skipped_count
     report = {
         "timestamp": datetime.datetime.now().isoformat(),
         "mode": mode,
         "total_duration_s": total_duration_s,
         "summary": {
             "total": len(results),
+            "executed": executed_count,
             "passed": passed_count,
-            "failed": len(results) - passed_count,
-            "success_rate_percent": (passed_count / len(results) * 100) if results else 0.0,
+            "skipped": skipped_count,
+            "failed": failed_count,
+            "success_rate_percent": (passed_count / executed_count * 100) if executed_count else 0.0,
         },
         "tests": [
             {
@@ -4515,6 +4536,7 @@ def format_report_json(
                 "tier": r.tier,
                 "server": r.server,
                 "passed": r.passed,
+                "skipped": r.skipped,
                 "duration_ms": r.duration_ms,
                 "error": r.error_message,
             }
@@ -4530,14 +4552,18 @@ def format_report_github(
     """Génère les annotations GitHub Actions (::notice::, ::error::)."""
     lines = []
     for r in results:
-        if r.passed:
+        if r.skipped:
+            lines.append(f"::notice title={r.test_id}::[{r.test_id}] {r.name} - IGNORÉ")
+        elif r.passed:
             lines.append(f"::notice title={r.test_id}::[{r.test_id}] {r.name} - SUCCÈS ({r.duration_ms:.1f}ms)")
         else:
             lines.append(f"::error title={r.test_id}::[{r.test_id}] {r.name} - ÉCHEC : {r.error_message}")
 
-    passed = sum(1 for r in results if r.passed)
-    total = len(results)
-    lines.append(f"::notice title=Bilan::Vérification E2E ({mode}) terminée : {passed}/{total} tests réussis en {total_duration_s:.2f}s")
+    skipped = sum(1 for r in results if r.skipped)
+    passed = sum(1 for r in results if r.passed and not r.skipped)
+    executed = len(results) - skipped
+    skip_note = f", {skipped} ignoré(s)" if skipped else ""
+    lines.append(f"::notice title=Bilan::Vérification E2E ({mode}) terminée : {passed}/{executed} tests exécutés réussis{skip_note} en {total_duration_s:.2f}s")
     return "\n".join(lines)
 
 
@@ -4674,7 +4700,7 @@ def main() -> int:
         sys.stderr.write(f"\n[!] Défaillance réseau ou infrastructure live (code 3) : {client.last_infra_error}\n")
         return 3
 
-    has_failure = any(not r.passed for r in all_results)
+    has_failure = any(not r.passed and not r.skipped for r in all_results)
     return 1 if has_failure else 0
 
 

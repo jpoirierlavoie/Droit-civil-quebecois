@@ -11,8 +11,10 @@ Usages :
 from __future__ import annotations
 
 import argparse
+import contextlib
 from datetime import date, time
 import importlib.util
+import io
 import json
 from pathlib import Path
 import re
@@ -297,6 +299,23 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                         erreurs.append(
                             f"{sid} ({cas['nom']}) : avertissement attendu contenant {sous_chaine!r} absent"
                         )
+
+            res_presc = calcul_mod.calculer_delai(date(2023, 11, 21), 3, "ans", regime="prescription")
+            if res_presc.get("echeance_brute") != "2026-11-21" or res_presc.get("echeance") != "2026-11-23" or not res_presc.get("reporter_samedi"):
+                erreurs.append(f"{sid} : calcul_delai prescription 2023-11-21 + 3 ans inattendu ({res_presc})")
+            res_li = calcul_mod.calculer_delai(date(2023, 11, 21), 3, "ans", regime="li")
+            if res_li.get("echeance") != "2026-11-21" or res_li.get("reporter_samedi") is not False:
+                erreurs.append(f"{sid} : calcul_delai li 2023-11-21 + 3 ans ne doit pas reporter le samedi ({res_li})")
+            res_li_sat = calcul_mod.calculer_delai(date(2023, 11, 21), 3, "ans", regime="li", reporter_samedi=True)
+            if res_li_sat.get("echeance") != "2026-11-23" or res_li_sat.get("reporter_samedi") is not True:
+                erreurs.append(f"{sid} : calcul_delai li reporter_samedi=True attendu 2026-11-23 ({res_li_sat})")
+            res_leap = calcul_mod.calculer_delai(date(2024, 2, 29), 3, "ans", regime="prescription")
+            if res_leap.get("echeance_brute") != "2027-02-28" or res_leap.get("echeance") != "2027-03-01":
+                erreurs.append(f"{sid} : calcul_delai bissextile 2024-02-29 + 3 ans inattendu ({res_leap})")
+            res_jan2_cpc = calcul_mod.calculer_delai(date(2025, 1, 2), 1, "ans", regime="cpc")
+            res_jan2_li = calcul_mod.calculer_delai(date(2025, 1, 2), 1, "ans", regime="prescription")
+            if res_jan2_cpc.get("echeance") != "2026-01-05" or res_jan2_li.get("echeance") != "2026-01-02":
+                erreurs.append(f"{sid} : divergence 2 janvier cpc vs prescription inattendue ({res_jan2_cpc.get('echeance')} / {res_jan2_li.get('echeance')})")
         elif outil == "inspecter_piece":
             if spec.get("fixture") == "docx_avec_commentaire":
                 with tempfile.TemporaryDirectory() as tmp:
@@ -313,6 +332,63 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     nb_com = int(res.get("details", {}).get("nombre_commentaires", 0))
                     if nb_com < int(att.get("nombre_commentaires_min", 0)):
                         erreurs.append(f"{sid} : nombre_commentaires={nb_com} insuffisant")
+
+                    tmp_dir = Path(tmp)
+                    vanish_docx = tmp_dir / "masque.docx"
+                    with zipfile.ZipFile(vanish_docx, "w") as zf:
+                        zf.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+                        zf.writestr(
+                            "word/document.xml",
+                            '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                            '<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Instruction cachée</w:t></w:r>'
+                            '<w:r><w:rPr><w:vanish w:val="0"/></w:rPr><w:t>Texte visible</w:t></w:r></w:p>'
+                            "</w:body></w:document>",
+                        )
+                    r_van = inspect_mod.inspecter_fichier(vanish_docx)
+                    if "TEXTE_MASQUE_DOCX" not in r_van.get("indicateurs", []) or r_van.get("details", {}).get("texte_masque", {}).get("occurrences") != 1:
+                        erreurs.append(f"{sid} : w:vanish non détecté exactement 1x dans inspecter_piece ({r_van})")
+
+                    xlsx_p = tmp_dir / "tableau_cache.xlsx"
+                    with zipfile.ZipFile(xlsx_p, "w") as zf:
+                        zf.writestr(
+                            "xl/workbook.xml",
+                            '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+                            '<sheet name="Visible" sheetId="1" r:id="rId1"/>'
+                            '<sheet name="Cachee" sheetId="2" state="hidden" r:id="rId2"/>'
+                            "</sheets></workbook>",
+                        )
+                        zf.writestr(
+                            "xl/_rels/workbook.xml.rels",
+                            '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
+                            "</Relationships>",
+                        )
+                        zf.writestr(
+                            "xl/worksheets/sheet1.xml",
+                            '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                            '<cols><col min="3" max="3" hidden="1"/></cols>'
+                            '<sheetData><row r="1"><c r="A1"><v>1</v></c></row>'
+                            '<row r="2" hidden="1"><c r="A2"><v>999</v></c></row></sheetData></worksheet>',
+                        )
+                        zf.writestr(
+                            "xl/worksheets/sheet2.xml",
+                            '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>',
+                        )
+                    r_xlsx = inspect_mod.inspecter_fichier(xlsx_p)
+                    inds_x = set(r_xlsx.get("indicateurs", []))
+                    if "FEUILLES_CACHEES" not in inds_x or "LIGNES_OU_COLONNES_MASQUEES" not in inds_x:
+                        erreurs.append(f"{sid} : feuilles/lignes/colonnes masquées .xlsx manquées ({r_xlsx})")
+
+                    old_cap = inspect_mod._MAX_ZIP_MEMBER_BYTES
+                    try:
+                        inspect_mod._MAX_ZIP_MEMBER_BYTES = 128
+                        r_cap = inspect_mod.inspecter_fichier(vanish_docx)
+                        if r_cap.get("statut") != "erreur":
+                            erreurs.append(f"{sid} : plafond de décompression inspecter_piece non appliqué ({r_cap})")
+                    finally:
+                        inspect_mod._MAX_ZIP_MEMBER_BYTES = old_cap
         elif outil == "inspecter_piece_journal":
             with tempfile.TemporaryDirectory() as tmp:
                 tmp_dir = Path(tmp)
@@ -483,6 +559,60 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     # Comportement attendu : --regles pointant vers un fichier absent doit lever FileNotFoundError.
                     if not str(exc):
                         erreurs.append(f"{sid} : exception FileNotFoundError vide pour --regles absent")
+
+                vanish_ctrl = tmp_dir / "vanish_ctrl.docx"
+                with zipfile.ZipFile(vanish_ctrl, "w") as zf:
+                    zf.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+                    zf.writestr(
+                        "word/document.xml",
+                        '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                        '<w:p><w:r><w:rPr><w:rFonts w:ascii="Times New Roman"/><w:sz w:val="24"/><w:vanish/></w:rPr><w:t>Masqué</w:t></w:r></w:p>'
+                        '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>'
+                        "</w:body></w:document>",
+                    )
+                    zf.writestr("docProps/app.xml", '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Pages>2</Pages></Properties>')
+                r_van_ctrl = ctrl_mod.controler_fichier(vanish_ctrl, regles={"max_pages": 5})
+                van_codes = {a["code"] for a in r_van_ctrl.get("bon_de_travail", [])}
+                if r_van_ctrl.get("statut_conformite") != "NON_CONFORME" or "SUPPRIMER_TEXTE_MASQUE" not in van_codes:
+                    erreurs.append(f"{sid} : w:vanish non rejeté par controler_document ({r_van_ctrl})")
+
+                corrupt_ctrl = tmp_dir / "corps_corrompu.docx"
+                with zipfile.ZipFile(corrupt_ctrl, "w") as zf:
+                    zf.writestr("word/document.xml", "<<<BROKEN_XML")
+                    zf.writestr("docProps/app.xml", '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Pages>2</Pages></Properties>')
+                r_corrupt_ctrl = ctrl_mod.controler_fichier(corrupt_ctrl, regles={"max_pages": 5})
+                corrupt_codes = {a["code"] for a in r_corrupt_ctrl.get("bon_de_travail", [])}
+                if r_corrupt_ctrl.get("statut_conformite") != "A_VERIFIER" or "CORPS_XML_ILLISIBLE" not in corrupt_codes:
+                    erreurs.append(f"{sid} : XML corrompu non signalé A_VERIFIER / CORPS_XML_ILLISIBLE ({r_corrupt_ctrl})")
+
+                with contextlib.redirect_stdout(io.StringIO()):
+                    rc_clean = ctrl_mod.main([
+                        str(clean_docx),
+                        "--max-pages", "5",
+                        "--police-attendue", "Times New Roman",
+                        "--taille-min-pt", "12",
+                        "--marge-min-po", "1.0",
+                        "--interligne-min", "1.5",
+                        "--json",
+                    ])
+                    rc_van = ctrl_mod.main([str(vanish_ctrl), "--max-pages", "5", "--json"])
+                    rc_corrupt = ctrl_mod.main([str(corrupt_ctrl), "--max-pages", "5", "--json"])
+                    rc_missing = ctrl_mod.main([str(tmp_dir / "absent_cli.docx"), "--json"])
+                if (rc_clean, rc_van, rc_corrupt, rc_missing) != (0, 1, 1, 2):
+                    erreurs.append(
+                        f"{sid} : codes de sortie CLI attendus (0, 1, 1, 2), obtenu {(rc_clean, rc_van, rc_corrupt, rc_missing)}"
+                    )
+
+                old_ctrl_cap = ctrl_mod._MAX_ZIP_MEMBER_BYTES
+                try:
+                    ctrl_mod._MAX_ZIP_MEMBER_BYTES = 128
+                    r_ctrl_cap = ctrl_mod.controler_fichier(clean_docx, regles={"max_pages": 5})
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        rc_cap = ctrl_mod.main([str(clean_docx), "--max-pages", "5", "--json"])
+                    if r_ctrl_cap.get("statut") != "erreur" or rc_cap != 2:
+                        erreurs.append(f"{sid} : plafond de décompression controler_document non appliqué ({r_ctrl_cap}, rc={rc_cap})")
+                finally:
+                    ctrl_mod._MAX_ZIP_MEMBER_BYTES = old_ctrl_cap
         elif outil == "verifier_cotes":
             with tempfile.TemporaryDirectory() as tmp:
                 tmp_dir = Path(tmp)

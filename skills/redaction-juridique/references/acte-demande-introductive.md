@@ -10,13 +10,13 @@
 ## Conditions et préalables
 
 1. Vérifier la prescription (`2892 C.c.Q.` : signification requise dans les 60 jours suivant l'expiration si dépôt proche de la limite) et tout avis préalable de déchéance (renvoi à `recherche-juridique` / `grille-prealables`).
-2. Vérifier le seuil de compétence (`33`, `35 C.p.c.`) : sous le plafond indexé de la Cour du Québec (`< 100 000 $` `[À VÉRIFIER VIA LOIS]`), le **régime simplifié particulier (`535.1–535.15`)** s'applique de plein droit (attention : seuils distincts sous **`< 50 000 $`** `[À VÉRIFIER VIA LOIS]` pour l'interdiction d'interrogatoire oral préalable sous `229 al. 1` / `535.9` et pour l'**expertise commune obligatoire de `535.15 C.p.c.`**).
+2. Vérifier le seuil de compétence (`33`, `35 C.p.c.`) : sous le plafond indexé de la Cour du Québec (`< 100 000 $` `[À VÉRIFIER À LA G.O.Q. — SEUIL INDEXÉ]`, l'indexation prévue à `35 al. 4` paraissant à la *Gazette officielle* avant de toucher le texte consolidé de `lois`), le **régime simplifié particulier (`535.1–535.15`)** s'applique de plein droit (attention : seuils distincts sous **`< 50 000 $`** `[À VÉRIFIER VIA LOIS]` pour l'interdiction d'interrogatoire oral préalable sous `229 al. 1` / `535.9` et pour l'**expertise commune obligatoire de `535.15 C.p.c.`**).
 3. Confirmer l'exactitude des personnes morales (`outils.registre_search`/`registre_get_entity`) et adresses (`outils.adresse_verify`), en rappelant de valider au REQ avant signification (incluant la vérification du *fondé de pouvoir* exigé par la *Loi sur la publicité légale des entreprises* `art. 26–28` lorsqu'une personne morale n'a ni domicile ni établissement au Québec).
 
 ## Forum et compétence
 
 * Distinguer `41` (domicile du défendeur; clause d'élection nulle en contrat d'adhésion) et `42` (fors additionnels : lieu du contrat, fait générateur/préjudice, immeuble).
-* Vérifier la compétence exclusive (`< 75 000 $`) vs concurrente (`75 000 $` à `< 100 000 $` `[À VÉRIFIER VIA LOIS]`) de la Cour du Québec (`35 C.p.c.`).
+* Vérifier la compétence exclusive (`< 75 000 $`) vs concurrente (`75 000 $` à `< 100 000 $` `[À VÉRIFIER À LA G.O.Q. — SEUIL INDEXÉ]`) de la Cour du Québec (`35 C.p.c.`).
 
 ## Structure obligatoire
 
