@@ -32,15 +32,21 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "3.0.1"
+VERSION_ATTENDUE = "3.1.0"
 USER_AGENT_VERIFICATEUR = (
-    "DroitCivilQuebecois-Verifier/3.0 (DroitCivil; Windows NT 10.0; Win64; x64) "
+    "DroitCivilQuebecois-Verifier/3.1 (DroitCivil; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
 )
 
 URL_SERVEURS = {
     "lois": "https://legislation.poirierlavoie.ca/mcp",
     "juris": "https://jurisprudence.poirierlavoie.ca/mcp",
+    "outils": "https://outils.poirierlavoie.ca/mcp",
+}
+
+URL_MANIFESTES_ATTENDUES = {
+    "lois": "https://legislation.poirierlavoie.ca/mcp/oauth",
+    "juris": "https://jurisprudence.poirierlavoie.ca/mcp/oauth",
     "outils": "https://outils.poirierlavoie.ca/mcp",
 }
 
@@ -2214,7 +2220,7 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 3.0.1
+    # T1.1.4 : Parité semver 3.1.0
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):
@@ -2272,37 +2278,46 @@ def run_tier_1_tests(
         "; ".join(p_errs) if p_errs else None,
     )
 
-    # T1.1.7 : Structure mcp_config.json Antigravity
+    # T1.1.7 : Structure mcp_config.json Antigravity (OAuth 2.1 sans secret statique)
     t0 = time.perf_counter()
     m_json = parsed_manifests.get("mcp_config.json", {})
     m_servers = m_json.get("mcpServers", {}) if isinstance(m_json, dict) else {}
     m_errs = []
-    for exp_k in ("lois", "juris", "outils"):
-        if exp_k not in m_servers:
-            m_errs.append(f"Serveur '{exp_k}' absent de mcp_config.json")
+    for exp_k, exp_url in URL_MANIFESTES_ATTENDUES.items():
+        srv = m_servers.get(exp_k)
+        if not isinstance(srv, dict):
+            m_errs.append(f"Serveur '{exp_k}' absent ou invalide dans mcp_config.json")
+            continue
+        if srv.get("url") != exp_url:
+            m_errs.append(f"mcp_config.json {exp_k}.url={srv.get('url')!r} != {exp_url!r}")
+        if "headers" in srv or "variables" in srv or "eager" in srv:
+            m_errs.append(f"mcp_config.json {exp_k} ne doit contenir ni headers, ni variables, ni eager")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.1.7",
-        "Conformité des déclarations mcp_config.json",
+        "Conformité OAuth 2.1 de mcp_config.json",
         "all",
         len(m_errs) == 0,
         elapsed,
         "; ".join(m_errs) if m_errs else None,
     )
 
-    # T1.1.8 : Paramètres sensibles gemini-extension.json
+    # T1.1.8 : Configuration OAuth 2.1 sans secrets statiques dans gemini-extension.json
     t0 = time.perf_counter()
     g_json = parsed_manifests.get("gemini-extension.json", {})
-    settings = g_json.get("settings", []) if isinstance(g_json, dict) else []
-    sec_vars = {s.get("envVar") for s in settings if isinstance(s, dict) and s.get("sensitive")}
+    settings = g_json.get("settings") if isinstance(g_json, dict) else None
+    g_servers = g_json.get("mcpServers", {}) if isinstance(g_json, dict) else {}
     g_errs = []
-    for exp_v in ("MCP_LEGISLATION_SECRET", "MCP_JURISPRUDENCE_SECRET"):
-        if exp_v not in sec_vars:
-            g_errs.append(f"Paramètre sensible manquant : {exp_v}")
+    if settings != []:
+        g_errs.append(f"gemini-extension.json settings doit valoir [] (trouvé {settings!r})")
+    for exp_k, exp_url in URL_MANIFESTES_ATTENDUES.items():
+        gsrv = g_servers.get(exp_k)
+        if not isinstance(gsrv, dict) or gsrv.get("httpUrl") != exp_url or "headers" in gsrv:
+            g_errs.append(f"gemini-extension.json {exp_k} non conforme OAuth 2.1 ({gsrv!r})")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.1.8",
-        "Déclaration des secrets dans gemini-extension.json",
+        "Déclaration OAuth 2.1 sans secrets statiques dans gemini-extension.json",
         "all",
         len(g_errs) == 0,
         elapsed,
@@ -2811,7 +2826,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.0.1"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.1.0"}}}',
                 auth_token="OMIT",
             )
             ok = status == 200
@@ -3528,39 +3543,46 @@ def run_tier_3_tests(
         f"Clés divergentes : .mcp={mcp_srv_keys}, agy={agy_srv_keys}, gem={gem_srv_keys}" if not keys_ok else None,
     )
 
-    # T3.1.2 : Parité des URL d'accès
+    # T3.1.2 : Parité des URL d'accès (/mcp/oauth pour lois & juris, /mcp pour outils)
     t0 = time.perf_counter()
     url_errs = []
-    for s_name, exp_url in URL_SERVEURS.items():
-        # Antigravity url
+    for s_name, exp_url in URL_MANIFESTES_ATTENDUES.items():
+        c_srv = mcp_data.get("mcpServers", {}).get(s_name, {})
+        if c_srv.get("url") != exp_url or c_srv.get("type") != "http":
+            url_errs.append(f".mcp.json {s_name}={c_srv!r} != http:{exp_url}")
         a_url = agy_data.get("mcpServers", {}).get(s_name, {}).get("url")
         if a_url != exp_url:
             url_errs.append(f"mcp_config.json {s_name}.url={a_url} != {exp_url}")
-        # Gemini extension httpUrl
         g_url = gem_data.get("mcpServers", {}).get(s_name, {}).get("httpUrl")
         if g_url != exp_url:
             url_errs.append(f"gemini-extension.json {s_name}.httpUrl={g_url} != {exp_url}")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T3.1.2",
-        "Parité stricte des URL d'accès entre configurations Claude et Gemini",
+        "Parité stricte des URL OAuth 2.1 entre configurations Claude et Gemini",
         "all",
         len(url_errs) == 0,
         elapsed,
         "; ".join(url_errs) if url_errs else None,
     )
 
-    # T3.1.3 : Parité des variables de secrets
+    # T3.1.3 : Absence d'en-têtes statiques ou variables secrètes dans les 3 manifestes (OAuth 2.1 zéro-config)
     t0 = time.perf_counter()
     sec_errs = []
-    gem_vars = {s.get("envVar") for s in gem_data.get("settings", []) if isinstance(s, dict)}
-    for s_var in ("MCP_LEGISLATION_SECRET", "MCP_JURISPRUDENCE_SECRET"):
-        if s_var not in gem_vars:
-            sec_errs.append(f"Variable {s_var} absente de gemini-extension.json settings")
+    if gem_data.get("settings") != []:
+        sec_errs.append("gemini-extension.json settings doit valoir []")
+    for s_name in ("lois", "juris", "outils"):
+        if "headers" in mcp_data.get("mcpServers", {}).get(s_name, {}):
+            sec_errs.append(f".mcp.json {s_name} ne doit pas déclarer d'en-têtes statiques")
+        agy_srv = agy_data.get("mcpServers", {}).get(s_name, {})
+        if "headers" in agy_srv or "variables" in agy_srv:
+            sec_errs.append(f"mcp_config.json {s_name} ne doit déclarer ni headers ni variables")
+        if "headers" in gem_data.get("mcpServers", {}).get(s_name, {}):
+            sec_errs.append(f"gemini-extension.json {s_name} ne doit pas déclarer d'en-têtes statiques")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T3.1.3",
-        "Correspondance des variables d'environnement de secrets",
+        "Absence d'en-têtes statiques et de variables secrètes dans les manifestes OAuth",
         "all",
         len(sec_errs) == 0,
         elapsed,
@@ -3954,7 +3976,7 @@ def run_tier_3_tests(
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T3.4.2", "Exécution verifier.py", "all", False, elapsed, str(ex))
 
-    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.0.1)
+    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.1.0)
     t0 = time.perf_counter()
     script_calc = repo_root / "skills" / "gestion-du-mandat" / "scripts" / "calcul_delai.py"
     script_insp = repo_root / "skills" / "analyse-et-strategie" / "scripts" / "inspecter_piece.py"

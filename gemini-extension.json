@@ -1,34 +1,15 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "3.0.1",
-  "description": "Litige civil et commercial québécois : 5 orchestrateurs de phase et 5 services spécialisés (recherche, analyse, rédaction, production, gestion du mandat). Connecteurs « lois », « juris » et « outils ».",
+  "version": "3.1.0",
+  "description": "Recherche, analyse, rédaction, administration du litige et déontologie en droit civil et commercial québécois. Connecteurs « lois », « juris » et « outils ».",
   "contextFileName": [],
-  "settings": [
-    {
-      "name": "Jeton individuel MCP Législation",
-      "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'legislation'), transmis dans l'en-tête Authorization: Bearer vers https://legislation.poirierlavoie.ca/mcp.",
-      "envVar": "MCP_LEGISLATION_SECRET",
-      "sensitive": true
-    },
-    {
-      "name": "Jeton individuel MCP Jurisprudence",
-      "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'jurisprudence', avec clé API CanLII personnelle active), transmis dans l'en-tête Authorization: Bearer vers https://jurisprudence.poirierlavoie.ca/mcp.",
-      "envVar": "MCP_JURISPRUDENCE_SECRET",
-      "sensitive": true
-    }
-  ],
+  "settings": [],
   "mcpServers": {
     "lois": {
-      "httpUrl": "https://legislation.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
-      }
+      "httpUrl": "https://legislation.poirierlavoie.ca/mcp/oauth"
     },
     "juris": {
-      "httpUrl": "https://jurisprudence.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
-      }
+      "httpUrl": "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
     },
     "outils": {
       "httpUrl": "https://outils.poirierlavoie.ca/mcp"

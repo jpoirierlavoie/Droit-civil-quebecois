@@ -2,17 +2,11 @@
   "mcpServers": {
     "lois": {
       "type": "http",
-      "url": "https://legislation.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
-      }
+      "url": "https://legislation.poirierlavoie.ca/mcp/oauth"
     },
     "juris": {
       "type": "http",
-      "url": "https://jurisprudence.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
-      }
+      "url": "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
     },
     "outils": {
       "type": "http",

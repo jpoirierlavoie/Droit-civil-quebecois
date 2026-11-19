@@ -1,10 +1,10 @@
-# Droit civil québécois (`v3.0.1`)
+# Droit civil québécois (`v3.1.0`)
 
 Greffon multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, Google Antigravity, Gemini CLI, Gemini App / Vertex AI et Gemini API Deep Research) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)* regroupant **10 compétences** (5 orchestrateurs de phase et 5 compétences de service), **59 feuilles de référence granulaires**, **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels) adossés au portail d'accès [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`).
 
 ---
 
-## Philosophie de conception (`v3.0.1`)
+## Philosophie de conception (`v3.1.0`)
 
 1. **Orchestrateurs de phase + Services transversaux :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, séquences, portes bloquantes, suivi d'état (`etat-dossier/<phase>.md`, avec bloc en ligne si le disque n'est pas inscriptible) et tables d'enchaînements vérifiées vers les services (`## Enchaînements`).
@@ -47,13 +47,13 @@ Greffon multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Resea
 
 | Clé serveur | Montages HTTP | Authentification et politique | Dépôt serveur |
 |---|---|---|---|
-| **`lois`** | Direct : `https://legislation.poirierlavoie.ca/mcp`<br>OAuth : `https://legislation.poirierlavoie.ca/mcp/oauth` | `/mcp` : `Authorization: Bearer ${MCP_LEGISLATION_SECRET}` (refus uniforme `404`)<br>`/mcp/oauth` : **OAuth 2.1 PKCE `S256`** via `acces.poirierlavoie.ca` (`401` RFC 9728) | [MCP-Legislation](https://github.com/jpoirierlavoie/MCP-Legislation) |
-| **`juris`** | Direct : `https://jurisprudence.poirierlavoie.ca/mcp`<br>OAuth : `https://jurisprudence.poirierlavoie.ca/mcp/oauth` | `/mcp` : `Authorization: Bearer ${MCP_JURISPRUDENCE_SECRET}` (refus uniforme `404`)<br>`/mcp/oauth` : **OAuth 2.1 PKCE `S256`** via `acces.poirierlavoie.ca` (`401` RFC 9728)<br>**BYOK CanLII strict :** clé API CanLII personnelle requise (coffre chiffré ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
+| **`lois`** | OAuth (défaut) : `https://legislation.poirierlavoie.ca/mcp/oauth`<br>Direct : `https://legislation.poirierlavoie.ca/mcp` | `/mcp/oauth` : **OAuth 2.1 PKCE `S256`** + RFC 7591 sans état via `acces.poirierlavoie.ca` (`401` RFC 9728)<br>`/mcp` : `Authorization: Bearer` ou `?key=` pour CLI/API sans navigateur (`404` uniforme) | [MCP-Legislation](https://github.com/jpoirierlavoie/MCP-Legislation) |
+| **`juris`** | OAuth (défaut) : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`<br>Direct : `https://jurisprudence.poirierlavoie.ca/mcp` | `/mcp/oauth` : **OAuth 2.1 PKCE `S256`** + RFC 7591 sans état via `acces.poirierlavoie.ca` (`401` RFC 9728)<br>`/mcp` : `Authorization: Bearer` ou `?key=` pour CLI/API sans navigateur (`404` uniforme)<br>**BYOK CanLII strict :** clé API CanLII personnelle requise (coffre chiffré ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
 | **`outils`** | Public : `https://outils.poirierlavoie.ca/mcp` | Accès public libre (sans secret, lecture seule D1) | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
-> Les deux serveurs authentifiés (`lois` et `juris`) sont configurés par variables d'environnement uniquement (`MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`). Un seul jeton individuel de portée `les_deux` (43 car.) peut alimenter les deux variables. Aucun secret n'est stocké dans le dépôt. Tous les identifiants composés respectent le plafond `<= 64` caractères (max **62/64** sous Claude Code, **52/64** sous Antigravity).
+> Depuis `v3.1.0`, les trois manifestes (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) branchent automatiquement `lois` et `juris` sur `/mcp/oauth` sans secret ni variable d'environnement locale à configurer. La monture directe `/mcp` demeure disponible pour l'exécution sans navigateur (CI, scripts, Gemini API Deep Research). Aucun secret n'est stocké dans le dépôt, et tous les identifiants composés respectent le plafond `<= 64` caractères (max **62/64** sous Claude Code, **52/64** sous Antigravity).
 
-### Catalogue exact des 32 outils (`v3.0.1`)
+### Catalogue exact des 32 outils (`v3.1.0`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 10 outils) | Serveur (`outils`, 12 outils) |
 |---|---|---|
@@ -80,8 +80,9 @@ L'accès aux serveurs authentifiés (`lois` et `juris`) est réservé aux **memb
    - Soumettre votre numéro de membre du Barreau du Québec, votre adresse courriel professionnelle et votre **clé API CanLII personnelle** (vérifiée en direct contre l'API CanLII dès l'admission).
    - Confirmer la propriété du courriel via le lien reçu de `noreply@acces.poirierlavoie.ca`, puis attendre la validation manuelle au *Bottin des avocats*.
    - La clé CanLII est scellée par chiffrement d'enveloppe (`HKDF-SHA256` + `AES-256-GCM`) dans le coffre `coffre_clef` ; à défaut de clé active au coffre (ou d'en-tête `X-Clef-CanLII`), les 9 outils CanLII de `juris` retournent `[CLEF_ABSENTE]` / `[CLEF_REFUSEE]` avant toute lecture du cache partagé.
-2. **Espace libre-service titulaire (`/moi`) :**
-   - **Jeton individuel (`les_deux`, `legislation` ou `jurisprudence`) :** jeton CSPRNG de 256 bits (`43` car. `base64url`), affiché une seule fois et stocké en condensé `SHA-256`. Un jeton `les_deux` peut être collé à la fois dans `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET`.
+2. **Auto-connexion OAuth 2.1 et espace libre-service (`/moi`) :**
+   - **Auto-connexion OAuth 2.1 (défaut) :** après approbation au Tableau de l'Ordre, l'avocat connecte directement `lois` et `juris` depuis son client MCP (`/mcp auth` ou *Connect*) via `acces.poirierlavoie.ca` (inscription dynamique RFC 7591 sans état + PKCE `S256`).
+   - **Jeton individuel pour CLI/API sans navigateur :** jeton CSPRNG de 256 bits (`43` car. `base64url`, portée `les_deux`, `legislation` ou `jurisprudence`), frappé dans `/moi` et affiché une seule fois, utilisable en en-tête `Authorization: Bearer` sur `/mcp`.
    - **Rotation / révocation :** remplacement ou révocation immédiate des jetons et de la clé API CanLII (support de transition sans coupure).
    - **Préférence `hybride_permis` (S19) :** activation ou désactivation en un clic du moteur vectoriel `Workers AI` dans `lois.search_text` (exécution 100 % lexicale FTS5 sur D1 lorsque désactivée).
    - **Droits Loi 25 :** exportation JSON et suppression intégrale en cascade du compte.
@@ -93,27 +94,27 @@ L'accès aux serveurs authentifiés (`lois` et `juris`) est réservé aux **memb
 
 ### 1. Claude Code
 
-Définir votre jeton individuel dans l'environnement utilisateur (un jeton `les_deux` suffit pour les deux variables), puis installer depuis la place de marché du dépôt :
-
-```bash
-export MCP_LEGISLATION_SECRET="<votre-jeton-titulaire>"
-export MCP_JURISPRUDENCE_SECRET="<votre-jeton-titulaire>"
-```
+Aucune variable d'environnement locale requise : installer depuis la place de marché du dépôt, puis autoriser la connexion OAuth 2.1 dans votre navigateur (via `/mcp` / `/mcp auth`) sur `acces.poirierlavoie.ca` :
 
 ```text
 /plugin marketplace add jpoirierlavoie/droit-civil-quebecois
 /plugin install droit-civil-quebecois@droit-civil-quebecois
 ```
 
+*(Pour un poste ou script sans navigateur, remplacer localement les URLs par `/mcp` avec un en-tête `Authorization: Bearer <jeton>` généré sur `acces.poirierlavoie.ca/moi` — extrait prêt à coller fourni dans `/moi`.)*
+
 ### 2. Claude Desktop & `claude.ai` (connecteurs personnalisés)
 
-Deux modes sont pris en charge :
-- **Recommandé (OAuth 2.1 PKCE `S256`) :** ajouter les connecteurs **`lois`** (`https://legislation.poirierlavoie.ca/mcp/oauth`), **`juris`** (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`) et **`outils`** (`https://outils.poirierlavoie.ca/mcp`), puis compléter la connexion sur `acces.poirierlavoie.ca`.
-- **Direct par paramètre de requête (`?key=`) :** saisir `https://legislation.poirierlavoie.ca/mcp?key=<votre-jeton>` et `https://jurisprudence.poirierlavoie.ca/mcp?key=<votre-jeton>` **dès la création du connecteur, avant toute première sonde** (sinon `claude.ai` reçoit un `404` et bascule sur la découverte OAuth). Importer les compétences `skills/` dans l'espace de travail pour activer le noyau `SAFETY-KERNEL`.
+- **Claude Desktop :** installer le greffon ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth`).
+- **Claude Web (`claude.ai` — OAuth 2.1 PKCE `S256`) :** sur le Web, Claude n'ajoute pas automatiquement les serveurs MCP distants d'un greffon ; ouvrir **Customize → Connectors** et ajouter une seule fois les trois URLs suivantes, puis cliquer sur **Connect** pour autoriser via `acces.poirierlavoie.ca` :
+  - `lois` : `https://legislation.poirierlavoie.ca/mcp/oauth`
+  - `juris` : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`
+  - `outils` : `https://outils.poirierlavoie.ca/mcp`
+- **Variante directe `?key=` (`claude.ai`) :** saisir `https://legislation.poirierlavoie.ca/mcp?key=<votre-jeton>` et `https://jurisprudence.poirierlavoie.ca/mcp?key=<votre-jeton>` **dès la création du connecteur, avant toute première sonde** (sinon `claude.ai` reçoit un `404`). Importer les compétences `skills/` dans l'espace de travail pour activer le noyau `SAFETY-KERNEL`.
 
 ### 3. Google Antigravity
 
-Synchroniser le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` et configurer `MCP_LEGISLATION_SECRET` / `MCP_JURISPRUDENCE_SECRET` dans le gestionnaire de greffons (identifiants nativement `<= 64` car., max 52 sous Antigravity) :
+Synchroniser le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` ; les connecteurs `lois` et `juris` s'authentifient automatiquement par OAuth 2.1 + PKCE (`http://127.0.0.1:<port>/oauth-callback` ou `https://antigravity.google/oauth-callback`), sans variable d'environnement à saisir (identifiants nativement `<= 64` car., max 52 sous Antigravity) :
 
 ```powershell
 python scripts/synchroniser_plugin_gemini.py --apply
@@ -126,7 +127,7 @@ python scripts/regenerer_cache_mcp.py --apply   # optionnel : reconstruit le cac
 gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecois
 ```
 
-`gemini-extension.json` déclare `sensitive: true` sur `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` et fixe `"contextFileName": []` afin que les consignes de développement (`GEMINI.md`) n'alourdissent jamais le contexte juridique de l'avocat.
+`gemini-extension.json` emploie OAuth 2.1 sur `/mcp/oauth` (`"settings": []`, autorisation interactive sans secret statique) et fixe `"contextFileName": []` afin que les consignes de développement (`GEMINI.md`) n'alourdissent jamais le contexte juridique de l'avocat.
 
 ### 5. Gemini App (`gemini.google.com`) & Vertex AI Gemini Enterprise
 
@@ -144,7 +145,7 @@ Les 32 outils des trois serveurs (`lois`, `juris`, `outils`) sont compatibles na
 ```text
 CONTRAINTES IMPÉRATIVES (DROIT CIVIL QUÉBÉCOIS — PALIER 2/3) :
 1. Confidentialité stricte : Requête entièrement anonymisée ; n'inclure aucun nom de client, fait identifiant, extrait de pièce ni numéro de dossier dans aucune recherche web ni aucun champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`).
-2. Sources primaires obligatoires (`fail-closed`) : Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Vérifier les textes via `lois` (`get_article` / `get_articles` avec date de consolidation) et authentifier les arrêts via `juris` (`verify_citations`, `get_case`, `citator` / `subsequent_history`). Si un connecteur requis échoue (`401`, `403`, `404`, `429`, `[CLEF_ABSENTE]`, `[CLEF_REFUSEE]`, `QUOTA_EPUISE`, hors ligne — sur `403` sur requête libre `query`, reformuler sans guillemets ni opérateurs ou lire par article exact; si le `403` persiste, traiter comme blocage) sans repli local prévu, s'arrêter sur le volet touché, nommer le connecteur et demander de rétablir l'accès (`acces.poirierlavoie.ca/moi`) ou de fournir le texte officiel. N'énoncer un ratio ou paragraphe d'arrêt qu'après lecture du texte intégral officiel en session ; sinon laisser explicitement :
+2. Sources primaires obligatoires (`fail-closed`) : Ne jamais réciter un article, un délai, un seuil indexé ou le ratio d'un arrêt de mémoire. Vérifier les textes via `lois` (`get_article` / `get_articles` avec date de consolidation) et authentifier les arrêts via `juris` (`verify_citations`, `get_case`, `citator` / `subsequent_history`). Si un connecteur requis échoue (`401`, `403`, `404`, `429`, `[CLEF_ABSENTE]`, `[CLEF_REFUSEE]`, `QUOTA_EPUISE`, hors ligne — sur `403` sur requête libre `query`, reformuler sans guillemets ni opérateurs ou lire par article exact; si le `403` persiste, traiter comme blocage) sans repli local prévu, s'arrêter sur le volet touché, nommer le connecteur et demander d'autoriser ou de rétablir l'accès (`acces.poirierlavoie.ca/moi`, ou admission préalable sur `acces.poirierlavoie.ca/demande`) ou de fournir le texte officiel. N'énoncer un ratio ou paragraphe d'arrêt qu'après lecture du texte intégral officiel en session ; sinon laisser explicitement :
    [RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]
 3. Étanchéité bijuridique : Exclure tout droit étranger (`.fr`, Belgique, Suisse ; art. 1240, 2224, 1641) et tout calque de common law (*duty of care*, *consideration*, *estoppel*, dommages punitifs sans loi habilitante sous l'art. 1621 C.c.Q.). En anglais, employer exclusivement la terminologie officielle C.c.Q./C.p.c. (`get_article(lang="en")`, `terminologie_lookup`).
 4. Protection et déclencheurs déontologiques : Présumer tout document non coté `CONFIDENTIEL` (jamais `PUBLIC` par défaut) ; signaler une obligation déontologique ou de caviardage (`b-1-r.3.1`, `b-1-r.5`, `cpc` art. 108, 192–194) uniquement devant un fait déclencheur concret.
@@ -156,10 +157,10 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ---
 
-## Migration depuis `v2.x` -> `v3.0.x`
+## Migration depuis `v3.0.x` -> `v3.1.0`
 
-- **Claude Code / Gemini CLI :** mettre à jour le greffon ou l'extension ; les variables individuelles `MCP_LEGISLATION_SECRET` et `MCP_JURISPRUDENCE_SECRET` issues de `acces.poirierlavoie.ca/moi` restent inchangées.
-- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` et `python scripts/regenerer_cache_mcp.py --apply`, puis conserver vos jetons individuels `acces.poirierlavoie.ca` dans le gestionnaire de greffons ou variables d'environnement.
+- **Claude Code / Gemini CLI :** mettre à jour le greffon ou l'extension ; les connecteurs basculent automatiquement sur OAuth 2.1 (`/mcp/oauth`) et ouvrent la connexion navigateur vers `acces.poirierlavoie.ca`. Vos jetons `Bearer` individuels antérieurs demeurent valides sur `/mcp` pour tout usage scripté ou sans navigateur.
+- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` et `python scripts/regenerer_cache_mcp.py --apply`, puis autoriser la connexion OAuth 2.1 lorsqu'Antigravity le propose (aucune variable secrète à configurer).
 
 ---
 
