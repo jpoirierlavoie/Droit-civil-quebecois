@@ -32,9 +32,9 @@ import urllib.parse
 import urllib.request
 
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "2.1.0"
+VERSION_ATTENDUE = "3.0.0"
 USER_AGENT_VERIFICATEUR = (
-    "DroitCivilQuebecois-Verifier/2.0 (PratiqueCivile; Windows NT 10.0; Win64; x64) "
+    "DroitCivilQuebecois-Verifier/3.0 (DroitCivil; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
 )
 
@@ -2209,7 +2209,7 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 2.1.0
+    # T1.1.4 : Parité semver 3.0.0
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):
@@ -2806,7 +2806,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"2.0.0"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.0.0"}}}',
                 auth_token="OMIT",
             )
             ok = status == 200
@@ -3943,15 +3943,22 @@ def run_tier_3_tests(
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T3.4.2", "Exécution verifier.py", "all", False, elapsed, str(ex))
 
-    # T3.4.3 : Vérification des scripts de compétences autonomes
+    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.0.0)
     t0 = time.perf_counter()
-    script_calc = repo_root / "skills" / "administration-litige" / "scripts" / "calcul_delai.py"
-    script_insp = repo_root / "skills" / "analyse-juridique" / "scripts" / "inspecter_piece.py"
-    scripts_ok = script_calc.is_file() and script_insp.is_file()
+    script_calc = repo_root / "skills" / "gestion-du-mandat" / "scripts" / "calcul_delai.py"
+    script_insp = repo_root / "skills" / "analyse-et-strategie" / "scripts" / "inspecter_piece.py"
+    script_ctrl = repo_root / "skills" / "production-et-conformite" / "scripts" / "controler_document.py"
+    script_cote = repo_root / "skills" / "production-et-conformite" / "scripts" / "verifier_cotes.py"
+    scripts_ok = (
+        script_calc.is_file()
+        and script_insp.is_file()
+        and script_ctrl.is_file()
+        and script_cote.is_file()
+    )
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T3.4.3",
-        "Disponibilité des scripts auxiliaires de compétences",
+        "Disponibilité des 4 scripts auxiliaires de compétences",
         "all",
         scripts_ok,
         elapsed,

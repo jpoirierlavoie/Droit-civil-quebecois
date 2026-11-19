@@ -10,7 +10,7 @@
 
 ### Portée
 
-Cette politique couvre le greffon **`droit-civil-quebecois`** (`v2.1.0`) ainsi que les dépôts d'infrastructure associés : [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`), [`MCP-Legislation`](https://github.com/jpoirierlavoie/MCP-Legislation), [`MCP-Jurisprudence`](https://github.com/jpoirierlavoie/MCP-Jurisprudence), [`MCP-Outils`](https://github.com/jpoirierlavoie/MCP-Outils) et [`MCP-Socle`](https://github.com/jpoirierlavoie/MCP-Socle).
+Cette politique couvre le greffon **`droit-civil-quebecois`** (`v3.0.0`) ainsi que les dépôts d'infrastructure associés : [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`), [`MCP-Legislation`](https://github.com/jpoirierlavoie/MCP-Legislation), [`MCP-Jurisprudence`](https://github.com/jpoirierlavoie/MCP-Jurisprudence), [`MCP-Outils`](https://github.com/jpoirierlavoie/MCP-Outils) et [`MCP-Socle`](https://github.com/jpoirierlavoie/MCP-Socle).
 
 ---
 
@@ -29,17 +29,18 @@ Cette politique couvre le greffon **`droit-civil-quebecois`** (`v2.1.0`) ainsi q
 
 ## Secret professionnel, zéro-journalisation et Deep Research
 
-### Règles impératives des compétences (`SAFETY-KERNEL`)
+### Règles impératives des compétences (`SAFETY-KERNEL` v3)
 
 Toutes les compétences du greffon imposent les règles suivantes :
 
 - **Zéro information nominative dans les recherches externes :** ne jamais inclure de noms de parties, faits identifiants, numéros de dossier ou extraits de pièces confidentielles dans une requête web ni dans un champ de recherche libre `query` (`lois.find_relevant`, `lois.search_text`).
 - **Présomption `CONFIDENTIEL` par défaut :** aucun document ou élément probant non analysé n'est considéré public par défaut ; tout indice de privilège (secret professionnel `9 Charte`, litige, règlement `s.p.`, confidentialité `108 C.p.c.`) est signalé avant toute communication.
+- **Honnêteté perceptuelle et dé-identification des précédents internes :** aucun média ou image non effectivement perçu en session n'est décrit ; tout précédent tiré d'un autre dossier et fourni par l'avocat doit être dé-identifié sans importer aucun fait, nom ni pièce dans le dossier courant, avec alerte de conflit le cas échéant.
 
-### Posture zéro-journalisation côté serveurs MCP et option locale `hybride_permis`
+### Posture zéro-journalisation côté serveurs MCP, option `hybride_permis` et scripts locaux
 
 - **Journaux d'invocation Cloudflare désactivés (`G37`) :** `observability.enabled = false` et `observability.logs.invocation_logs = false` sur `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Acces` et `MCP-Outils`. Aucun Worker n'écrit de texte de requête, citation, argument d'outil ni `request.url` (protégeant notamment `?key=`) dans `console.*` (`G9`).
 - **Zéro écriture de requêtes dans D1 (`S13`, `S14`, `G13`) :** `MCP-Outils` est strictement sans écriture (`PRAGMA query_only = ON`) ; `MCP-Legislation` et `MCP-Jurisprudence` ont retiré toute écriture d'exécution dans `search_log` et `api_usage`, ne conservant dans `DB_IDENTITE` que des compteurs journaliers agrégés (`compteur_jour`) et des événements techniques à énumération fermée horodatés à la minute (`evenement_technique`, purgés automatiquement à 90 jours).
 - **Désactivation libre-service de Workers AI (`hybride_permis`, `S19`) :** chaque titulaire peut désactiver le repérage sémantique dans `https://acces.poirierlavoie.ca/moi` ; `lois.search_text` reste alors strictement cantonné à l'index lexical FTS5 local sur D1.
-- **Prudence particulière en mode Deep Research :** les boucles autonomes (`claude.ai` Research et `gemini-api` `deep-research-preview-04-2026`, dont l'exécution en arrière-plan impose `store=True`) effectuent des recherches web ouvertes et conservent la transcription côté fournisseur. **Ne soumettre exclusivement que des questions juridiques abstraites et anonymisées**, idéalement préfixées du préambule `SAFETY-KERNEL`, sous compte d'entreprise couvert par une entente de traitement de données.
-- **Scripts locaux Python :** `skills/analyse-juridique/scripts/inspecter_piece.py` et `skills/administration-litige/scripts/calcul_delai.py` n'utilisent que la bibliothèque standard Python, ne réalisent aucun appel réseau et n'écrivent aucun fichier hors du flux standard choisi par l'utilisateur.
+- **Prudence particulière en mode Deep Research et surfaces nuage :** les boucles autonomes (`claude.ai` Research et `gemini-api` `deep-research-preview-04-2026`, dont l'exécution en arrière-plan impose `store=True`) effectuent des recherches web ouvertes et conservent la transcription côté fournisseur. **Ne soumettre exclusivement que des questions juridiques abstraites et anonymisées**, idéalement préfixées du préambule `SAFETY-KERNEL` v3, sous compte d'entreprise couvert par une entente de traitement de données.
+- **Scripts locaux Python (lecture seule, zéro réseau) :** `skills/analyse-et-strategie/scripts/inspecter_piece.py`, `skills/gestion-du-mandat/scripts/calcul_delai.py`, `skills/production-et-conformite/scripts/controler_document.py` et `skills/production-et-conformite/scripts/verifier_cotes.py` n'utilisent que la bibliothèque standard Python, ne réalisent aucun appel réseau et n'écrivent aucun fichier hors du journal de garde explicitement demandé par `--journal`. Sur les surfaces sans exécution Python locale, les contrôles octets/XML/PDF/cotes non exécutés sont explicitement signalés comme omis et inscrits au bon de travail manuel.

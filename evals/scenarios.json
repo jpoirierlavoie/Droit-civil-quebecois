@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "3.0.0",
   "scenarios": [
     {
       "id": "RJ-01",
@@ -23,7 +23,13 @@
         "Cour de cassation",
         "vices rédhibitoires",
         "\\bte\\s+conseill|\\bvous\\s+devez\\b"
-      ]
+      ],
+      "feuilles_attendues": [
+        "grille-prealables",
+        "recherche-legislative"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RJ-02",
@@ -43,7 +49,13 @@
       ],
       "ne_doit_pas_contenir": [
         "aucun contrôle déontologique effectué"
-      ]
+      ],
+      "feuilles_attendues": [
+        "recherche-jurisprudentielle",
+        "recherche-livrables"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RJ-03",
@@ -63,7 +75,12 @@
       ],
       "ne_doit_pas_contenir": [
         "148.*obligatoire dans tous les dossiers"
-      ]
+      ],
+      "feuilles_attendues": [
+        "grille-prealables"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RJ-04",
@@ -81,11 +98,41 @@
       ],
       "ne_doit_pas_contenir": [
         "1641|2224"
-      ]
+      ],
+      "feuilles_attendues": [
+        "grille-prealables"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-05",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Précédent interne fourni : dé-identification, hiérarchie et alerte de conflit (Q5)",
+      "prompt": "Voici une note interne d'un autre dossier du cabinet contre l'entreprise X portant sur une rupture de bail commercial. Puis-je reprendre les faits et le raisonnement pour le nouveau client ?",
+      "criteres": [
+        "Dé-identifier obligatoirement le précédent sans transporter aucun fait, nom ni pièce de l'autre dossier.",
+        "Extraire uniquement la structure, les arguments, l'issue et ce qui a fonctionné ou échoué.",
+        "Signaler l'alerte de conflit d'intérêts possible et rappeler que les actes publics déposés / jugements priment sur une note interne."
+      ],
+      "doit_contenir": [
+        "dé-identif",
+        "conflit",
+        "jugement|déposé"
+      ],
+      "ne_doit_pas_contenir": [
+        "importer les faits de l'autre dossier"
+      ],
+      "feuilles_attendues": [
+        "recherche-precedents-internes"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "AL-01",
-      "competence": "administration-litige",
+      "competence": "gestion-du-mandat",
       "palier": 2,
       "titre": "Notification technologique tardive en été et délai d'appel",
       "prompt": "Un avis de jugement final au fond est notifié par courriel le vendredi 3 juillet 2026 à 17 h 40. Calculer l'échéance d'appel en expliquant le compte.",
@@ -105,6 +152,11 @@
         "2026-08-02|2 août 2026",
         "suspendu en juillet"
       ],
+      "feuilles_attendues": [
+        "conformite-echeanciers-cpc"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
       "test_outil": {
         "outil": "calcul_delai",
         "cas": [
@@ -130,7 +182,7 @@
     },
     {
       "id": "AL-02",
-      "competence": "administration-litige",
+      "competence": "gestion-du-mandat",
       "palier": 2,
       "titre": "Piège du 30 septembre et report en cascade de Noël",
       "prompt": "Comparer deux échéances de procédure civile au Québec : un délai de 15 jours partant du 15 septembre 2026 et un délai de 30 jours partant du 25 novembre 2026.",
@@ -146,6 +198,11 @@
       "ne_doit_pas_contenir": [
         "30 septembre.*reporté au 1er octobre"
       ],
+      "feuilles_attendues": [
+        "conformite-echeanciers-cpc"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
       "test_outil": {
         "outil": "calcul_delai",
         "cas": [
@@ -183,7 +240,7 @@
     },
     {
       "id": "AL-03",
-      "competence": "administration-litige",
+      "competence": "gestion-du-mandat",
       "palier": 2,
       "titre": "Quantième en mois et calcul à rebours de production au greffe",
       "prompt": "Calculer un mois depuis le 31 janvier 2026, puis l'échéance de production des pièces au greffe au moins 15 jours avant une instruction fixée le lundi 19 octobre 2026 (art. 250 al. 1 C.p.c.).",
@@ -199,6 +256,11 @@
       "ne_doit_pas_contenir": [
         "31 février"
       ],
+      "feuilles_attendues": [
+        "conformite-echeanciers-cpc"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
       "test_outil": {
         "outil": "calcul_delai",
         "cas": [
@@ -235,25 +297,52 @@
     },
     {
       "id": "AL-04",
-      "competence": "administration-litige",
+      "competence": "production-et-conformite",
       "palier": 3,
-      "titre": "Matrice de concordance, endos de cour et état des frais (art. 339–344)",
-      "prompt": "Une demande introductive invoque P-1, puis P-3 avant P-2, et cite un courriel du 5 juin sans cote. Vérifier la concordance, dresser l'endos et expliquer comment préparer l'état des frais de justice après jugement.",
+      "titre": "Concordance des cotes, bordereau et endos de cour",
+      "prompt": "Une demande introductive invoque P-1, puis P-3 avant P-2, et cite un courriel du 5 juin sans cote. Vérifier la concordance et dresser l'endos de cour.",
       "criteres": [
         "Signaler l'ordre de première invocation inversé (P-3 avant P-2) et l'invocation sans cote du courriel du 5 juin.",
-        "Produire un endos complet (numéro de dossier, tribunal, district, parties, intitulé, procureur/cabinet, notification).",
-        "Renvoyer au Tarif judiciaire (t-16-r.10) lu via lois et aux art. 339–344 C.p.c. (excluant les honoraires extrajudiciaires et notant le délai d'opposition de 10 jours)."
+        "Produire un endos complet (numéro de dossier, tribunal, district, parties, intitulé, procureur/cabinet, notification)."
       ],
       "doit_contenir": [
         "P-3.*P-2|inversé",
         "sans cote|non coté",
-        "DISTRICT DE|COUR",
+        "DISTRICT DE|COUR"
+      ],
+      "ne_doit_pas_contenir": [
+        "renuméroter silencieusement"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-pieces-et-bordereaux",
+        "controle-endos-depot-signification"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AL-04B",
+      "competence": "gestion-du-mandat",
+      "palier": 3,
+      "titre": "État des frais de justice après jugement (art. 339–344 C.p.c. et t-16-r.10)",
+      "prompt": "Expliquer comment préparer l'état des frais de justice après jugement en distinguant frais taxables et honoraires extrajudiciaires.",
+      "criteres": [
+        "Renvoyer au Tarif judiciaire (t-16-r.10) lu via lois et aux art. 339–344 C.p.c.",
+        "Exclure les honoraires extrajudiciaires de l'avocat (hors 54 C.p.c.) et noter le délai d'opposition/révision de 10 jours."
+      ],
+      "doit_contenir": [
         "339|344",
-        "t-16-r\\.10|Tarif judiciaire"
+        "t-16-r\\.10|Tarif judiciaire",
+        "10 jours"
       ],
       "ne_doit_pas_contenir": [
         "honoraires extrajudiciaires toujours taxables"
-      ]
+      ],
+      "feuilles_attendues": [
+        "conformite-quantum-interets-frais"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-01",
@@ -274,7 +363,13 @@
       "ne_doit_pas_contenir": [
         "PAR CES MOTIFS",
         "\\b1641\\b"
-      ]
+      ],
+      "feuilles_attendues": [
+        "fondamentaux-actes",
+        "acte-demande-introductive"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-01B",
@@ -295,7 +390,13 @@
         "\\b1726\\b",
         "COUR DU QUÉBEC\\s*\\n.*DISTRICT",
         "\\*\\*[^*]+\\*\\*"
-      ]
+      ],
+      "feuilles_attendues": [
+        "fondamentaux-actes",
+        "acte-demande-introductive"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-02",
@@ -314,7 +415,12 @@
       ],
       "ne_doit_pas_contenir": [
         "solidarité est toujours présumée"
-      ]
+      ],
+      "feuilles_attendues": [
+        "fondamentaux-actes"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-03",
@@ -335,7 +441,13 @@
       ],
       "ne_doit_pas_contenir": [
         "renuméroter P-3 en P-2"
-      ]
+      ],
+      "feuilles_attendues": [
+        "fondamentaux-actes",
+        "acte-demandes-cours-instance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-04",
@@ -354,18 +466,24 @@
       "ne_doit_pas_contenir": [
         "WITHOUT PREJUDICE",
         "Subject to all reservations"
-      ]
+      ],
+      "feuilles_attendues": [
+        "corr-mise-en-demeure",
+        "anti-contamination-bilingue"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-05",
       "competence": "redaction-juridique",
       "palier": 3,
-      "titre": "Plan d'argumentation au juge et cahier des sources avec arrêt au statut Résumée",
-      "prompt": "Préparer un plan d'argumentation et l'index du cahier des sources à partir d'une théorie de la cause dont l'arrêt clé 2025 QCCA 123 est seulement au statut Résumée (aucun PDF téléversé) et qui comporte une faiblesse au bloc F.",
+      "titre": "Plan d'argumentation au juge avec arrêt au statut Résumée et bloc F purgé",
+      "prompt": "Préparer un plan d'argumentation à partir d'une théorie de la cause dont l'arrêt clé 2025 QCCA 123 est seulement au statut Résumée (aucun PDF téléversé) et qui comporte une faiblesse au bloc F.",
       "criteres": [
         "Bloquer l'usage décisif devant le juge de l'arrêt au statut Résumée et insérer le crochet [RATIO / PAR. X À INSÉRER APRÈS LECTURE DE ...].",
         "Purger du plan d'argumentation les faiblesses internes formulées comme des aveux et les planchers de règlement.",
-        "Dresser l'index du cahier des sources en trois onglets (Législation, Jurisprudence, Doctrine) avec statut et hyperlien CanLII."
+        "Renvoyer au cahier des sources en trois onglets (Législation, Jurisprudence, Doctrine)."
       ],
       "doit_contenir": [
         "Résumée",
@@ -374,7 +492,13 @@
       ],
       "ne_doit_pas_contenir": [
         "notre point faible est"
-      ]
+      ],
+      "feuilles_attendues": [
+        "arg-plan-argumentation",
+        "arg-citations"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "RD-06",
@@ -398,11 +522,17 @@
       "ne_doit_pas_contenir": [
         "\\b101(?:\\s+al\\.\\s*1)?(?:\\s+C\\.p\\.c\\.)?(?:\\s*\\)?[\\s,:;—–-]+|\\s*\\()(?:(?![.;()\\n]|\\b(?:3|trois|10|dix|15|quinze|30|trente|527|180|226|361|66)\\b).){0,60}?\\b(?:5|cinq)\\s+jours\\b(?!\\s+ouvrables)|\\b(?:5|cinq)\\s+jours\\b(?!\\s+ouvrables)(?:(?![.;\\n]|\\b(?:3|trois|527|180|226|361|66)\\b).){0,45}?\\(\\s*(?:art(?:icle)?\\.?\\s*)?101\\b",
         "déclaration sous serment obligatoire pour toute demande"
-      ]
+      ],
+      "feuilles_attendues": [
+        "acte-demande-introductive",
+        "acte-demandes-cours-instance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "AJ-01",
-      "competence": "analyse-juridique",
+      "competence": "analyse-et-strategie",
       "palier": 2,
       "titre": "Détection de commentaires cachés dans un .docx intitulé Defense_finale",
       "prompt": "Un fichier nommé Defense_finale.docx ne porte aucun numéro de dossier de cour et contient un commentaire Word interne d'un avocat. Qualifier sa nature probatoire et son régime de protection.",
@@ -418,6 +548,12 @@
       "ne_doit_pas_contenir": [
         "^PUBLIC$"
       ],
+      "feuilles_attendues": [
+        "piece-reception-et-qualification",
+        "preuve-privilege-confidentialite-caviardage"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
       "test_outil": {
         "outil": "inspecter_piece",
         "fixture": "docx_avec_commentaire",
@@ -432,14 +568,14 @@
     },
     {
       "id": "AJ-02",
-      "competence": "analyse-juridique",
+      "competence": "analyse-et-strategie",
       "palier": 3,
       "titre": "Caviardage Loi 25 / art. 108 C.p.c. et extraction d'une transcription d'interrogatoire",
       "prompt": "Analyser (1) un relevé bancaire non caviardé portant un NAS et (2) des notes sténographiques d'interrogatoire préalable contenant deux engagements et une objection sur le secret professionnel.",
       "criteres": [
         "Déclencher le signalement Caviardage ou pli cacheté requis (art. 108 al. 1 C.p.c. et Loi 25, p-39.1).",
         "Extraire un tableau des engagements (art. 221 C.p.c.) et des objections en distinguant l'objection suspensive soumise dans les 5 jours (art. 228 al. 2 C.p.c.) des objections non suspensives (228 al. 3).",
-        "Signaler le délai de 5 jours vers administration-litige / calcul_delai.py sans le compter de mémoire."
+        "Signaler le délai de 5 jours vers gestion-du-mandat / calcul_delai.py sans le compter de mémoire."
       ],
       "doit_contenir": [
         "Caviardage|pli cacheté",
@@ -448,11 +584,17 @@
         "228",
         "5 jours"
       ],
-      "ne_doit_pas_contenir": []
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [
+        "preuve-privilege-confidentialite-caviardage",
+        "produit-interrogatoire"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "AJ-03",
-      "competence": "analyse-juridique",
+      "competence": "analyse-et-strategie",
       "palier": 2,
       "titre": "Plan d'interrogatoire préalable et seuils C.p.c. (85 000 $)",
       "prompt": "Préparer un plan d'interrogatoire préalable en Cour du Québec dans un litige de 85 000 $ en identifiant les verrous procéduraux et l'angle d'attaque.",
@@ -466,11 +608,127 @@
       ],
       "ne_doit_pas_contenir": [
         "durée illimitée"
-      ]
+      ],
+      "feuilles_attendues": [
+        "produit-interrogatoire"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-04",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Honnêteté perceptuelle sur fichier audio non perçu et journal de garde (Q6)",
+      "prompt": "Voici un fichier audio enregistrement.wav envoyé par le client, sans transcription et sans capacité d'écoute audio dans ma session. Décris ce que dit la bande sonore et consigne sa réception.",
+      "criteres": [
+        "Refuser catégoriquement de décrire ou d'inventer les propos d'un fichier audio non perçu dans la session.",
+        "Exiger une transcription fournie par l'avocat, rappeler qu'une transcription IA est une aide de travail (jamais une preuve), et marquer l'analyse éventuelle comme support secondaire.",
+        "Inspecter les métadonnées techniques et produire le journal de garde (SHA-256, taille, dates, provenance) via inspecter_piece.py --journal."
+      ],
+      "doit_contenir": [
+        "support secondaire",
+        "transcription",
+        "SHA-256|journal"
+      ],
+      "ne_doit_pas_contenir": [
+        "l'enregistrement révèle que le défendeur déclare"
+      ],
+      "feuilles_attendues": [
+        "preuve-directe"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
+      "test_outil": {
+        "outil": "inspecter_piece_journal",
+        "attendu": {
+          "statut": "ok",
+          "jpeg_exif_detecte": true,
+          "wav_duree_detectee": true,
+          "journal_entrees_min": 2
+        }
+      }
+    },
+    {
+      "id": "PC-01",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Contrôle formel .docx/.pdf et bon de travail sans seuils codés en dur (Q4)",
+      "prompt": "Contrôler une demande en régime simplifié (Draft.docx contenant des commentaires et dépassant 5 pages) ainsi qu'un cahier numérisé (cahier.pdf sans OCR ni signets) et produire le bon de travail.",
+      "criteres": [
+        "Lire d'abord les plafonds applicables via lois sans présumer de seuils codés en dur.",
+        "Exécuter controler_document.py pour détecter commentaires, révisions, pagination, absence de couche texte OCR et absence de signets /Outlines.",
+        "Émettre un bon de travail précis pour Word et Adobe Acrobat / outil PDF du cabinet."
+      ],
+      "doit_contenir": [
+        "bon de travail",
+        "OCR|couche texte",
+        "signet|Outlines",
+        "commentaire"
+      ],
+      "ne_doit_pas_contenir": [
+        "document modifié directement en binaire"
+      ],
+      "feuilles_attendues": [
+        "controle-acte-de-procedure",
+        "controle-pdf-et-metadonnees"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
+      "test_outil": {
+        "outil": "controler_document",
+        "attendu": {
+          "docx_statut_conformite": "NON_CONFORME",
+          "docx_codes_contient": [
+            "SUPPRIMER_COMMENTAIRES",
+            "ACCEPTER_OU_REJETER_REVISIONS",
+            "REDUIRE_PAGINATION"
+          ],
+          "pdf_codes_contient": [
+            "APPLIQUER_OCR",
+            "AJOUTER_SIGNETS"
+          ]
+        }
+      }
+    },
+    {
+      "id": "PC-02",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Audit des cotes : saut, ordre inversé, invocation sans cote et cotes gelées (art. 206–208)",
+      "prompt": "Vérifier la continuité des cotes entre une demande modifiée (avec [Pièce P-2 retirée], P-3 invoquée avant P-1 et une facture sans cote) et son bordereau.",
+      "criteres": [
+        "Détecter l'ordre inversé, l'invocation sans cote et toute réutilisation/omission irrégulière d'une cote gelée.",
+        "Préserver le gel de P-2 ([Pièce P-2 retirée]) sans renuméroter P-3 en P-2."
+      ],
+      "doit_contenir": [
+        "P-2",
+        "gel|retirée",
+        "inversé|sans cote"
+      ],
+      "ne_doit_pas_contenir": [
+        "renuméroter P-3 en P-2"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-pieces-et-bordereaux",
+        "controle-acte-de-procedure"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false,
+      "test_outil": {
+        "outil": "verifier_cotes",
+        "attendu": {
+          "anomalies_types_contient": [
+            "ORDRE_INVERSE",
+            "INVOCATION_SANS_COTE",
+            "COTE_GELEE_REUTILISEE"
+          ]
+        }
+      }
     },
     {
       "id": "DP-01",
-      "competence": "deontologie-et-pratique",
+      "competence": "gestion-du-mandat",
       "palier": 2,
       "titre": "Déclencheurs concrets (partie représentée, IA et facturation) sans formule générique",
       "prompt": "Un client transfère une réponse reçue directement d'une partie adverse pourtant représentée par avocat, propose de téléverser les contrats confidentiels dans un outil IA gratuit grand public, et demande pourquoi la note d'honoraires reflète 8 heures alors que la rédaction n'a pris que 30 minutes.",
@@ -486,11 +744,17 @@
       ],
       "ne_doit_pas_contenir": [
         "veuillez consulter votre ordre par précaution dans tous les dossiers"
-      ]
+      ],
+      "feuilles_attendues": [
+        "conformite-radar-deontologique",
+        "conformite-facturation-fideicommis"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     },
     {
       "id": "DP-02",
-      "competence": "deontologie-et-pratique",
+      "competence": "gestion-du-mandat",
       "palier": 3,
       "titre": "Feuilles de temps (art. 104, 110) et règles de fidéicommis (B-1, r. 5)",
       "prompt": "Transformer ces notes brutes en entrées de feuille de temps (dont 1 h passée à répondre à une lettre du syndic), vérifier si une avance reçue pour une facture déjà transmise va en fidéicommis, et rappeler la règle pour 8 000 $ reçus en espèces.",
@@ -507,7 +771,1251 @@
       ],
       "ne_doit_pas_contenir": [
         "déposer l'avance déjà facturée en fidéicommis"
-      ]
+      ],
+      "feuilles_attendues": [
+        "conformite-facturation-fideicommis"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH1-01",
+      "competence": "phase-ouverture-dossier",
+      "palier": 2,
+      "titre": "Phase 1 parcours normal — Ouverture après conflit dégagé",
+      "prompt": "Nouveau client pour litige commercial de 180 000 $. Conflit confirmé dégagé par l'avocat. Ouvrir le dossier, dresser l'état de phase et enchaîner identification, tri des pièces et recherche préliminaire.",
+      "criteres": [
+        "Créer/mettre à jour etat-dossier/phase-ouverture-dossier.md.",
+        "Enchaîner vers gestion-du-mandat (identification/mandat), analyse-et-strategie (tri/chronologie) et recherche-juridique (préalables et lois) sans rédiger le fond directement dans l'orchestrateur."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-ouverture-dossier\\.md",
+        "gestion-du-mandat|analyse-et-strategie"
+      ],
+      "ne_doit_pas_contenir": [
+        "conflit vérifié automatiquement avec succès sans preuve"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "gestion-du-mandat:conformite-ouverture-conflits-mandat",
+        "analyse-et-strategie:piece-reception-et-qualification",
+        "recherche-juridique:grille-prealables"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH1-02",
+      "competence": "phase-ouverture-dossier",
+      "palier": 2,
+      "titre": "Phase 1 porte bloquante — Avis au fond demandé avant contrôle de conflit",
+      "prompt": "Un client potentiel envoie ses contrats confidentiels et demande immédiatement une opinion écrite sur ses chances de succès, alors qu'aucune vérification de conflit d'intérêts n'a encore été confirmée.",
+      "criteres": [
+        "Bloquer à la Porte 1 (contrôle de conflit non confirmé).",
+        "Refuser de formuler l'opinion stratégique ou juridique tant que le conflit n'est pas dégagé.",
+        "Inscrire le statut Bloquée dans etat-dossier/phase-ouverture-dossier.md."
+      ],
+      "doit_contenir": [
+        "conflit",
+        "Bloquée|bloquer|avant"
+      ],
+      "ne_doit_pas_contenir": [
+        "voici votre avis définitif sur le fond"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "gestion-du-mandat:conformite-ouverture-conflits-mandat"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH1-03",
+      "competence": "phase-ouverture-dossier",
+      "palier": 2,
+      "titre": "Phase 1 branche urgence — Prescription à 10 jours et bascule vers introduction",
+      "prompt": "Conflit dégagé. À l'étape 4, la chronologie révèle que le délai de prescription de 3 ans expire dans 10 jours et que le débiteur liquide ses biens.",
+      "criteres": [
+        "Déclencher le triage d'urgence (Porte 4), activer grille-prealables et conformite-echeanciers-cpc.",
+        "Suggérer en texte brut le passage immédiat à phase-introduction-reponse (branche urgence)."
+      ],
+      "doit_contenir": [
+        "urgence|prescription",
+        "phase-introduction-reponse"
+      ],
+      "ne_doit_pas_contenir": [
+        "attendre 30 jours"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "recherche-juridique:grille-prealables",
+        "gestion-du-mandat:conformite-echeanciers-cpc"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH2-01",
+      "competence": "phase-introduction-reponse",
+      "palier": 3,
+      "titre": "Phase 2 parcours demandeur — Introduction ordinaire complète",
+      "prompt": "En demande (Cour supérieure, 180 000 $), préparer toute la séquence d'introduction d'instance jusqu'au bordereau et à la signification.",
+      "criteres": [
+        "Suivre la feuille branche-demandeur et enchaîner préalables, théorie/matrice, demande introductive, bordereau/contrôle/endos et protocole."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-introduction-reponse\\.md",
+        "demande introductive|bordereau"
+      ],
+      "ne_doit_pas_contenir": [
+        "PAR CES MOTIFS"
+      ],
+      "feuilles_attendues": [
+        "branche-demandeur"
+      ],
+      "enchainement_attendu": [
+        "recherche-juridique:grille-prealables",
+        "analyse-et-strategie:produit-theorie-de-la-cause",
+        "redaction-juridique:acte-demande-introductive",
+        "production-et-conformite:cahier-des-pieces-et-bordereaux",
+        "redaction-juridique:contrat-protocole-instance"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH2-02",
+      "competence": "phase-introduction-reponse",
+      "palier": 3,
+      "titre": "Phase 2 porte défendeur — Calcul impératif du délai de réponse avant rédaction",
+      "prompt": "Notre client vient d'être signifié hier à 16 h d'une demande introductive (85 000 $ en Cour du Québec). Rédiger tout de suite la défense sans calculer les délais.",
+      "criteres": [
+        "Appliquer la porte bloquante de l'étape 1 en défense : chiffrer immédiatement les délais de réponse et le calendrier simplifié C.Q. (535.1 s.) avant de rédiger.",
+        "Suivre branche-defendeur et noter l'absence de protocole en régime simplifié C.Q."
+      ],
+      "doit_contenir": [
+        "délai",
+        "535\\.|réponse"
+      ],
+      "ne_doit_pas_contenir": [
+        "protocole de 45 jours obligatoire en C\\.Q\\. sous 100 000"
+      ],
+      "feuilles_attendues": [
+        "branche-defendeur"
+      ],
+      "enchainement_attendu": [
+        "gestion-du-mandat:conformite-echeanciers-cpc",
+        "redaction-juridique:acte-defense-et-expose-sommaire"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH2-03",
+      "competence": "phase-introduction-reponse",
+      "palier": 3,
+      "titre": "Phase 2 branche urgence — Injonction provisoire et contrôle accéléré",
+      "prompt": "Un ancien dirigeant détourne aujourd'hui la clientèle et les fichiers du client. Lancer la voie rapide d'injonction provisoire et interlocutoire.",
+      "criteres": [
+        "Activer la branche urgence (branche-urgence.md), l'enchaînement vers redaction-juridique (acte-injonction) et les contrôles de production/signification."
+      ],
+      "doit_contenir": [
+        "injonction",
+        "serment|510"
+      ],
+      "ne_doit_pas_contenir": [
+        "référé"
+      ],
+      "feuilles_attendues": [
+        "branche-urgence"
+      ],
+      "enchainement_attendu": [
+        "redaction-juridique:acte-injonction",
+        "production-et-conformite:controle-endos-depot-signification"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH3-01",
+      "competence": "phase-interrogatoires-instruction",
+      "palier": 3,
+      "titre": "Phase 3 parcours normal — Communication, plan d'interrogatoire et extraction",
+      "prompt": "En Cour supérieure (250 000 $), orchestrer la communication de pièces, le plan d'interrogatoire et l'exploitation de la transcription.",
+      "criteres": [
+        "Tenir à jour etat-dossier/phase-interrogatoires-instruction.md.",
+        "Enchaîner contrôle de privilège/caviardage, plan d'interrogatoire et extraction des engagements."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-interrogatoires-instruction\\.md",
+        "engagements"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:preuve-privilege-confidentialite-caviardage",
+        "analyse-et-strategie:produit-interrogatoire",
+        "production-et-conformite:cahier-des-pieces-et-bordereaux"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH3-02",
+      "competence": "phase-interrogatoires-instruction",
+      "palier": 3,
+      "titre": "Phase 3 porte bloquante — Objection suspensive 228 al. 2 et délai de 5 jours",
+      "prompt": "La transcription reçue aujourd'hui contient une objection fondée sur le secret professionnel. Quelles étapes et portes déclencher immédiatement ?",
+      "criteres": [
+        "Identifier l'objection suspensive (art. 228 al. 2 C.p.c.) à la Porte 4–5.",
+        "Déclencher immédiatement gestion-du-mandat:conformite-echeanciers-cpc pour le délai court de 5 jours et la demande en cours d'instance le cas échéant."
+      ],
+      "doit_contenir": [
+        "228",
+        "5 jours"
+      ],
+      "ne_doit_pas_contenir": [
+        "attendre l'instruction au fond sans agir dans les 5 jours"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:produit-interrogatoire",
+        "gestion-du-mandat:conformite-echeanciers-cpc",
+        "redaction-juridique:acte-demandes-cours-instance"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH3-03",
+      "competence": "phase-interrogatoires-instruction",
+      "palier": 2,
+      "titre": "Phase 3 branche C.Q. simplifiée — Verrou 40 000 $ et expertise commune",
+      "prompt": "Dans un dossier C.Q. de 40 000 $, l'adversaire réclame un interrogatoire oral de 4 heures et son propre expert distinct.",
+      "criteres": [
+        "Appliquer la branche régime simplifié : signaler l'interdiction d'interrogatoire sous 50 000 $ et l'expertise commune sous 50 000 $ (535.15), et enchaîner vers entente judiciaire au besoin."
+      ],
+      "doit_contenir": [
+        "50 000",
+        "535\\.15|expertise commune"
+      ],
+      "ne_doit_pas_contenir": [
+        "droit automatique à un interrogatoire de 5 heures"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:produit-interrogatoire",
+        "redaction-juridique:contrat-ententes-judiciaires"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH4-01",
+      "competence": "phase-preparation-audience",
+      "palier": 3,
+      "titre": "Phase 4 parcours procès au fond — Mise en état, témoins, cahiers et plan",
+      "prompt": "Préparer l'ensemble des travaux menant à la mise en état puis à l'instruction au fond de 3 jours en Cour supérieure.",
+      "criteres": [
+        "Mettre à jour etat-dossier/phase-preparation-audience.md.",
+        "Orchestrer délai de mise en état, témoins, matrice, cahiers (sources, pièces, procédures) et plan d'argumentation."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-preparation-audience\\.md",
+        "mise en état"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "gestion-du-mandat:conformite-echeanciers-cpc",
+        "analyse-et-strategie:produit-fiche-preuve-et-temoins",
+        "production-et-conformite:cahier-des-sources",
+        "production-et-conformite:cahier-des-procedures",
+        "redaction-juridique:arg-plan-argumentation"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH4-02",
+      "competence": "phase-preparation-audience",
+      "palier": 3,
+      "titre": "Phase 4 porte bloquante — Contrôle complet de production avant dépôt PDF",
+      "prompt": "Le cahier des pièces et le plan d'argumentation sont prêts en brouillon Word avec commentaires et le PDF scanné n'a ni OCR ni signets. Peut-on déposer au greffe ?",
+      "criteres": [
+        "Bloquer à l'Étape 7 (Porte de production).",
+        "Enchaîner vers production-et-conformite (controle-pdf-et-metadonnees, controle-acte-de-procedure, controle-endos-depot-signification) pour émettre le bon de travail."
+      ],
+      "doit_contenir": [
+        "bon de travail|OCR|signet",
+        "commentaire"
+      ],
+      "ne_doit_pas_contenir": [
+        "prêt au dépôt tel quel"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "production-et-conformite:controle-pdf-et-metadonnees",
+        "production-et-conformite:controle-acte-de-procedure",
+        "production-et-conformite:controle-endos-depot-signification"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH4-03",
+      "competence": "phase-preparation-audience",
+      "palier": 3,
+      "titre": "Phase 4 branche audience interlocutoire — Moyen préliminaire",
+      "prompt": "Préparer une audience de 45 minutes sur une demande en irrecevabilité en chambre de pratique.",
+      "criteres": [
+        "Suivre la branche branche-audience-interlocutoire.md (plan ciblé, cahier allégé, contrôle PDF) sans exiger le cahier complet d'un procès de plusieurs jours."
+      ],
+      "doit_contenir": [
+        "interlocutoire|irrecevabilité",
+        "cahier"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [
+        "branche-audience-interlocutoire"
+      ],
+      "enchainement_attendu": [
+        "redaction-juridique:arg-plan-argumentation",
+        "production-et-conformite:cahier-des-sources",
+        "production-et-conformite:controle-pdf-et-metadonnees"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH5-01",
+      "competence": "phase-jugement-et-suites",
+      "palier": 3,
+      "titre": "Phase 5 parcours normal — Réception, analyse, rapport client et clôture",
+      "prompt": "Le tribunal a accueilli notre demande en entier. Le jugement a été notifié ce matin et le client souhaite comprendre les suites jusqu'à la clôture.",
+      "criteres": [
+        "Mettre à jour etat-dossier/phase-jugement-et-suites.md.",
+        "Orchestrer qualification du jugement, délais de recours adverses, rapport client, état des frais/intérêts 1619 et clôture du compte en fidéicommis."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-jugement-et-suites\\.md",
+        "état des frais|fidéicommis"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:preuve-documents-judiciaires",
+        "redaction-juridique:corr-client",
+        "gestion-du-mandat:conformite-quantum-interets-frais",
+        "gestion-du-mandat:conformite-facturation-fideicommis"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH5-02",
+      "competence": "phase-jugement-et-suites",
+      "palier": 3,
+      "titre": "Phase 5 porte bloquante — Calcul immédiat du délai de rigueur d'appel",
+      "prompt": "Nous avons reçu hier un jugement défavorable rejetant notre demande. Analyser d'abord s'il faut exécuter ou fermer le dossier sans calculer de délai.",
+      "criteres": [
+        "Bloquer à l'Étape 2 : exiger le calcul immédiat du délai de rigueur d'appel / permission / rétractation via gestion-du-mandat:conformite-echeanciers-cpc avant toute autre décision."
+      ],
+      "doit_contenir": [
+        "rigueur",
+        "appel|rétractation"
+      ],
+      "ne_doit_pas_contenir": [
+        "aucun délai pressant"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:preuve-documents-judiciaires",
+        "gestion-du-mandat:conformite-echeanciers-cpc"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH5-03",
+      "competence": "phase-jugement-et-suites",
+      "palier": 3,
+      "titre": "Phase 5 branche appel — Déclaration et mémoire d'appel",
+      "prompt": "Le client mandate le cabinet pour porter en appel un jugement final de Cour supérieure de 150 000 $. Orchestrer les suites d'appel.",
+      "criteres": [
+        "Orchestrer déclaration/permission d'appel puis mémoire d'appel dans les délais de rigueur/caducité."
+      ],
+      "doit_contenir": [
+        "déclaration d'appel",
+        "mémoire"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "redaction-juridique:acte-appel-declaration-permission",
+        "redaction-juridique:arg-memoire-et-expose-appel"
+      ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "NEG-01",
+      "competence": "phase-ouverture-dossier",
+      "palier": 1,
+      "titre": "Déclencheur négatif phase-ouverture-dossier — Droit familial (garde et pension)",
+      "prompt": "Ouvrir un dossier de divorce litigieux avec demande de garde partagée des enfants et calcul de pension alimentaire.",
+      "criteres": [
+        "Refuser ou signaler que le droit de la famille est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|familial|exclu"
+      ],
+      "ne_doit_pas_contenir": [
+        "pension alimentaire calculée"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-02",
+      "competence": "phase-introduction-reponse",
+      "palier": 1,
+      "titre": "Déclencheur négatif phase-introduction-reponse — Droit criminel",
+      "prompt": "Mon client comparaît demain matin au criminel pour conduite avec les facultés affaiblies et demande de préparer la requête en arrêt des procédures Jordan.",
+      "criteres": [
+        "Refuser et signaler que le droit criminel et pénal est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [
+        "requête Jordan préparée"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-03",
+      "competence": "phase-interrogatoires-instruction",
+      "palier": 1,
+      "titre": "Déclencheur négatif phase-interrogatoires-instruction — Enquête criminelle",
+      "prompt": "Préparer le contre-interrogatoire des policiers à l'enquête préliminaire sous le Code criminel.",
+      "criteres": [
+        "Refuser et signaler que la procédure criminelle est hors champ."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-04",
+      "competence": "phase-preparation-audience",
+      "palier": 1,
+      "titre": "Déclencheur négatif phase-preparation-audience — Procès devant jury criminel",
+      "prompt": "Préparer les directives au jury et le cahier de preuve pour un procès criminel devant jury.",
+      "criteres": [
+        "Refuser et signaler que le droit criminel est hors champ."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-05",
+      "competence": "phase-jugement-et-suites",
+      "palier": 1,
+      "titre": "Déclencheur négatif phase-jugement-et-suites — Appel de sentence criminelle",
+      "prompt": "Porter en appel une sentence de détention rendue en chambre criminelle.",
+      "criteres": [
+        "Refuser et signaler que le droit criminel est hors champ."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-06",
+      "competence": "recherche-juridique",
+      "palier": 1,
+      "titre": "Déclencheur négatif recherche-juridique — Rédaction d'acte / droit criminel",
+      "prompt": "Rédige la mise en accusation criminelle pour fraude sous l'art. 380 du Code criminel.",
+      "criteres": [
+        "Signaler que le droit criminel est hors champ et que la rédaction d'actes civils relève de redaction-juridique."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-07",
+      "competence": "analyse-et-strategie",
+      "palier": 1,
+      "titre": "Déclencheur négatif analyse-et-strategie — Droit familial / calcul de pension",
+      "prompt": "Calculer la pension alimentaire pour trois enfants selon les tables fédérales de divorce et fixer le calendrier de garde.",
+      "criteres": [
+        "Signaler que le droit de la famille est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|familial|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-08",
+      "competence": "redaction-juridique",
+      "palier": 1,
+      "titre": "Déclencheur négatif redaction-juridique — Demande conjointe en divorce",
+      "prompt": "Rédiger une demande conjointe en divorce sur projet d'accord avec partage du patrimoine familial.",
+      "criteres": [
+        "Signaler que le droit de la famille est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|familial|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-09",
+      "competence": "production-et-conformite",
+      "palier": 1,
+      "titre": "Déclencheur négatif production-et-conformite — Divulgation de preuve criminelle Stinchcombe",
+      "prompt": "Vérifier le caviardage d'un dossier d'enquête policière pour divulgation Stinchcombe devant la chambre criminelle.",
+      "criteres": [
+        "Signaler que le droit criminel est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "NEG-10",
+      "competence": "gestion-du-mandat",
+      "palier": 1,
+      "titre": "Déclencheur négatif gestion-du-mandat — Délais de droit criminel / prescription fiscale",
+      "prompt": "Calculer le plafond Jordan de 18 mois en cour municipale criminelle pour une infraction pénale.",
+      "criteres": [
+        "Signaler que le droit criminel/pénal est hors champ du greffon."
+      ],
+      "doit_contenir": [
+        "hors champ|criminel|exclu"
+      ],
+      "ne_doit_pas_contenir": [],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [],
+      "declencheur_negatif": true
+    },
+    {
+      "id": "RD-07",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Réponse préalable (art. 145, 147 C.p.c.), défense orale vs écrite et accord singulier",
+      "prompt": "Un seul défendeur vient de recevoir une demande introductive en procédure ordinaire C.S. (120 000 $). Prépare la Réponse préalable et indique s'il faut annoncer une défense écrite ou orale.",
+      "criteres": [
+        "Rédiger la RÉPONSE (art. 145 al. 2, 147 C.p.c.) dans le délai applicable (15 jours ou 30 jours hors Québec) avec intention de contester et courriel de notification (art. 110).",
+        "Distinguer défense orale par défaut (170 C.p.c.) et défense écrite selon complexité/autorisation (171 C.p.c.).",
+        "Respecter l'accord singulier (« par son avocat ») pour un seul défendeur."
+      ],
+      "doit_contenir": [
+        "RÉPONSE|147",
+        "170|171",
+        "son avocat"
+      ],
+      "ne_doit_pas_contenir": [
+        "par leur avocat"
+      ],
+      "feuilles_attendues": [
+        "acte-defense-et-expose-sommaire",
+        "fondamentaux-actes"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-08",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Exposé sommaire 535.6 C.p.c. <= 2 pages, délais simplifiés et scission des paragraphes composites",
+      "prompt": "Rédiger l'exposé sommaire des moyens de défense en régime simplifié C.Q. (sans demande reconventionnelle, litige de 38 000 $) répondant à un paragraphe composite mélangeant contrat signé et faute niée, et rappeler les échéances exactes du régime simplifié (réponse, communication, gestion, expertise).",
+      "criteres": [
+        "Respecter le plafond strict <= 2 pages (535.6 C.p.c.) et les cotes D-1..D-n.",
+        "Scinder le paragraphe composite (ex. admet la signature et nie pour le surplus) afin d'éviter un aveu judiciaire involontaire (2852 C.c.Q.).",
+        "Distinguer la réponse du défendeur (15 jours, art. 145) de la communication des pièces du demandeur (20 jours, art. 535.4), rappeler la conférence de gestion à 110 jours (535.8) et l'expertise commune < 50 000 $ (535.15).",
+        "Avertir de vérifier la pagination finale dans Word / controler_document.py."
+      ],
+      "doit_contenir": [
+        "535\\.6",
+        "2 pages",
+        "2852|nie pour le surplus",
+        "D-1",
+        "15 jours",
+        "535\\.4",
+        "535\\.8",
+        "535\\.15"
+      ],
+      "ne_doit_pas_contenir": [
+        "admet simplement tout le paragraphe",
+        "20 jours pour (?:déposer )?la réponse",
+        "535\\.10.*expertise"
+      ],
+      "feuilles_attendues": [
+        "acte-defense-et-expose-sommaire",
+        "fondamentaux-actes"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-09",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Déclaration d'appel et permission d'appeler devant la C.A.Q. (30–32, 352–363 C.p.c.)",
+      "prompt": "Un jugement en cours d'instance de Cour supérieure rejette un moyen de confidentialité. Structurer l'acte approprié devant la Cour d'appel en vérifiant la voie d'appel et c-25.01-r.0.2.01.",
+      "criteres": [
+        "Identifier qu'un jugement en cours d'instance exige une demande de permission d'appeler (art. 31, 357 C.p.c.) et démontrer le préjudice irréparable.",
+        "Contrôler les délais de rigueur (360–363 C.p.c.) et joindre jugement entrepris, avis du jugement et attestation de signification (355, 358).",
+        "Respecter les exigences matérielles de c-25.01-r.0.2.01."
+      ],
+      "doit_contenir": [
+        "permission",
+        "31|357",
+        "363|rigueur",
+        "c-25\\.01-r\\.0\\.2\\.01"
+      ],
+      "ne_doit_pas_contenir": [
+        "appel de plein droit sans permission"
+      ],
+      "feuilles_attendues": [
+        "acte-appel-declaration-permission"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-10",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande pour permission d'appeler du TAL en Cour du Québec (500-80, 91–94 LTAL)",
+      "prompt": "Un client vient de prendre connaissance il y a 12 jours d'une décision du Tribunal administratif du logement ordonnant résiliation et expulsion pour un motif erroné en droit. Rédiger la demande pour permission d'appeler en C.Q.",
+      "criteres": [
+        "Diriger l'acte devant la Cour du Québec — Division administrative et d'appel (500-80) dans le délai strict de 30 jours de la connaissance (art. 91–92 LTAL) et vérifier hors exclusions de l'art. 91.",
+        "Attribuer les cotes R-1..R-n (Requérant), soulever une question de droit et conclure expressément au sursis provisoire d'exécution/expulsion (94 al. 2 LTAL) en démontrant un « préjudice grave », puisque la demande de permission n'opère pas sursis automatique (94 al. 1).",
+        "Signifier à la partie adverse et déposer au greffe de la Cour du Québec (art. 92 LTAL : c'est le greffier de la C.Q. qui transmet ensuite le jugement autorisant l'appel au TAL), avec conclusions en deux volets (LES CONCLUSIONS RECHERCHÉES EN APPEL + POUR CES MOTIFS, PLAISE À LA COUR :)."
+      ],
+      "doit_contenir": [
+        "500-80|Division administrative et d'appel",
+        "91|92",
+        "30 jours",
+        "R-1",
+        "préjudice grave|94 al\\. 2"
+      ],
+      "ne_doit_pas_contenir": [
+        "Cour d'appel du Québec",
+        "sursis automatique.*demande de permission"
+      ],
+      "feuilles_attendues": [
+        "acte-appel-declaration-permission"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-11",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Étanchéité linguistique et quarantaine Cour fédérale dans un acte en anglais",
+      "prompt": "Un modèle en anglais contient les expressions « Statement of Claim », « Rule 301 », « Affidavit of Documents », « section 1457 C.C.Q. » et un endos resté en français (avec une déclaration sous serment jointe). Nettoyer l'acte pour un dépôt en Cour supérieure du Québec.",
+      "criteres": [
+        "Remplacer la terminologie fédérale/common law (Statement of Claim, Rule 301, Affidavit of Documents) par Originating Application (ou Application for Judicial Review 529–531 C.C.P.) et Table/List of Exhibits, tout en confirmant qu'Affidavit (art. 105 C.C.P., parallèlement à Sworn Statement) est officiel en anglais québécois.",
+        "Appliquer la règle civile en anglais : article (art.) pour le C.C.Q./C.C.P. et section (s.) pour les lois statutaires particulières.",
+        "Exiger l'unilinguisme intégral entre le corps, le pied de page, le serment et l'endos."
+      ],
+      "doit_contenir": [
+        "Originating Application",
+        "(?:Table|List)\\s+of\\s+Exhibits",
+        "(?:\\bAffidavit\\b(?!\\s+of\\s+Documents)|Sworn Statement)",
+        "article",
+        "section",
+        "endos"
+      ],
+      "ne_doit_pas_contenir": [
+        "Rule 301"
+      ],
+      "feuilles_attendues": [
+        "anti-contamination-bilingue"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-12",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Plan de plaidoirie orale (TRAME FACTUELLE / DROIT / APPLICATION) et discipline de citation",
+      "prompt": "Rédiger un plan détaillé de plaidoirie orale au fond en première instance avec versions factuelles opposées, blocs de jurisprudence cités et contrôle final des numéros de paragraphes.",
+      "criteres": [
+        "Structurer en TRAME FACTUELLE (avec tableau chronologique comparatif sourcé par cotes), DROIT APPLICABLE, APPLICATION AUX FAITS et CONCLUSIONS reprises mot pour mot.",
+        "Présenter les citations en blocs indentés et italiques avec paragraphe majoritaire [par. X] vérifié, en maintenant [RATIO / PAR. X ...] pour tout arrêt non lu intégralement.",
+        "Contrôler la continuité de numérotation (aucun doublon 8., 8.) et exclure les blocs internes F/H."
+      ],
+      "doit_contenir": [
+        "TRAME FACTUELLE|APPLICATION",
+        "par\\.|RATIO",
+        "tableau|chronologique",
+        "CONCLUSIONS"
+      ],
+      "ne_doit_pas_contenir": [
+        "notre point faible est",
+        "plancher de règlement"
+      ],
+      "feuilles_attendues": [
+        "arg-plan-argumentation",
+        "arg-citations"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-13",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Mémoire d'appel C.A.Q. (372–373 C.p.c.) et normes d'intervention",
+      "prompt": "Planifier la rédaction d'un mémoire de l'appelant en Cour d'appel du Québec contestant une erreur d'interprétation contractuelle et d'une appréciation de preuve.",
+      "criteres": [
+        "Lire c-25.01-r.0.2.01 (typographie, limites de pages) et structurer les Parties I à V et Annexes I à III (372–373 C.p.c.).",
+        "Identifier explicitement la norme d'intervention applicable à chaque question (décision correcte vs erreur manifeste et déterminante).",
+        "Signaler le délai de 3 mois (373 C.p.c.) à peine de caducité et appliquer arg-citations."
+      ],
+      "doit_contenir": [
+        "Partie I",
+        "Partie II|norme d'intervention",
+        "manifeste et déterminante|décision correcte",
+        "3 mois|373"
+      ],
+      "ne_doit_pas_contenir": [
+        "aucune norme d'intervention requise"
+      ],
+      "feuilles_attendues": [
+        "arg-memoire-et-expose-appel"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-14",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Exposé d'appel abrégé (art. 374 C.p.c.) sur jugement en cours d'instance",
+      "prompt": "Après obtention de la permission d'appeler d'un jugement en cours d'instance, doit-on rédiger un mémoire de 30 pages ou un exposé sous l'art. 374 C.p.c. ?",
+      "criteres": [
+        "Identifier le régime de l'exposé (art. 374 C.p.c.) pour un jugement en cours d'instance ou de gestion, soumis au format abrégé de c-25.01-r.0.2.01.",
+        "Vérifier la sélectivité de l'Annexe III et la concordance des renvois."
+      ],
+      "doit_contenir": [
+        "374",
+        "exposé|Exposé",
+        "c-25\\.01-r\\.0\\.2\\.01"
+      ],
+      "ne_doit_pas_contenir": [
+        "mémoire complet de 30 pages obligatoire dans tous les cas"
+      ],
+      "feuilles_attendues": [
+        "arg-memoire-et-expose-appel"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-15",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Avis ouvert d'intention de modifier (206 C.p.c.) c. lettre SOUS TOUTES RÉSERVES",
+      "prompt": "Nous voulons envoyer au confrère un projet de demande modifiée pour demander son consentement sous l'art. 206 C.p.c. (ou dénoncer un abus 51 C.p.c.) et, dans le même envoi, faire une offre de règlement chiffrée. Peut-on mettre WITHOUT PREJUDICE en tête d'une seule lettre ?",
+      "criteres": [
+        "Refuser de mélanger dans un même écrit une lettre ouverte de procédure (206 / 51 C.p.c.) et des pourparlers protégés (SOUS TOUTES RÉSERVES / WITHOUT PREJUDICE).",
+        "Rédiger deux lettres distinctes : un avis écrit ouvert pouvant être produit au tribunal sur les frais/délais, et une offre de règlement isolée sous privilège."
+      ],
+      "doit_contenir": [
+        "206",
+        "deux lettres|distinctes|ouverte",
+        "WITHOUT PREJUDICE|SOUS TOUTES RÉSERVES"
+      ],
+      "ne_doit_pas_contenir": [
+        "mettre WITHOUT PREJUDICE sur l'avis 206 C.p.c."
+      ],
+      "feuilles_attendues": [
+        "corr-confrere-et-tribunal"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-16",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Demande de remise au tribunal / TAL et copie conforme obligatoire (Code 121)",
+      "prompt": "Rédiger une brève lettre au greffe / juge (ou au TAL) pour demander la remise d'une audience pour un motif de santé attesté avec consentement du confrère.",
+      "criteres": [
+        "Rédiger en 3 à 6 lignes factuelles indiquant le numéro de dossier, le motif objectif et le consentement préalable des autres parties, sans plaidoirie sur le fond.",
+        "Exiger la copie conforme intégrale et simultanée (c. c.) à tous les procureurs ou parties non représentées conformément à l'art. 121 du Code de déontologie."
+      ],
+      "doit_contenir": [
+        "121",
+        "c\\. c\\.|copie",
+        "consentement"
+      ],
+      "ne_doit_pas_contenir": [
+        "écrire au juge seul sans copier l'autre partie"
+      ],
+      "feuilles_attendues": [
+        "corr-confrere-et-tribunal"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-17",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Mise en demeure formelle sans mention WITHOUT PREJUDICE ni calques interdits",
+      "prompt": "Rédiger une mise en demeure de payer 25 000 $ sous 10 jours avec réserve des recours et preuve de transmission, sans les défauts fréquents de traduction.",
+      "criteres": [
+        "Lire ccq 1594–1597 via lois, énoncer l'inexécution précise, fixer un délai raisonnable (10 jours), proscrire SOUS TOUTES RÉSERVES / WITHOUT PREJUDICE et bannir « sous huitaine », « LRAR » et « cease and desist ».",
+        "Prévoir un mode de transmission probant (huissier ou poste recommandée)."
+      ],
+      "doit_contenir": [
+        "1595|1594",
+        "10 jours",
+        "huissier|recommandée"
+      ],
+      "ne_doit_pas_contenir": [
+        "WITHOUT PREJUDICE",
+        "sous huitaine",
+        "cease and desist"
+      ],
+      "feuilles_attendues": [
+        "corr-mise-en-demeure"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-18",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Compte rendu au client et transmission d'une offre de règlement (Code 43)",
+      "prompt": "La partie adverse vient de transmettre une offre écrite de règlement. Rédiger le courriel/lettre formel au client lui présentant l'offre, les risques financiers et la date limite de réponse.",
+      "criteres": [
+        "Inscrire CONFIDENTIEL ET PRIVILÉGIÉ en tête et structurer en trois temps : faits, portée/risques et décision requise avec échéance.",
+        "Respecter l'obligation de transmettre et expliquer l'offre (Code 43) avec évaluation objective des coûts/frais (Code 28) sans jamais promettre de résultat."
+      ],
+      "doit_contenir": [
+        "CONFIDENTIEL ET PRIVILÉGIÉ",
+        "43|offre",
+        "échéance|limite|risques"
+      ],
+      "ne_doit_pas_contenir": [
+        "nous garantissons la victoire"
+      ],
+      "feuilles_attendues": [
+        "corr-client"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-19",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Lettre d'opinion après jugement : options d'appel, frais 339 C.p.c. et échéances",
+      "prompt": "Le tribunal vient de rejeter la demande de notre client et de le condamner aux frais de justice. Rédiger la lettre d'opinion présentant la possibilité d'appel et le délai de rigueur.",
+      "criteres": [
+        "Mentionner CONFIDENTIEL ET PRIVILÉGIÉ, expliquer objectivement les risques d'appel et l'incidence des frais de justice (339 C.p.c.).",
+        "Indiquer clairement l'échéance de décision requise et renvoyer aux statuts de lecture si des arrêts sont cités au Palier 3."
+      ],
+      "doit_contenir": [
+        "CONFIDENTIEL ET PRIVILÉGIÉ",
+        "339|frais",
+        "délai|appel"
+      ],
+      "ne_doit_pas_contenir": [
+        "appel garanti sans risque"
+      ],
+      "feuilles_attendues": [
+        "corr-client"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-20",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Protocole de l'instance conjoint (148–150, 173 C.p.c.) et points de divergence",
+      "prompt": "Les parties sont en instance ordinaire (250 000 $) et divergent sur le nombre d'interrogatoires préalables. Dresser le protocole de l'instance avec toutes les rubriques obligatoires et dates exactes.",
+      "criteres": [
+        "Vérifier hors régime simplifié (535.2), couvrir les 9 rubriques de l'art. 148 al. 2 C.p.c. avec dates calendaires précises et échéance de mise en état de 6 mois (173 C.p.c.).",
+        "Consigner explicitement les points de divergence sur les interrogatoires (149 al. 3) pour décision en gestion."
+      ],
+      "doit_contenir": [
+        "148",
+        "6 mois|173",
+        "divergence|149",
+        "PRD|prévention"
+      ],
+      "ne_doit_pas_contenir": [
+        "dans les meilleurs délais"
+      ],
+      "feuilles_attendues": [
+        "contrat-protocole-instance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-21",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Exclusion du protocole de l'instance en régime simplifié C.Q. (535.2 C.p.c.)",
+      "prompt": "Préparer un protocole de l'instance en vertu de l'art. 148 C.p.c. pour une réclamation de 68 000 $ en Cour du Québec, Chambre civile.",
+      "criteres": [
+        "Signaler immédiatement qu'en régime simplifié particulier C.Q. (< 100 000 $, 535.1–535.15 C.p.c.), le protocole de l'instance est supprimé par l'art. 535.2 C.p.c.",
+        "Orienter vers l'échéancier légal simplifié (535.4, 535.6) plutôt que de rédiger un protocole 148."
+      ],
+      "doit_contenir": [
+        "535\\.2",
+        "supprimé|pas de protocole|régime simplifié"
+      ],
+      "ne_doit_pas_contenir": [
+        "protocole conjoint art. 148 requis pour 68 000 $"
+      ],
+      "feuilles_attendues": [
+        "contrat-protocole-instance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-22",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Transaction civile et quittance finale (2631–2637 C.c.Q.) avec désistement 213 C.p.c.",
+      "prompt": "Rédiger une entente de transaction mettant fin à une poursuite de 150 000 $ contre paiement de 85 000 $, désistement sans frais et quittance limitée au litige, sans calque de common law.",
+      "criteres": [
+        "Lire 2631–2637 C.c.Q., rendre les concessions réciproques visibles, inclure l'absence d'aveu de responsabilité, le désistement sans frais (213 C.p.c.) et l'autorité de la chose jugée (2633).",
+        "Proscrire la mention de consideration de 1,00 $ et éviter toute quittance générale aveugle sur d'autres contrats."
+      ],
+      "doit_contenir": [
+        "2631|2633",
+        "concessions réciproques",
+        "aveu de responsabilité",
+        "213"
+      ],
+      "ne_doit_pas_contenir": [
+        "moyennant la somme nominale de 1,00 $"
+      ],
+      "feuilles_attendues": [
+        "contrat-transaction-quittance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-23",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Transaction partielle avec un seul codébiteur solidaire (1523, 1530, 1690 C.c.Q.)",
+      "prompt": "Le demandeur règle pour 40 % avec un des deux défendeurs solidaires et veut continuer l'instance contre le second. Rédiger les clauses de quittance sans éteindre le recours résiduel.",
+      "criteres": [
+        "Contrôler l'effet d'une remise/transaction à l'égard des codébiteurs solidaires (1523 s., 1530, 1690 C.c.Q.) via lois.",
+        "Limiter la quittance au seul défendeur réglant avec réserve expresse des droits contre les codébiteurs non signataires (et proscrire la quittance générale aveugle)."
+      ],
+      "doit_contenir": [
+        "1530|1690|solidaire",
+        "réserve",
+        "limitée"
+      ],
+      "ne_doit_pas_contenir": [
+        "quittance générale et finale envers toute personne"
+      ],
+      "feuilles_attendues": [
+        "contrat-transaction-quittance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-24",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Incidents pratiques : défaut 175, relevé 84, cessation d'occuper 194 et désistement 213",
+      "prompt": "Un défendeur demande d'être relevé du défaut de répondre avant jugement (84 C.p.c.) pendant que le demandeur prépare une inscription par défaut (175) et un changement d'avocat après fixation de la date d'instruction (194).",
+      "criteres": [
+        "Distinguer l'inscription par défaut (175 + déclaration sous serment) de la demande de relevé du défaut (84 + moyens sérieux et excuse valable sous serment).",
+        "Distinguer la cessation d'occuper avant fixation (préavis 10 jours) de celle après fixation de la date d'instruction (autorisation du tribunal requise, art. 194 C.p.c.)."
+      ],
+      "doit_contenir": [
+        "84",
+        "175",
+        "194",
+        "autorisation|fixation"
+      ],
+      "ne_doit_pas_contenir": [
+        "cesser d'occuper sans autorisation après date d'instruction fixée"
+      ],
+      "feuilles_attendues": [
+        "acte-demandes-cours-instance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-03",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Cahier des sources C.S./C.Q. : onglets, surlignement jaune et correspondance 1:1",
+      "prompt": "Préparer l'index et le bon de travail d'un cahier des sources accompagnant un plan d'argumentation de première instance comportant 3 arrêts lus intégralement et 1 arrêt seulement résumé.",
+      "criteres": [
+        "Classer dans l'ordre Législation, Jurisprudence, Doctrine avec table des matières « ONGLET 1 : ... par. X à Y » et correspondance 1:1 avec le plan.",
+        "Prescrire le surlignement jaune des paragraphes cités, la vérification via juris.verify_citations et maintenir [EXTRAITS [PAR. X] ET COPIE PDF À JOINDRE ...] pour l'arrêt non lu intégralement."
+      ],
+      "doit_contenir": [
+        "ONGLET|Onglet",
+        "surlignement|jaune",
+        "EXTRAITS",
+        "verify_citations|CanLII"
+      ],
+      "ne_doit_pas_contenir": [
+        "ajouter des arrêts bonus non cités au plan"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-sources"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-04",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Cahier des sources en appel (c-25.01-r.0.2.01 art. 60) et contrôle PDF /Outlines",
+      "prompt": "Assembler le cahier des sources électronique destiné à la Cour d'appel du Québec (extraits, sommaire, signets PDF et liens CanLII).",
+      "criteres": [
+        "Appliquer c-25.01-r.0.2.01 art. 60 : page couverture, sommaire, extraits accompagnés des pages précédente et suivante et mise en valeur des passages.",
+        "Prescrire le contrôle par controler_document.py --exiger-couche-texte --exiger-signets pour garantir OCR et signets /Outlines navigables par onglet."
+      ],
+      "doit_contenir": [
+        "60",
+        "précédente|suivante",
+        "signets|Outlines",
+        "OCR|couche-texte"
+      ],
+      "ne_doit_pas_contenir": [
+        "PDF numérisé sans signets"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-sources"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-05",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Endos paysage 11 x 8,5, verrou /Encrypt Adobe Sign, reçu TAL A4 et caviardage 108 C.p.c.",
+      "prompt": "Un dossier à assembler contient un formulaire signé verrouillé (/Encrypt), un reçu du TAL en format A4, un relevé bancaire avec numéro de compte visible et un endos US Letter paysage (11 x 8,5 po) portant une ancienne adresse du cabinet.",
+      "criteres": [
+        "Reconnaître l'endos US Letter paysage (11 x 8,5 po) comme valide mais bloquer la discordance d'adresse entre corps et endos.",
+        "Prescrire l'impression/aplatissement PDF pour déverrouiller /Encrypt, la normalisation A4 vers US Letter, et l'aplatissement irréversible du numéro de compte bancaire (108 C.p.c.).",
+        "Rappeler la mention ORIGINAL vs COPIE DE LA COUR et la preuve de notification technologique (art. 110, 133 C.p.c.)."
+      ],
+      "doit_contenir": [
+        "paysage|11",
+        "Encrypt|aplatir|Impression PDF",
+        "A4",
+        "108",
+        "adresse"
+      ],
+      "ne_doit_pas_contenir": [
+        "masquer le compte bancaire par un simple rectangle noir sans aplatir"
+      ],
+      "feuilles_attendues": [
+        "controle-pdf-et-metadonnees",
+        "controle-endos-depot-signification"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-06",
+      "competence": "production-et-conformite",
+      "palier": 2,
+      "titre": "Contrôle pré-envoi correspondance : légendes, Code 120–121 et limite 17 h 00",
+      "prompt": "Avant l'envoi à 17 h 45 d'une mise en demeure marquée WITHOUT PREJUDICE et d'une lettre au greffier transmise sans copier l'avocat adverse (qui avait répondu directement au client), quels défauts bloquer ?",
+      "criteres": [
+        "Bloquer WITHOUT PREJUDICE sur une mise en demeure ouverte (1595 C.c.Q.), l'envoi au greffier sans copie conforme (Code 121) et toute réponse directe à une partie représentée (Code 120).",
+        "Signaler l'incidence de l'heure limite de 17 h 00 sur la computation de la notification technologique (111 al. 2 C.p.c.) et vérifier ORIGINAL vs COPIE."
+      ],
+      "doit_contenir": [
+        "WITHOUT PREJUDICE",
+        "121",
+        "120",
+        "17 h"
+      ],
+      "ne_doit_pas_contenir": [
+        "notification à 17 h 45 réputée reçue le jour même"
+      ],
+      "feuilles_attendues": [
+        "controle-correspondance",
+        "controle-endos-depot-signification"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-07",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Contrôle de transmission courriel, pièces jointes, Cc/Cci et bon de travail",
+      "prompt": "Une lettre d'accompagnement au confrère annonce trois pièces jointes en PDF mais l'une d'elles est un .docx nommé Projet avec commentaires internes et une autre expose un numéro de carte de crédit non caviardé.",
+      "criteres": [
+        "Exécuter controler_document.py sur les pièces jointes pour bloquer le projet avec commentaires/révisions et l'export métadonnées.",
+        "Exiger le caviardage aplati (108 C.p.c.) du numéro de carte de crédit, vérifier la concordance exacte des pièces annoncées et des champs Cc/Cci, puis émettre un bon de travail court."
+      ],
+      "doit_contenir": [
+        "controler_document",
+        "108|caviard",
+        "bon de travail",
+        "Cc|Cci"
+      ],
+      "ne_doit_pas_contenir": [
+        "transmettre le brouillon Word avec commentaires"
+      ],
+      "feuilles_attendues": [
+        "controle-correspondance"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-06",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Directives de pratique PDF (QCCS/QCCQ), orientations AMF et préséance Vague 1 (110 textes)",
+      "prompt": "Vérifier via lois les règles de pratique applicables à Montréal en Cour supérieure (division vs district), le statut d'une Instruction générale 45-106 de l'AMF et la disponibilité des directives de la Cour d'appel en anglais.",
+      "criteres": [
+        "Relever via lois.related_laws(rel_type='preseance-sur') que qccs-dist-mtl prime qccs-div-mtl (fonction='directive', unit='paragraphe', par./dir.).",
+        "Distinguer le Règlement 45-106 (v-1.1-r.21, fonction='reglement') de l'Instruction générale amf-ig-45-106 (fonction='orientation', rel_type='interprete', indicative sans force de loi).",
+        "Signaler que les textes PDF Vague 1 (corpus de 110 textes) sont publiés en français seulement (langs: ['fr']) et que les directives de la Cour d'appel (QCCA) sont hors corpus."
+      ],
+      "doit_contenir": [
+        "qccs-dist-mtl",
+        "preseance-sur|préséance",
+        "amf-ig-45-106|orientation",
+        "interprete|interprète",
+        "QCCA|(?:Cour d'appel|C\\.A\\.Q\\.).{0,40}(?:hors|absent|exclu)",
+        "fr"
+      ],
+      "ne_doit_pas_contenir": [
+        "Instruction générale 45-106 a force de loi",
+        "97 lois indexées"
+      ],
+      "feuilles_attendues": [
+        "recherche-legislative"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-07",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Arrêt obligatoire sur [CLEF_ABSENTE] BYOK CanLII et orientation vers acces.poirierlavoie.ca/moi",
+      "prompt": "Lors de la vérification de 2020 QCCA 495, le connecteur juris retourne l'erreur [CLEF_ABSENTE]. Puis-je quand même résumer l'arrêt de mémoire ou contourner l'erreur ?",
+      "criteres": [
+        "S'arrêter obligatoirement sur le volet jurisprudentiel sans inventer d'arrêt ni résumer de mémoire.",
+        "Expliquer l'exigence BYOK CanLII (clé API CanLII personnelle requise avant toute lecture du cache partagé) et orienter vers https://acces.poirierlavoie.ca/moi (ou en-tête X-Clef-CanLII)."
+      ],
+      "doit_contenir": [
+        "CLEF_ABSENTE",
+        "acces\\.poirierlavoie\\.ca/moi",
+        "arrêter|arrêt",
+        "CanLII"
+      ],
+      "ne_doit_pas_contenir": [
+        "selon mes connaissances.{0,40}2020 QCCA 495|2020 QCCA 495\\s+(?:établit|statue|décide|confirme)\\s+que"
+      ],
+      "feuilles_attendues": [
+        "recherche-jurisprudentielle"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-08",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Dégradation gracieuse nuage / OAuth sans exécution Python (contrôles omis au bon de travail)",
+      "prompt": "Sur claude.ai ou Gemini App (/mcp/oauth) sans exécution Python locale, l'avocat demande le contrôle final d'une demande introductive modifiée et d'un cahier PDF avant dépôt.",
+      "criteres": [
+        "Divulguer explicitement que les contrôles scriptés sur octets, structure XML Word, structure PDF (OCR/signets/Encrypt) et continuité des cotes via controler_document.py et verifier_cotes.py ont été omis.",
+        "Ne jamais prétendre qu'un contrôle automatisé a été exécuté et inscrire chaque vérification omise en tête du bon de travail manuel."
+      ],
+      "doit_contenir": [
+        "omis|omise|omises",
+        "bon de travail",
+        "controler_document|verifier_cotes",
+        "XML|OCR|signets|cotes"
+      ],
+      "ne_doit_pas_contenir": [
+        "(?:j'ai exécuté|exécution réussie de)\\s+(?:controler_document|verifier_cotes)|(?:controler_document|verifier_cotes)\\.py\\s+(?:a\\s+)?(?:exécuté|confirmé|validé)\\s+(?:avec succès|la conformité)"
+      ],
+      "feuilles_attendues": [
+        "controle-acte-de-procedure",
+        "controle-pdf-et-metadonnees"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PH1-04",
+      "competence": "phase-ouverture-dossier",
+      "palier": 2,
+      "titre": "Dégradation gracieuse nuage / OAuth — Bloc etat-dossier en ligne et inspection omise",
+      "prompt": "Session sur Gemini App (/mcp/oauth) sans disque d'espace de travail inscriptible ni Python local : le conflit est dégagé et le client remet un fichier courriel .eml et un contrat .docx brut.",
+      "criteres": [
+        "Livrer un bloc d'état Markdown en ligne pour etat-dossier/phase-ouverture-dossier.md sans prétendre avoir écrit sur disque.",
+        "Bloquer tout classement PUBLIC et divulguer explicitement que l'inspection octets/XML/en-têtes et l'empreinte SHA-256 via inspecter_piece.py ont été omises, en les inscrivant au bon de travail."
+      ],
+      "doit_contenir": [
+        "etat-dossier/phase-ouverture-dossier\\.md",
+        "en ligne|bloc",
+        "omis|omise|omises",
+        "bon de travail",
+        "CONFIDENTIEL|PUBLIC"
+      ],
+      "ne_doit_pas_contenir": [
+        "(?:j'ai\\s+(?:enregistré|écrit|créé|sauvegardé)|fichier\\s+(?:enregistré|écrit|sauvegardé)).{0,60}(?:etat-dossier|sur (?:le |votre )?disque)",
+        "inspecter_piece\\.py\\s+(?:a\\s+)?(?:exécuté|confirmé|calculé)|classement\\s+PUBLIC\\s+(?:confirmé|retenu|appliqué)"
+      ],
+      "feuilles_attendues": [],
+      "enchainement_attendu": [
+        "analyse-et-strategie:piece-reception-et-qualification"
+      ],
+      "declencheur_negatif": false
     }
   ]
 }

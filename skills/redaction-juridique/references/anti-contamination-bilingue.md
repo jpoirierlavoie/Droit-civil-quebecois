@@ -6,6 +6,7 @@ Tables compactes de détection et de correction pour tout projet français ou an
 
 1. **Analyse automatisée (`outils.terminologie_scan`) :** Exécuter sur tout projet fini (jusqu'à 32 000 caractères; scinder au-delà) pour repérer automatiquement francismes de France, calques de common law et archaïsmes procéduraux antérieurs au C.p.c. de 2016.
 2. **Vérification bilingue officielle :** Ne jamais traduire littéralement un concept civil ou procédural en anglais. Appeler `lois.get_article(law="ccq"|"cpc", article="...", lang="en")` ou `outils.terminologie_lookup` et `outils.termino_attestations`.
+3. **Textes PDF publiés en français seulement (`langs: ['fr']`) :** Les directives de pratique QCCS/QCCQ et textes AMF de la Vague 1 (`fonction='directive'|'orientation'`, `v-1.1-r.*`) retournent une erreur explicite sous `lang='en'` (*published in French only (`langs: ['fr']`)*). Pour un écrit anglais citant ces directives ou orientations, lire la source avec `lang='fr'` dans `lois` puis vérifier à la source si le tribunal ou l'AMF publie une désignation anglaise officielle avant de traduire.
 
 ## 2. Marqueurs français à purger (procédure, droit substantiel, sociétés)
 
@@ -52,3 +53,9 @@ En anglais devant un tribunal québécois, **bannir les termes de common law** (
 | acte authentique / sous seing privé / écrit d'entreprise | *authentic act* / *private writing* / *unsigned writing regularly used…* | C.c.Q. 2813, 2826, 2831 |
 | prescription / délai de rigueur | *prescription* / *strict time limit* | C.c.Q. 2925; C.p.c. 148, 173 |
 | réserve de droits vs pourparlers | *UNDER ALL RESERVES* vs *WITHOUT PREJUDICE* | Usage québécois |
+
+## Règles de citation et étanchéité procédurale en anglais
+
+* **`Article` (`art.`) c. `Section` (`s.`) :** Dans la rédaction civile québécoise en anglais, conserver **`article`** (`art.`) pour le *Civil Code of Québec* (`C.C.Q.`) et le *Code of Civil Procedure* (`C.C.P.`), et réserver **`section`** (`s.`) aux lois statutaires particulières (*CQLR*) et aux lois fédérales ; vérifier l'uniformité dans tout l'acte et l'index des autorités.
+* **Quarantaine Cour fédérale / common law :** Ne jamais transposer dans une procédure civile québécoise les intitulés strictement fédéraux ou de common law (`Statement of Claim`, `Statement of Defence`, `Notice of Application` sous la *Rule 301/359* des *Règles des Cours fédérales*, `Applicant's Record` / `Applicant's Motion Record`, `Affidavit of Documents`). En Cour supérieure du Québec, les intitulés canoniques sont `Originating Application`, `Defence` / `Brief Statement of Grounds of Defence`, `Affidavit` (*terme officiel du C.p.c. en anglais à l'art. 105 C.C.P.*, parallèlement à `Sworn Statement` dans les formulaires administratifs du ministère de la Justice), `Application for Judicial Review` (`art. 529–531 C.C.P.`) et `Table of Exhibits` / `List of Exhibits` / `Book of Authorities`.
+* **Cohérence linguistique corps / endos / pied de page :** Un acte rédigé en anglais exige un cartouche, un titre, un pied de page, un serment et un *endos* intégralement rédigés en anglais (aucun en-tête français résiduel issu d'un gabarit copié-collé, et vice versa pour un acte en français).

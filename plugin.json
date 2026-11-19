@@ -1,13 +1,13 @@
 {
   "name": "droit-civil-quebecois",
   "displayName": "Droit civil québécois",
-  "version": "2.1.0",
-  "description": "Recherche, analyse stratégique et probante, rédaction judiciaire, administration du litige et déontologie en droit civil et commercial québécois. Cinq compétences à découverte progressive branchées sur les connecteurs « lois », « juris » et « outils ».",
+  "version": "3.0.0",
+  "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement) et 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) branchés sur « lois », « juris » et « outils ».",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Établis les règles, les préalables et les autorités d'un recours pour vice caché en vérifiant les textes via lois et juris",
-    "Analyse ces pièces, signale les enjeux de privilège et dresse la chronologie ainsi que le calendrier des délais C.p.c.",
-    "Rédige une demande introductive d'instance complète avec cartouche, avis d'assignation, bordereau de pièces et endos"
+    "Ouvre ce nouveau dossier civil : vérifie le contrôle de conflit, l'identification du client, la prescription et les urgences",
+    "Analyse ces pièces (courriels, PDF, enregistrement), tiens le journal de garde, signale le caviardage art. 108 C.p.c. et bâtis la théorie de la cause",
+    "Rédige une demande introductive complète, contrôle la pagination et les cotes avec les scripts de production et génère le bon de travail"
   ],
   "author": {
     "name": "Jason Poirier Lavoie"

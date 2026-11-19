@@ -1,7 +1,7 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "2.1.0",
-  "description": "Recherche, analyse, rédaction, administration du litige et déontologie en droit civil et commercial québécois. Connecteurs « lois », « juris » et « outils ».",
+  "version": "3.0.0",
+  "description": "Litige civil et commercial québécois : 5 orchestrateurs de phase et 5 services spécialisés (recherche, analyse, rédaction, production, gestion du mandat). Connecteurs « lois », « juris » et « outils ».",
   "contextFileName": [],
   "settings": [
     {
