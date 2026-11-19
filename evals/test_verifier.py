@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests unitaires sur fixtures pour verifier.py (architecture v3.0.1).
+"""Tests unitaires sur fixtures pour verifier.py (architecture v3.1.0).
 
 Bibliothèque standard Python uniquement. Exécutable directement ou via
 `python evals/executer_evals.py --auto-test`.
@@ -36,7 +36,7 @@ def _write_lf(path: Path, text: str) -> None:
 
 
 def _build_valid_v3_fixture(root: Path) -> None:
-    """Construit un dépôt minimal 100 % conforme aux règles v3.0.1."""
+    """Construit un dépôt minimal 100 % conforme aux règles v3.1.0."""
     for rel in sorted(verifier.ROOT_ALLOWLIST | verifier.EVALS_ALLOWLIST):
         target = root / rel
         if rel in (".claude-plugin/plugin.json",):
@@ -45,7 +45,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.0.1",
+                        "version": "3.1.0",
                         "license": verifier.EXPECTED_LICENSE,
                         "homepage": verifier.EXPECTED_REPO_URL,
                         "repository": verifier.EXPECTED_REPO_URL,
@@ -59,11 +59,11 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "metadata": {"version": "3.0.1"},
+                        "metadata": {"version": "3.1.0"},
                         "plugins": [
                             {
                                 "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "version": "3.0.1",
+                                "version": "3.1.0",
                                 "license": verifier.EXPECTED_LICENSE,
                                 "homepage": verifier.EXPECTED_REPO_URL,
                                 "repository": verifier.EXPECTED_REPO_URL,
@@ -81,7 +81,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.0.1",
+                        "version": "3.1.0",
                         "description": "Plugin v3",
                         "logo": "assets/logo.svg",
                         "suggestedPrompts": ["Test 1"],
@@ -98,28 +98,8 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "mcpServers": {
-                            "lois": {
-                                "url": verifier.EXPECTED_LEGISLATION_URL,
-                                "headers": {"Authorization": verifier.EXPECTED_LEGISLATION_AUTH},
-                                "variables": [
-                                    {
-                                        "name": "MCP_LEGISLATION_SECRET",
-                                        "title": "Secret",
-                                        "description": "Token",
-                                    }
-                                ],
-                            },
-                            "juris": {
-                                "url": verifier.EXPECTED_JURISPRUDENCE_URL,
-                                "headers": {"Authorization": verifier.EXPECTED_JURISPRUDENCE_AUTH},
-                                "variables": [
-                                    {
-                                        "name": "MCP_JURISPRUDENCE_SECRET",
-                                        "title": "Secret",
-                                        "description": "Token",
-                                    }
-                                ],
-                            },
+                            "lois": {"url": verifier.EXPECTED_LEGISLATION_OAUTH_URL},
+                            "juris": {"url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
                             "outils": {"url": verifier.EXPECTED_OUTILS_URL},
                         }
                     }
@@ -132,31 +112,12 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.0.1",
+                        "version": "3.1.0",
                         "contextFileName": [],
-                        "settings": [
-                            {
-                                "name": "L",
-                                "description": "D",
-                                "envVar": "MCP_LEGISLATION_SECRET",
-                                "sensitive": True,
-                            },
-                            {
-                                "name": "J",
-                                "description": "D",
-                                "envVar": "MCP_JURISPRUDENCE_SECRET",
-                                "sensitive": True,
-                            },
-                        ],
+                        "settings": [],
                         "mcpServers": {
-                            "lois": {
-                                "httpUrl": verifier.EXPECTED_LEGISLATION_URL,
-                                "headers": {"Authorization": verifier.EXPECTED_LEGISLATION_AUTH},
-                            },
-                            "juris": {
-                                "httpUrl": verifier.EXPECTED_JURISPRUDENCE_URL,
-                                "headers": {"Authorization": verifier.EXPECTED_JURISPRUDENCE_AUTH},
-                            },
+                            "lois": {"httpUrl": verifier.EXPECTED_LEGISLATION_OAUTH_URL},
+                            "juris": {"httpUrl": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
                             "outils": {"httpUrl": verifier.EXPECTED_OUTILS_URL},
                         },
                     }
@@ -305,7 +266,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
 
     _write_lf(
         root / "evals" / "scenarios.json",
-        json.dumps({"version": "3.0.1", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"version": "3.1.0", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
     )
 
 
@@ -516,6 +477,49 @@ class VerifierV3Tests(unittest.TestCase):
             _write_lf(root / ".in_use" / "209", "platform-sync-marker\n")
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertEqual(errs, [])
+
+    def test_oauth_manifests_reject_residual_headers_and_eager(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            _write_lf(
+                root / "mcp_config.json",
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "lois": {
+                                "url": verifier.EXPECTED_LEGISLATION_OAUTH_URL,
+                                "headers": {"Authorization": "Bearer test"},
+                                "eager": True,
+                            },
+                            "juris": {"url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
+                            "outils": {"url": verifier.EXPECTED_OUTILS_URL},
+                        }
+                    }
+                )
+                + "\n",
+            )
+            _write_lf(
+                root / ".mcp.json",
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "lois": {
+                                "type": "http",
+                                "url": verifier.EXPECTED_LEGISLATION_OAUTH_URL,
+                                "headers": {"Authorization": "Bearer x"},
+                            },
+                            "juris": {"type": "http", "url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
+                            "outils": {"type": "http", "url": verifier.EXPECTED_OUTILS_URL},
+                        }
+                    }
+                )
+                + "\n",
+            )
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'headers'" in e for e in errs))
+            self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'eager'" in e for e in errs))
+            self.assertTrue(any(".mcp.json" in e for e in errs))
 
 
 if __name__ == "__main__":

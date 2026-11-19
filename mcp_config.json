@@ -1,30 +1,10 @@
 {
   "mcpServers": {
     "lois": {
-      "url": "https://legislation.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_LEGISLATION_SECRET}"
-      },
-      "variables": [
-        {
-          "name": "MCP_LEGISLATION_SECRET",
-          "title": "Jeton individuel MCP Législation",
-          "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'legislation'), transmis dans l'en-tête Authorization: Bearer vers https://legislation.poirierlavoie.ca/mcp."
-        }
-      ]
+      "url": "https://legislation.poirierlavoie.ca/mcp/oauth"
     },
     "juris": {
-      "url": "https://jurisprudence.poirierlavoie.ca/mcp",
-      "headers": {
-        "Authorization": "Bearer ${MCP_JURISPRUDENCE_SECRET}"
-      },
-      "variables": [
-        {
-          "name": "MCP_JURISPRUDENCE_SECRET",
-          "title": "Jeton individuel MCP Jurisprudence",
-          "description": "Jeton individuel de titulaire admis sur https://acces.poirierlavoie.ca (portée 'les_deux' ou 'jurisprudence', avec clé API CanLII personnelle active), transmis dans l'en-tête Authorization: Bearer vers https://jurisprudence.poirierlavoie.ca/mcp."
-        }
-      ]
+      "url": "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
     },
     "outils": {
       "url": "https://outils.poirierlavoie.ca/mcp"

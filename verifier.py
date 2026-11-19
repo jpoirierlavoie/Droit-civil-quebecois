@@ -1,4 +1,4 @@
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.0.1).
+"""Contrôle statique du dépôt « Droit civil québécois » (v3.1.0).
 
 Exécuter depuis la racine du dépôt :
 
@@ -163,35 +163,23 @@ EXPECTED_SKILLS = PHASE_SKILLS | SERVICE_SKILLS
 
 EXPECTED_LICENSE = "CC-BY-NC-SA-4.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
-EXPECTED_LEGISLATION_URL = "https://legislation.poirierlavoie.ca/mcp"
-EXPECTED_LEGISLATION_AUTH = "Bearer $" + "{MCP_LEGISLATION_SECRET}"
-EXPECTED_JURISPRUDENCE_URL = "https://jurisprudence.poirierlavoie.ca/mcp"
-EXPECTED_JURISPRUDENCE_AUTH = "Bearer $" + "{MCP_JURISPRUDENCE_SECRET}"
+EXPECTED_LEGISLATION_OAUTH_URL = "https://legislation.poirierlavoie.ca/mcp/oauth"
+EXPECTED_JURISPRUDENCE_OAUTH_URL = "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
 
 EXPECTED_MCP_SERVERS = {
     "lois": {
         "type": "http",
-        "url": EXPECTED_LEGISLATION_URL,
-        "headers": {"Authorization": EXPECTED_LEGISLATION_AUTH},
+        "url": EXPECTED_LEGISLATION_OAUTH_URL,
     },
     "juris": {
         "type": "http",
-        "url": EXPECTED_JURISPRUDENCE_URL,
-        "headers": {"Authorization": EXPECTED_JURISPRUDENCE_AUTH},
+        "url": EXPECTED_JURISPRUDENCE_OAUTH_URL,
     },
     "outils": {"type": "http", "url": EXPECTED_OUTILS_URL},
 }
-EXPECTED_GOOGLE_SERVERS = {
-    "lois": (
-        EXPECTED_LEGISLATION_URL,
-        EXPECTED_LEGISLATION_AUTH,
-        "MCP_LEGISLATION_SECRET",
-    ),
-    "juris": (
-        EXPECTED_JURISPRUDENCE_URL,
-        EXPECTED_JURISPRUDENCE_AUTH,
-        "MCP_JURISPRUDENCE_SECRET",
-    ),
+EXPECTED_GOOGLE_OAUTH_URLS = {
+    "lois": EXPECTED_LEGISLATION_OAUTH_URL,
+    "juris": EXPECTED_JURISPRUDENCE_OAUTH_URL,
 }
 EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
     "lois": (
@@ -841,14 +829,14 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     if agy_mcp is not None:
         agy_servers = agy_mcp.get("mcpServers")
-        expected_agy_keys = set(EXPECTED_GOOGLE_SERVERS) | {"outils"}
+        expected_agy_keys = set(EXPECTED_GOOGLE_OAUTH_URLS) | {"outils"}
         if not isinstance(agy_servers, dict) or set(agy_servers.keys()) != expected_agy_keys:
             erreurs.append(
                 "mcp_config.json : 'mcpServers' doit déclarer exactement "
                 "'lois', 'juris' et 'outils'"
             )
         else:
-            for srv_name, (exp_url, exp_auth, exp_var) in EXPECTED_GOOGLE_SERVERS.items():
+            for srv_name, exp_url in EXPECTED_GOOGLE_OAUTH_URLS.items():
                 srv = agy_servers[srv_name]
                 if not isinstance(srv, dict):
                     erreurs.append(
@@ -859,30 +847,24 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                     erreurs.append(
                         f"mcp_config.json : mcpServers.{srv_name}.url doit valoir '{exp_url}'"
                     )
-                if srv.get("headers") != {"Authorization": exp_auth}:
+                if "headers" in srv:
                     erreurs.append(
-                        f"mcp_config.json : mcpServers.{srv_name}.headers.Authorization doit "
-                        f"valoir '{exp_auth}'"
+                        f"mcp_config.json : mcpServers.{srv_name} ne doit pas contenir 'headers' "
+                        "(OAuth 2.1 sans configuration préalable)"
+                    )
+                if "variables" in srv:
+                    erreurs.append(
+                        f"mcp_config.json : mcpServers.{srv_name} ne doit pas contenir 'variables' "
+                        "(OAuth 2.1 sans configuration préalable)"
                     )
                 if "eager" in srv:
                     erreurs.append(
                         f"mcp_config.json : mcpServers.{srv_name} ne doit pas contenir 'eager' "
                         "(chargement paresseux)"
                     )
-                variables = srv.get("variables")
-                has_secret_var = isinstance(variables, list) and any(
-                    isinstance(v, dict)
-                    and v.get("name") == exp_var
-                    and isinstance(v.get("title"), str)
-                    and bool(v["title"].strip())
-                    and isinstance(v.get("description"), str)
-                    and bool(v["description"].strip())
-                    for v in variables
-                )
-                if not has_secret_var:
+                if set(srv.keys()) != {"url"}:
                     erreurs.append(
-                        f"mcp_config.json : mcpServers.{srv_name}.variables doit déclarer "
-                        f"{exp_var} avec 'title' et 'description'"
+                        f"mcp_config.json : mcpServers.{srv_name} ne doit contenir que la clé 'url'"
                     )
             outils_srv = agy_servers["outils"]
             if not isinstance(outils_srv, dict):
@@ -917,14 +899,14 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         if gemini_ext.get("contextFileName") != []:
             erreurs.append("gemini-extension.json : 'contextFileName' doit valoir []")
         g_servers = gemini_ext.get("mcpServers")
-        expected_gemini_keys = set(EXPECTED_GOOGLE_SERVERS) | {"outils"}
+        expected_gemini_keys = set(EXPECTED_GOOGLE_OAUTH_URLS) | {"outils"}
         if not isinstance(g_servers, dict) or set(g_servers.keys()) != expected_gemini_keys:
             erreurs.append(
                 "gemini-extension.json : 'mcpServers' doit déclarer exactement "
                 "'lois', 'juris' et 'outils'"
             )
         else:
-            for srv_name, (exp_url, exp_auth, _) in EXPECTED_GOOGLE_SERVERS.items():
+            for srv_name, exp_url in EXPECTED_GOOGLE_OAUTH_URLS.items():
                 gsrv = g_servers[srv_name]
                 if not isinstance(gsrv, dict):
                     erreurs.append(
@@ -936,10 +918,14 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                         f"gemini-extension.json : mcpServers.{srv_name}.httpUrl doit valoir "
                         f"'{exp_url}'"
                     )
-                if gsrv.get("headers") != {"Authorization": exp_auth}:
+                if "headers" in gsrv:
                     erreurs.append(
-                        f"gemini-extension.json : mcpServers.{srv_name}.headers.Authorization "
-                        f"doit valoir '{exp_auth}'"
+                        f"gemini-extension.json : mcpServers.{srv_name} ne doit pas contenir 'headers' "
+                        "(OAuth 2.1 sans configuration préalable)"
+                    )
+                if set(gsrv.keys()) != {"httpUrl"}:
+                    erreurs.append(
+                        f"gemini-extension.json : mcpServers.{srv_name} ne doit contenir que la clé 'httpUrl'"
                     )
             g_outils = g_servers["outils"]
             if not isinstance(g_outils, dict):
@@ -957,22 +943,10 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                         "gemini-extension.json : mcpServers.outils ne doit contenir que la clé 'httpUrl'"
                     )
         settings = gemini_ext.get("settings")
-        for _, _, exp_var in EXPECTED_GOOGLE_SERVERS.values():
-            has_secret_setting = isinstance(settings, list) and any(
-                isinstance(s, dict)
-                and s.get("envVar") == exp_var
-                and s.get("sensitive") is True
-                and isinstance(s.get("name"), str)
-                and bool(s["name"].strip())
-                and isinstance(s.get("description"), str)
-                and bool(s["description"].strip())
-                for s in settings
+        if settings != []:
+            erreurs.append(
+                "gemini-extension.json : 'settings' doit valoir [] (auto-connexion OAuth 2.1 sans secret statique)"
             )
-            if not has_secret_setting:
-                erreurs.append(
-                    f"gemini-extension.json : settings doit déclarer {exp_var} "
-                    "avec sensitive=true, 'name' et 'description'"
-                )
 
     if len(set(versions.values())) > 1:
         detail = ", ".join(f"{k}={v}" for k, v in sorted(versions.items()))
