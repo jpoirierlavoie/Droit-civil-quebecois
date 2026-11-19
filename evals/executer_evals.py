@@ -479,8 +479,10 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                 try:
                     ctrl_mod._charger_regles(str(tmp_dir / "absent.json"), {})
                     erreurs.append(f"{sid} : --regles JSON absent ignoré silencieusement")
-                except FileNotFoundError:
-                    pass
+                except FileNotFoundError as exc:
+                    # Comportement attendu : --regles pointant vers un fichier absent doit lever FileNotFoundError.
+                    if not str(exc):
+                        erreurs.append(f"{sid} : exception FileNotFoundError vide pour --regles absent")
         elif outil == "verifier_cotes":
             with tempfile.TemporaryDirectory() as tmp:
                 tmp_dir = Path(tmp)

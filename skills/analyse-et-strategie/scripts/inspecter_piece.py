@@ -834,11 +834,15 @@ def _inspect_png(path: Path) -> dict[str, object]:
                 nul = chunk_data.find(b"\x00")
                 if nul > 0 and nul + 2 <= len(chunk_data) and chunk_data[nul + 1] == 0:
                     k = chunk_data[:nul].decode("latin-1", errors="replace")
+                    decompressed: bytes | None = None
                     try:
-                        v = zlib.decompress(chunk_data[nul + 2 :]).decode("latin-1", errors="replace")
-                        text_chunks[k] = _truncate(v, 150)
+                        decompressed = zlib.decompress(chunk_data[nul + 2 :])
                     except zlib.error:
-                        pass
+                        # Flux compressé zTXt corrompu : ignorer ce chunk sans interrompre l'inspection PNG.
+                        decompressed = None
+                    if decompressed is not None:
+                        v = decompressed.decode("latin-1", errors="replace")
+                        text_chunks[k] = _truncate(v, 150)
             elif ctype == b"iTXt":
                 nul1 = chunk_data.find(b"\x00")
                 if nul1 > 0 and nul1 + 3 <= len(chunk_data):
