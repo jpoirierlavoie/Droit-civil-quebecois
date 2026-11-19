@@ -84,6 +84,62 @@ ANTIGRAVITY_AUTHOR_KEYS = frozenset({"name", "url"})
 EXPECTED_PLUGIN_NAME = "droit-civil-quebecois"
 EXPECTED_DISPLAY_NAME = "Droit civil québécois"
 EXPECTED_REPO_URL = "https://github.com/jpoirierlavoie/droit-civil-quebecois"
+RETIRED_REPO_SLUGS = (
+    "competence-litige-civil",
+    "competence-pratique-civile-quebecoise",
+    "MCP-Jurisprudence-Quebec",
+    "MCP-Socle-Juridique",
+    "pratique-civile-outils",
+)
+LEGACY_PLUGIN_ALLOW_MIGRATION = frozenset(
+    {
+        "verifier.py",
+        "README.md",
+        "CLAUDE.md",
+        "GEMINI.md",
+        "scripts/synchroniser_plugin_gemini.py",
+        "scripts/regenerer_cache_mcp.py",
+    }
+)
+RETIRED_V1_SKILLS = (
+    "analyse-documentaire",
+    "calendrier-procedural",
+    "deontologie-professionnelle",
+)
+RETIRED_V2_SKILLS = (
+    "administration-litige",
+    "analyse-juridique",
+    "deontologie-et-pratique",
+)
+RETIRED_V1_TOOLS = (
+    "legislation_list_laws",
+    "legislation_list_subjects",
+    "legislation_related_laws",
+    "legislation_find_relevant",
+    "legislation_get_article",
+    "legislation_get_articles",
+    "legislation_get_structure",
+    "legislation_get_division",
+    "legislation_search_text",
+    "legislation_resolve_reference",
+    "jurisprudence_verify_citations",
+    "jurisprudence_find_case",
+    "jurisprudence_get_case",
+    "jurisprudence_citator",
+    "jurisprudence_subsequent_history",
+    "jurisprudence_browse_cases",
+    "jurisprudence_list_databases",
+    "jurisprudence_browse_legislation",
+    "jurisprudence_get_legislation",
+    "jurisprudence_parse_citation",
+    "calendrier_list_holidays",
+    "calendrier_compute_deadlines",
+    "interets_compute_1619",
+    "greffe_parse_court_file_number",
+    "registre_search_entities",
+    "terminologie_attestations",
+    "terminologie_scan_text",
+)
 
 PHASE_SKILLS = frozenset(
     {
@@ -1510,7 +1566,21 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                             f"{svc}/references/{leaf_stem}.md ({cnt} trouvé(s))"
                         )
 
-    # 7. Banned patterns & repository-relative paths
+    # 7. Retired slugs, stale v1/v2 names, banned patterns & repository-relative paths
+    for rel in files:
+        if rel == "verifier.py":
+            continue
+        text = decoded.get(rel)
+        if text is None:
+            continue
+        for slug in RETIRED_REPO_SLUGS:
+            if slug in text:
+                erreurs.append(f"{rel} : ancien identifiant de dépôt interdit ({slug})")
+        if rel not in LEGACY_PLUGIN_ALLOW_MIGRATION and "pratique-civile-quebecoise" in text:
+            erreurs.append(
+                f"{rel} : ancien identifiant de greffon 'pratique-civile-quebecoise' interdit en v3"
+            )
+
     for rel in sorted(skill_md_files + skill_script_files + eval_files):
         text = decoded.get(rel)
         if text is None:
@@ -1518,6 +1588,15 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         for label, pat in BANNED_PATTERNS:
             if pat.search(text):
                 erreurs.append(f"{rel} : {label} interdit")
+        for old_skill in RETIRED_V1_SKILLS:
+            if old_skill in text:
+                erreurs.append(f"{rel} : ancien nom de compétence v1 interdit ({old_skill})")
+        for old_v2_skill in RETIRED_V2_SKILLS:
+            if old_v2_skill in text:
+                erreurs.append(f"{rel} : ancien nom de compétence v2 interdit ({old_v2_skill})")
+        for old_tool in RETIRED_V1_TOOLS:
+            if re.search(rf"\b{re.escape(old_tool)}\b", text):
+                erreurs.append(f"{rel} : ancien nom d'outil MCP v1 interdit ({old_tool})")
 
     for rel in sorted(skill_md_files):
         text = decoded.get(rel)

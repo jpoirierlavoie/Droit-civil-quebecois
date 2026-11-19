@@ -6,7 +6,7 @@ Encadre la rédaction d'une argumentation écrite développée ou de notes et au
 
 ## Destinataire et format
 
-`[FICHE À RÉDIGER]` — Consulter via `lois` les directives et règlements de la Cour supérieure (`c-25.01-r.0.2.1`, `r.0.2.2`, `r.0.2.3`) et de la Cour du Québec (`c-25.01-r.9`) quant au format, à la police, aux marges, à l'interligne et au plafond de pages autorisé.
+`[FICHE À RÉDIGER]` — Consulter via `lois` les directives et règlements de la Cour supérieure (`c-25.01-r.0.2.1`, `r.0.2.2`, `r.0.2.3`) et de la Cour du Québec (`c-25.01-r.9`), ainsi que les directives Vague 1 (`fonction='directive'`, `par.`/`dir.`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`, `qccq-daa-jurisprudence` ; lire avec `lang='fr'`) quant au format, à la police, aux marges, à l'interligne et au plafond de pages autorisé.
 
 ## Structure
 
@@ -22,4 +22,4 @@ Appliquer strictement `arg-citations.md` : citations neutres authentifiées via 
 
 ## Contrôle
 
-`[FICHE À RÉDIGER]` — Vérifier la concordance des autorités avec le cahier des sources (`production-et-conformite`), la conformité typographique (`controler_document.py`) et la purge linguistique (`outils.terminologie_scan`).
+`[FICHE À RÉDIGER]` — Vérifier la concordance des autorités avec le cahier des sources (`production-et-conformite`), la conformité typographique (`controler_document.py` — ou, sur surface nuage sans Python local, divulguer explicitement les contrôles octets/XML/PDF omis et les inscrire au bon de travail manuel) et la purge linguistique (`outils.terminologie_scan`).

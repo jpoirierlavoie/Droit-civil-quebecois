@@ -19,7 +19,7 @@ Document **strictement interne** (non déposé au greffe) :
 4. **Ordre de première invocation inversé :** `P-5` invoquée au par. 8 avant `P-4` au par. 11 (les cotes suivent la première invocation continue).
 5. **Doublon :** même document coté deux fois, ou documents hétérogènes groupés sans mention `en liasse` datée.
 
-*(Outillage : utiliser l'outil `verifier_cotes.py` de `production-et-conformite` sur l'acte, le bordereau et la matrice pour automatiser l'audit.)*
+*(Outillage : utiliser l'outil `verifier_cotes.py` de `production-et-conformite` sur l'acte, le bordereau et la matrice pour automatiser l'audit ; sur surface nuage sans Python local, divulguer explicitement que la vérification scriptée des cotes a été omise et l'inscrire au bon de travail manuel.)*
 
 ## Statut des faits
 

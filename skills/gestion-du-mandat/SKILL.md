@@ -51,7 +51,7 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 ## Règle de posture absolue
 
 1. **Rappeler, jamais attester :** Dire qu'une vérification (conflit, identité, conciliation) est due; ne jamais écrire qu'elle a été accomplie sans preuve directe.
-2. **Aucun calcul mental :** Tout délai passe par `outils.calendrier_deadlines` ou `scripts/calcul_delai.py`; tout décompte `1619 C.c.Q.` passe par `outils.interets_1619`.
+2. **Aucun calcul mental :** Tout délai passe par `outils.calendrier_deadlines` ou `scripts/calcul_delai.py` *(si `outils` échoue sans Python local en nuage, s'arrêter sur le calcul et renvoyer vers `acces.poirierlavoie.ca/moi`)*; tout décompte `1619 C.c.Q.` passe par `outils.interets_1619`.
 3. **Pertinence stricte :** Hors déclencheur concret ou question directe, n'ajouter aucune clause déontologique générique.
 
 ## Contrôle avant remise

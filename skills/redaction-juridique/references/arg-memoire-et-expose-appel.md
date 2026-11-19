@@ -6,7 +6,7 @@ Encadre la rédaction du mémoire d'appel (`372–373 C.p.c.`) et de l'exposé (
 
 **Appeler `lois.get_articles` avant toute rédaction :**
 * `law="cpc"`, `numbers=["372", "373", "374", "376"]`
-* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : inspecter la structure (`get_structure`) pour charger les exigences exactes de format, typographie, nombre de pages maximal, marges, pagination et confection des annexes.
+* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : inspecter la structure (`get_structure`) pour charger les exigences exactes de format, typographie, nombre de pages maximal, marges, pagination et confection des annexes *(les directives et avis de la Cour d'appel `QCCA` sont hors corpus Vague 1 de `110` textes et doivent être vérifiés directement à la source)*.
 
 ## Structure
 
@@ -30,6 +30,6 @@ Appliquer strictement `arg-citations.md` : citations neutres vérifiées via `ju
 
 ## Contrôle
 
-1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01`) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`).
+1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01` — ou, sans Python local sur `claude.ai`, Gemini App `/mcp/oauth` ou Deep Research, divulguer explicitement les vérifications octets/XML/PDF omises et les reporter au bon de travail manuel) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`).
 2. Vérifier le délai de dépôt du mémoire (`373` : `3 mois` pour l'appelant, caducité si expiré sans prolongation demandée *avant* échéance) via `gestion-du-mandat`.
 3. Exécuter `outils.terminologie_scan`.

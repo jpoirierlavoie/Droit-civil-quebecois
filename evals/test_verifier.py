@@ -482,6 +482,33 @@ class VerifierV3Tests(unittest.TestCase):
             errs2, _ = verifier.verifier(root)
             self.assertTrue(any("acces.poirierlavoie.ca/moi" in e for e in errs2))
 
+    def test_retired_identifiers_v1_v2_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            readme = root / "README.md"
+            _write_lf(readme, "Voir " + "competence-" + "litige-civil" + "\n")
+            sec = root / "SECURITY.md"
+            _write_lf(sec, "Ancien slug : " + "pratique-civile-" + "quebecoise" + "\n")
+            leaf = root / "skills" / "gestion-du-mandat" / "references" / "conformite-echeanciers-cpc.md"
+            _write_lf(
+                leaf,
+                leaf.read_text(encoding="utf-8")
+                + "\nRenvoi "
+                + "administration-"
+                + "litige et "
+                + "analyse-"
+                + "documentaire et "
+                + "legislation_"
+                + "get_article.\n",
+            )
+            errs, _ = verifier.verifier(root)
+            self.assertTrue(any("ancien identifiant de dépôt interdit" in e for e in errs))
+            self.assertTrue(any("ancien identifiant de greffon" in e for e in errs))
+            self.assertTrue(any("ancien nom de compétence v2 interdit" in e for e in errs))
+            self.assertTrue(any("ancien nom de compétence v1 interdit" in e for e in errs))
+            self.assertTrue(any("ancien nom d'outil MCP v1 interdit" in e for e in errs))
+
 
 if __name__ == "__main__":
     unittest.main()

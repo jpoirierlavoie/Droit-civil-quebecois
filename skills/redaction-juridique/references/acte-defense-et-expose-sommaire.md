@@ -5,7 +5,7 @@
 ## Vecteur législatif
 
 * `law="cpc"` : `numbers=["99", "145", "147", "148", "154", "170", "171", "172", "490", "535.1", "535.4", "535.6", "535.7"]`
-* Règlements : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.).
+* Règlements et directives : `c-25.01-r.0.2.1` (C.S.), `c-25.01-r.9` (C.Q.), plus directives C.S./C.Q. Vague 1 (`fonction='directive'`, `par.`/`dir.`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-regles-simplifiees`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`).
 
 ## Conditions et préalables
 

@@ -5,8 +5,8 @@
 ## Vecteur législatif
 
 * `law="cpc"` : `numbers=["30", "31", "32", "352", "353", "354", "355", "357", "358", "359", "360", "361", "363", "365"]`
-* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : charger la structure (`get_structure`) pour vérifier pagination, polices et formalités exactes.
-* `law="t-15.01"` (*Loi sur le Tribunal administratif du logement*, `numbers=["91", "92", "93", "94"]`) et `law="c-25.01-r.9"` pour la permission d'appeler devant la **Cour du Québec (Division administrative et d'appel)**.
+* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : charger la structure (`get_structure`) pour vérifier pagination, polices et formalités exactes *(les directives C.A.Q. `QCCA` sont hors Vague 1 et se vérifient à la source)*.
+* `law="t-15.01"` (*Loi sur le Tribunal administratif du logement*, `numbers=["91", "92", "93", "94"]`), `law="c-25.01-r.9"` et `qccq-daa-jurisprudence` (`fonction='directive'`, `fr`-only) pour la permission d'appeler devant la **Cour du Québec (Division administrative et d'appel)**.
 
 ## Conditions et préalables
 

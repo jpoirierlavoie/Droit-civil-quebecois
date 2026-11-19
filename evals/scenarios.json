@@ -1926,7 +1926,7 @@
         "preseance-sur|préséance",
         "amf-ig-45-106|orientation",
         "interprete|interprète",
-        "QCCA|Cour d'appel.*hors|hors.*Vague 1|absentes",
+        "QCCA|(?:Cour d'appel|C\\.A\\.Q\\.).{0,40}(?:hors|absent|exclu)",
         "fr"
       ],
       "ne_doit_pas_contenir": [
@@ -1956,7 +1956,7 @@
         "CanLII"
       ],
       "ne_doit_pas_contenir": [
-        "selon mes connaissances, l'arrêt 2020 QCCA 495 établit"
+        "selon mes connaissances.{0,40}2020 QCCA 495|2020 QCCA 495\\s+(?:établit|statue|décide|confirme)\\s+que"
       ],
       "feuilles_attendues": [
         "recherche-jurisprudentielle"
@@ -1981,7 +1981,7 @@
         "XML|OCR|signets|cotes"
       ],
       "ne_doit_pas_contenir": [
-        "j'ai exécuté controler_document\\.py avec succès"
+        "(?:j'ai exécuté|exécution réussie de)\\s+(?:controler_document|verifier_cotes)|(?:controler_document|verifier_cotes)\\.py\\s+(?:a\\s+)?(?:exécuté|confirmé|validé)\\s+(?:avec succès|la conformité)"
       ],
       "feuilles_attendues": [
         "controle-acte-de-procedure",
@@ -2008,7 +2008,8 @@
         "CONFIDENTIEL|PUBLIC"
       ],
       "ne_doit_pas_contenir": [
-        "j'ai enregistré le fichier etat-dossier/phase-ouverture-dossier\\.md sur votre disque"
+        "(?:j'ai\\s+(?:enregistré|écrit|créé|sauvegardé)|fichier\\s+(?:enregistré|écrit|sauvegardé)).{0,60}(?:etat-dossier|sur (?:le |votre )?disque)",
+        "inspecter_piece\\.py\\s+(?:a\\s+)?(?:exécuté|confirmé|calculé)|classement\\s+PUBLIC\\s+(?:confirmé|retenu|appliqué)"
       ],
       "feuilles_attendues": [],
       "enchainement_attendu": [
