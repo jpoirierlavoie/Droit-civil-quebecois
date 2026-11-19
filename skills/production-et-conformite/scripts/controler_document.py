@@ -22,6 +22,10 @@ import zlib
 
 _DOCX_EXTS = {".docx", ".docm"}
 _PDF_EXTS = {".pdf"}
+_MAX_ZIP_MEMBER_BYTES = 64 * 1024 * 1024
+_MAX_ZIP_TOTAL_BYTES = 128 * 1024 * 1024
+_VANISH_TAGS = ("vanish", "specVanish", "webHidden")
+_XML_OFF_VALUES = frozenset({"0", "false", "off"})
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -77,14 +81,70 @@ def _truncate(text: str, limit: int = 120) -> str:
     return cleaned[: limit - 1] + "…"
 
 
-def _parse_xml_from_zip(zf: zipfile.ZipFile, member: str) -> ET.Element | None:
+class _ZipLimitExceeded(ValueError):
+    """Levée lorsqu'un membre OOXML dépasse le plafond de décompression sécurisé."""
+
+
+def _is_w_flag_enabled(el: ET.Element) -> bool:
+    raw = el.attrib.get(f"{{{_W_NS}}}val")
+    if raw is None:
+        raw = el.attrib.get("val")
+    if raw is None:
+        return True
+    return raw.strip().lower() not in _XML_OFF_VALUES
+
+
+def _read_zip_member_bounded(
+    zf: zipfile.ZipFile, member: str, total_budget: list[int] | None = None
+) -> bytes | None:
     try:
-        data = zf.read(member)
+        info = zf.getinfo(member)
     except KeyError:
+        return None
+    if info.file_size > _MAX_ZIP_MEMBER_BYTES:
+        raise _ZipLimitExceeded(
+            f"Membre OOXML trop volumineux ({info.file_size} octets > {_MAX_ZIP_MEMBER_BYTES}) : {member}."
+        )
+    if total_budget is not None and (total_budget[0] + info.file_size) > _MAX_ZIP_TOTAL_BYTES:
+        raise _ZipLimitExceeded(
+            f"Décompression OOXML totale dépassant {_MAX_ZIP_TOTAL_BYTES} octets sur {member}."
+        )
+    chunks: list[bytes] = []
+    member_size = 0
+    with zf.open(info, "r") as fh:
+        while True:
+            chunk = fh.read(65536)
+            if not chunk:
+                break
+            member_size += len(chunk)
+            if member_size > _MAX_ZIP_MEMBER_BYTES:
+                raise _ZipLimitExceeded(
+                    f"Membre OOXML trop volumineux à la décompression (> {_MAX_ZIP_MEMBER_BYTES} octets) : {member}."
+                )
+            if total_budget is not None:
+                total_budget[0] += len(chunk)
+                if total_budget[0] > _MAX_ZIP_TOTAL_BYTES:
+                    raise _ZipLimitExceeded(
+                        f"Décompression OOXML totale dépassant {_MAX_ZIP_TOTAL_BYTES} octets sur {member}."
+                    )
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _parse_xml_from_zip(
+    zf: zipfile.ZipFile,
+    member: str,
+    xml_errors: list[str] | None = None,
+    total_budget: list[int] | None = None,
+) -> ET.Element | None:
+    data = _read_zip_member_bounded(zf, member, total_budget=total_budget)
+    if data is None:
         return None
     try:
         return ET.fromstring(data)
     except ET.ParseError:
+        if xml_errors is not None:
+            xml_errors.append(member)
         return None
 
 
@@ -94,206 +154,237 @@ def _extract_docx_data(path: Path) -> dict[str, object]:
     except zipfile.BadZipFile:
         return {"statut": "erreur", "erreur": "Archive OOXML invalide ou corrompue (.docx)."}
 
-    with zf_ctx as zf:
-        core_meta: dict[str, str] = {}
-        core = _parse_xml_from_zip(zf, "docProps/core.xml")
-        if core is not None:
-            for tag, label in (
-                (f"{{{_DC_NS}}}creator", "auteur_initial"),
-                (f"{{{_CP_NS}}}lastModifiedBy", "dernier_editeur"),
-                (f"{{{_DCTERMS_NS}}}created", "date_creation"),
-                (f"{{{_DCTERMS_NS}}}modified", "date_modification"),
-                (f"{{{_DC_NS}}}title", "titre"),
-                (f"{{{_DC_NS}}}subject", "objet"),
-            ):
-                el = core.find(tag)
-                if el is not None and el.text and el.text.strip():
-                    core_meta[label] = el.text.strip()
-
-        app_meta: dict[str, str] = {}
-        pages_declarees: int | None = None
-        mots_declares: int | None = None
-        app = _parse_xml_from_zip(zf, "docProps/app.xml")
-        if app is not None:
-            for tag, label in (
-                (f"{{{_APP_NS}}}Application", "application"),
-                (f"{{{_APP_NS}}}Company", "organisation"),
-                (f"{{{_APP_NS}}}Pages", "pages_declarees"),
-                (f"{{{_APP_NS}}}Words", "mots_declares"),
-            ):
-                el = app.find(tag)
-                if el is not None and el.text and el.text.strip():
-                    app_meta[label] = el.text.strip()
-            if "pages_declarees" in app_meta and app_meta["pages_declarees"].isdigit():
-                pages_declarees = int(app_meta["pages_declarees"])
-            if "mots_declares" in app_meta and app_meta["mots_declares"].isdigit():
-                mots_declares = int(app_meta["mots_declares"])
-
-        polices: set[str] = set()
-        tailles_pt: set[float] = set()
-        interlignes_ratio: set[float] = set()
-        interlignes_pt: set[float] = set()
-
-        theme_root = _parse_xml_from_zip(zf, "word/theme/theme1.xml")
-        theme_fonts: dict[str, str] = {}
-        if theme_root is not None:
-            major = theme_root.find(f".//{{{_A_NS}}}majorFont/{{{_A_NS}}}latin")
-            minor = theme_root.find(f".//{{{_A_NS}}}minorFont/{{{_A_NS}}}latin")
-            if major is not None and major.attrib.get("typeface"):
-                theme_fonts["major"] = major.attrib["typeface"]
-            if minor is not None and minor.attrib.get("typeface"):
-                theme_fonts["minor"] = minor.attrib["typeface"]
-
-        def _scan_formatting(root: ET.Element | None) -> None:
-            if root is None:
-                return
-            for rf in root.findall(f".//{{{_W_NS}}}rFonts"):
-                for attr in ("ascii", "hAnsi", "cs", "eastAsia"):
-                    val = rf.attrib.get(f"{{{_W_NS}}}{attr}")
-                    if val:
-                        polices.add(val)
-                for attr in ("asciiTheme", "hAnsiTheme"):
-                    tval = rf.attrib.get(f"{{{_W_NS}}}{attr}", "")
-                    if tval.startswith("minor") and "minor" in theme_fonts:
-                        polices.add(theme_fonts["minor"])
-                    elif tval.startswith("major") and "major" in theme_fonts:
-                        polices.add(theme_fonts["major"])
-            for sz_tag in ("sz", "szCs"):
-                for sz in root.findall(f".//{{{_W_NS}}}{sz_tag}"):
-                    raw_val = sz.attrib.get(f"{{{_W_NS}}}val")
-                    if raw_val and raw_val.isdigit():
-                        tailles_pt.add(round(int(raw_val) / 2.0, 2))
-            for sp in root.findall(f".//{{{_W_NS}}}spacing"):
-                raw_line = sp.attrib.get(f"{{{_W_NS}}}line")
-                rule = sp.attrib.get(f"{{{_W_NS}}}lineRule", "auto")
-                if raw_line and raw_line.isdigit():
-                    val_i = int(raw_line)
-                    if rule == "auto":
-                        interlignes_ratio.add(round(val_i / 240.0, 2))
-                    else:
-                        interlignes_pt.add(round(val_i / 20.0, 2))
-
-        styles_root = _parse_xml_from_zip(zf, "word/styles.xml")
-        doc_root = _parse_xml_from_zip(zf, "word/document.xml")
-        extra_roots = [
-            _parse_xml_from_zip(zf, m)
-            for m in zf.namelist()
-            if (
-                (m.startswith("word/header") or m.startswith("word/footer"))
-                and m.endswith(".xml")
-            )
-            or m in ("word/footnotes.xml", "word/endnotes.xml")
-        ]
-        doc_trees = [r for r in [doc_root, *extra_roots] if r is not None]
-
-        used_style_ids: set[str] = set()
-        for tree in doc_trees:
-            for st_tag in ("pStyle", "rStyle", "tblStyle"):
-                for el in tree.findall(f".//{{{_W_NS}}}{st_tag}"):
-                    sval = el.attrib.get(f"{{{_W_NS}}}val")
-                    if sval:
-                        used_style_ids.add(sval)
-
-        if styles_root is not None:
-            doc_defs = styles_root.find(f"{{{_W_NS}}}docDefaults")
-            if doc_defs is not None:
-                _scan_formatting(doc_defs)
-            styles_by_id: dict[str, ET.Element] = {}
-            for st_el in styles_root.findall(f"{{{_W_NS}}}style"):
-                sid = st_el.attrib.get(f"{{{_W_NS}}}styleId")
-                if sid:
-                    styles_by_id[sid] = st_el
-                    if st_el.attrib.get(f"{{{_W_NS}}}default") == "1":
-                        used_style_ids.add(sid)
-            resolved_ids = set(used_style_ids)
-            frontier = list(used_style_ids)
-            for _ in range(10):
-                nxt: list[str] = []
-                for sid in frontier:
-                    st_el = styles_by_id.get(sid)
-                    if st_el is None:
-                        continue
-                    based = st_el.find(f"{{{_W_NS}}}basedOn")
-                    if based is not None:
-                        bval = based.attrib.get(f"{{{_W_NS}}}val")
-                        if bval and bval not in resolved_ids:
-                            resolved_ids.add(bval)
-                            nxt.append(bval)
-                if not nxt:
-                    break
-                frontier = nxt
-            for sid in sorted(resolved_ids):
-                _scan_formatting(styles_by_id.get(sid))
-
-        for tree in doc_trees:
-            _scan_formatting(tree)
-
-        marges_po: dict[str, float] = {}
-        format_page_po: dict[str, object] = {}
-        if doc_root is not None:
-            for pg_mar in doc_root.findall(f".//{{{_W_NS}}}pgMar"):
-                for side, label in (
-                    ("top", "haut"),
-                    ("bottom", "bas"),
-                    ("left", "gauche"),
-                    ("right", "droite"),
+    try:
+        with zf_ctx as zf:
+            total_budget = [0]
+            xml_errors: list[str] = []
+            core_meta: dict[str, str] = {}
+            core = _parse_xml_from_zip(zf, "docProps/core.xml", xml_errors, total_budget)
+            if core is not None:
+                for tag, label in (
+                    (f"{{{_DC_NS}}}creator", "auteur_initial"),
+                    (f"{{{_CP_NS}}}lastModifiedBy", "dernier_editeur"),
+                    (f"{{{_DCTERMS_NS}}}created", "date_creation"),
+                    (f"{{{_DCTERMS_NS}}}modified", "date_modification"),
+                    (f"{{{_DC_NS}}}title", "titre"),
+                    (f"{{{_DC_NS}}}subject", "objet"),
                 ):
-                    raw_twip = pg_mar.attrib.get(f"{{{_W_NS}}}{side}")
-                    if raw_twip and raw_twip.lstrip("-").isdigit():
-                        val_po = round(int(raw_twip) / 1440.0, 2)
-                        if label not in marges_po or val_po < marges_po[label]:
-                            marges_po[label] = val_po
-            pg_sizes: list[dict[str, object]] = []
-            for pg_sz in doc_root.findall(f".//{{{_W_NS}}}pgSz"):
-                w_raw = pg_sz.attrib.get(f"{{{_W_NS}}}w")
-                h_raw = pg_sz.attrib.get(f"{{{_W_NS}}}h")
-                if w_raw and h_raw and w_raw.isdigit() and h_raw.isdigit():
-                    w_po = round(int(w_raw) / 1440.0, 2)
-                    h_po = round(int(h_raw) / 1440.0, 2)
-                    est_portrait_letter = abs(w_po - 8.5) <= 0.1 and abs(h_po - 11.0) <= 0.1
-                    est_paysage_letter = abs(w_po - 11.0) <= 0.1 and abs(h_po - 8.5) <= 0.1
-                    est_letter = est_portrait_letter or est_paysage_letter
-                    orientation = "paysage" if est_paysage_letter or w_po > h_po else "portrait"
-                    pg_sizes.append(
+                    el = core.find(tag)
+                    if el is not None and el.text and el.text.strip():
+                        core_meta[label] = el.text.strip()
+
+            app_meta: dict[str, str] = {}
+            pages_declarees: int | None = None
+            mots_declares: int | None = None
+            app = _parse_xml_from_zip(zf, "docProps/app.xml", xml_errors, total_budget)
+            if app is not None:
+                for tag, label in (
+                    (f"{{{_APP_NS}}}Application", "application"),
+                    (f"{{{_APP_NS}}}Company", "organisation"),
+                    (f"{{{_APP_NS}}}Pages", "pages_declarees"),
+                    (f"{{{_APP_NS}}}Words", "mots_declares"),
+                ):
+                    el = app.find(tag)
+                    if el is not None and el.text and el.text.strip():
+                        app_meta[label] = el.text.strip()
+                if "pages_declarees" in app_meta and app_meta["pages_declarees"].isdigit():
+                    pages_declarees = int(app_meta["pages_declarees"])
+                if "mots_declares" in app_meta and app_meta["mots_declares"].isdigit():
+                    mots_declares = int(app_meta["mots_declares"])
+
+            polices: set[str] = set()
+            tailles_pt: set[float] = set()
+            interlignes_ratio: set[float] = set()
+            interlignes_pt: set[float] = set()
+
+            theme_root = _parse_xml_from_zip(zf, "word/theme/theme1.xml", xml_errors, total_budget)
+            theme_fonts: dict[str, str] = {}
+            if theme_root is not None:
+                major = theme_root.find(f".//{{{_A_NS}}}majorFont/{{{_A_NS}}}latin")
+                minor = theme_root.find(f".//{{{_A_NS}}}minorFont/{{{_A_NS}}}latin")
+                if major is not None and major.attrib.get("typeface"):
+                    theme_fonts["major"] = major.attrib["typeface"]
+                if minor is not None and minor.attrib.get("typeface"):
+                    theme_fonts["minor"] = minor.attrib["typeface"]
+
+            def _scan_formatting(root: ET.Element | None) -> None:
+                if root is None:
+                    return
+                for rf in root.findall(f".//{{{_W_NS}}}rFonts"):
+                    for attr in ("ascii", "hAnsi", "cs", "eastAsia"):
+                        val = rf.attrib.get(f"{{{_W_NS}}}{attr}")
+                        if val:
+                            polices.add(val)
+                    for attr in ("asciiTheme", "hAnsiTheme"):
+                        tval = rf.attrib.get(f"{{{_W_NS}}}{attr}", "")
+                        if tval.startswith("minor") and "minor" in theme_fonts:
+                            polices.add(theme_fonts["minor"])
+                        elif tval.startswith("major") and "major" in theme_fonts:
+                            polices.add(theme_fonts["major"])
+                for sz_tag in ("sz", "szCs"):
+                    for sz in root.findall(f".//{{{_W_NS}}}{sz_tag}"):
+                        raw_val = sz.attrib.get(f"{{{_W_NS}}}val")
+                        if raw_val and raw_val.isdigit():
+                            tailles_pt.add(round(int(raw_val) / 2.0, 2))
+                for sp in root.findall(f".//{{{_W_NS}}}spacing"):
+                    raw_line = sp.attrib.get(f"{{{_W_NS}}}line")
+                    rule = sp.attrib.get(f"{{{_W_NS}}}lineRule", "auto")
+                    if raw_line and raw_line.isdigit():
+                        val_i = int(raw_line)
+                        if rule == "auto":
+                            interlignes_ratio.add(round(val_i / 240.0, 2))
+                        else:
+                            interlignes_pt.add(round(val_i / 20.0, 2))
+
+            styles_root = _parse_xml_from_zip(zf, "word/styles.xml", xml_errors, total_budget)
+            doc_root = _parse_xml_from_zip(zf, "word/document.xml", xml_errors, total_budget)
+            extra_roots_map: dict[str, ET.Element] = {}
+            for m in zf.namelist():
+                if (
+                    (m.startswith("word/header") or m.startswith("word/footer"))
+                    and m.endswith(".xml")
+                ) or m in ("word/footnotes.xml", "word/endnotes.xml"):
+                    r_ext = _parse_xml_from_zip(zf, m, xml_errors, total_budget)
+                    if r_ext is not None:
+                        extra_roots_map[m] = r_ext
+            extra_roots = list(extra_roots_map.values())
+            doc_trees = [r for r in [doc_root, *extra_roots] if r is not None]
+
+            used_style_ids: set[str] = set()
+            for tree in doc_trees:
+                for st_tag in ("pStyle", "rStyle", "tblStyle"):
+                    for el in tree.findall(f".//{{{_W_NS}}}{st_tag}"):
+                        sval = el.attrib.get(f"{{{_W_NS}}}val")
+                        if sval:
+                            used_style_ids.add(sval)
+
+            used_style_elements: list[ET.Element] = []
+            if styles_root is not None:
+                doc_defs = styles_root.find(f"{{{_W_NS}}}docDefaults")
+                if doc_defs is not None:
+                    _scan_formatting(doc_defs)
+                    used_style_elements.append(doc_defs)
+                styles_by_id: dict[str, ET.Element] = {}
+                for st_el in styles_root.findall(f"{{{_W_NS}}}style"):
+                    sid = st_el.attrib.get(f"{{{_W_NS}}}styleId")
+                    if sid:
+                        styles_by_id[sid] = st_el
+                        if st_el.attrib.get(f"{{{_W_NS}}}default") == "1":
+                            used_style_ids.add(sid)
+                resolved_ids = set(used_style_ids)
+                frontier = list(used_style_ids)
+                for _ in range(10):
+                    nxt: list[str] = []
+                    for sid in frontier:
+                        st_el = styles_by_id.get(sid)
+                        if st_el is None:
+                            continue
+                        based = st_el.find(f"{{{_W_NS}}}basedOn")
+                        if based is not None:
+                            bval = based.attrib.get(f"{{{_W_NS}}}val")
+                            if bval and bval not in resolved_ids:
+                                resolved_ids.add(bval)
+                                nxt.append(bval)
+                    if not nxt:
+                        break
+                    frontier = nxt
+                for sid in sorted(resolved_ids):
+                    st_el = styles_by_id.get(sid)
+                    _scan_formatting(st_el)
+                    if st_el is not None:
+                        used_style_elements.append(st_el)
+
+            for tree in doc_trees:
+                _scan_formatting(tree)
+
+            vanish_occurrences = 0
+            vanish_tags: set[str] = set()
+            vanish_excerpts: list[str] = []
+            for tree in [*doc_trees, *used_style_elements]:
+                for v_tag in _VANISH_TAGS:
+                    for el in tree.findall(f".//{{{_W_NS}}}{v_tag}"):
+                        if _is_w_flag_enabled(el):
+                            vanish_occurrences += 1
+                            vanish_tags.add(f"w:{v_tag}")
+            for tree in doc_trees:
+                for run in tree.findall(f".//{{{_W_NS}}}r"):
+                    rpr = run.find(f"{{{_W_NS}}}rPr")
+                    if rpr is None:
+                        continue
+                    if any(
+                        _is_w_flag_enabled(fl)
+                        for v_tag in _VANISH_TAGS
+                        for fl in rpr.findall(f"{{{_W_NS}}}{v_tag}")
+                    ):
+                        txt = "".join(t.text or "" for t in run.findall(f".//{{{_W_NS}}}t")).strip()
+                        if txt and len(vanish_excerpts) < 10:
+                            vanish_excerpts.append(_truncate(txt))
+
+            marges_po: dict[str, float] = {}
+            format_page_po: dict[str, object] = {}
+            if doc_root is not None:
+                for pg_mar in doc_root.findall(f".//{{{_W_NS}}}pgMar"):
+                    for side, label in (
+                        ("top", "haut"),
+                        ("bottom", "bas"),
+                        ("left", "gauche"),
+                        ("right", "droite"),
+                    ):
+                        raw_twip = pg_mar.attrib.get(f"{{{_W_NS}}}{side}")
+                        if raw_twip and raw_twip.lstrip("-").isdigit():
+                            val_po = round(int(raw_twip) / 1440.0, 2)
+                            if label not in marges_po or val_po < marges_po[label]:
+                                marges_po[label] = val_po
+                pg_sizes: list[dict[str, object]] = []
+                for pg_sz in doc_root.findall(f".//{{{_W_NS}}}pgSz"):
+                    w_raw = pg_sz.attrib.get(f"{{{_W_NS}}}w")
+                    h_raw = pg_sz.attrib.get(f"{{{_W_NS}}}h")
+                    if w_raw and h_raw and w_raw.isdigit() and h_raw.isdigit():
+                        w_po = round(int(w_raw) / 1440.0, 2)
+                        h_po = round(int(h_raw) / 1440.0, 2)
+                        est_portrait_letter = abs(w_po - 8.5) <= 0.1 and abs(h_po - 11.0) <= 0.1
+                        est_paysage_letter = abs(w_po - 11.0) <= 0.1 and abs(h_po - 8.5) <= 0.1
+                        est_letter = est_portrait_letter or est_paysage_letter
+                        orientation = "paysage" if est_paysage_letter or w_po > h_po else "portrait"
+                        pg_sizes.append(
+                            {
+                                "largeur_po": w_po,
+                                "hauteur_po": h_po,
+                                "us_letter": est_letter,
+                                "orientation": orientation,
+                            }
+                        )
+                if pg_sizes:
+                    non_letter = [p for p in pg_sizes if not p["us_letter"]]
+                    format_page_po = dict(non_letter[0] if non_letter else pg_sizes[0])
+                    orientations = sorted({str(p["orientation"]) for p in pg_sizes})
+                    if len(orientations) > 1:
+                        format_page_po["orientations_detectees"] = orientations
+                    if len(pg_sizes) > 1:
+                        format_page_po["sections_inspectees"] = len(pg_sizes)
+
+            comments_root = _parse_xml_from_zip(zf, "word/comments.xml", xml_errors, total_budget)
+            commentaires: list[dict[str, str]] = []
+            if comments_root is not None:
+                for com in comments_root.findall(f".//{{{_W_NS}}}comment"):
+                    commentaires.append(
                         {
-                            "largeur_po": w_po,
-                            "hauteur_po": h_po,
-                            "us_letter": est_letter,
-                            "orientation": orientation,
+                            "auteur": com.attrib.get(f"{{{_W_NS}}}author", ""),
+                            "date": com.attrib.get(f"{{{_W_NS}}}date", ""),
+                            "extrait": _truncate("".join(com.itertext()).strip()),
                         }
                     )
-            if pg_sizes:
-                non_letter = [p for p in pg_sizes if not p["us_letter"]]
-                format_page_po = dict(non_letter[0] if non_letter else pg_sizes[0])
-                orientations = sorted({str(p["orientation"]) for p in pg_sizes})
-                if len(orientations) > 1:
-                    format_page_po["orientations_detectees"] = orientations
-                if len(pg_sizes) > 1:
-                    format_page_po["sections_inspectees"] = len(pg_sizes)
 
-        comments_root = _parse_xml_from_zip(zf, "word/comments.xml")
-        commentaires: list[dict[str, str]] = []
-        if comments_root is not None:
-            for com in comments_root.findall(f".//{{{_W_NS}}}comment"):
-                commentaires.append(
-                    {
-                        "auteur": com.attrib.get(f"{{{_W_NS}}}author", ""),
-                        "date": com.attrib.get(f"{{{_W_NS}}}date", ""),
-                        "extrait": _truncate("".join(com.itertext()).strip()),
-                    }
-                )
-
-        insertions = 0
-        suppressions = 0
-        rev_authors: set[str] = set()
-        for member in zf.namelist():
-            if member == "word/document.xml" or (
-                (member.startswith("word/header") or member.startswith("word/footer"))
-                and member.endswith(".xml")
-            ):
-                root = doc_root if member == "word/document.xml" else _parse_xml_from_zip(zf, member)
-                if root is None:
-                    continue
+            insertions = 0
+            suppressions = 0
+            rev_authors: set[str] = set()
+            rev_roots: list[ET.Element] = []
+            if doc_root is not None:
+                rev_roots.append(doc_root)
+            for m, r_ext in extra_roots_map.items():
+                if (m.startswith("word/header") or m.startswith("word/footer")) and m.endswith(".xml"):
+                    rev_roots.append(r_ext)
+            for root in rev_roots:
                 for tag_local in ("ins", "del"):
                     for node in root.findall(f".//{{{_W_NS}}}{tag_local}"):
                         if tag_local == "ins":
@@ -304,10 +395,16 @@ def _extract_docx_data(path: Path) -> dict[str, object]:
                         if auth:
                             rev_authors.add(auth)
 
+            corps_illisible = doc_root is None
+    except _ZipLimitExceeded as exc:
+        return {"statut": "erreur", "erreur": str(exc)}
+
     return {
         "statut": "ok",
         "format": "docx",
         "details": {
+            "corps_illisible": corps_illisible,
+            "membres_xml_invalides": xml_errors,
             "pages_declarees": pages_declarees,
             "mots_declares": mots_declares,
             "polices_detectees": sorted(polices),
@@ -318,6 +415,11 @@ def _extract_docx_data(path: Path) -> dict[str, object]:
             "interlignes_pt": sorted(interlignes_pt),
             "nombre_commentaires": len(commentaires),
             "commentaires_apercu": commentaires[:10],
+            "texte_masque": {
+                "occurrences": vanish_occurrences,
+                "balises": sorted(vanish_tags),
+                "extraits": vanish_excerpts,
+            },
             "marques_revision": {
                 "insertions": insertions,
                 "suppressions": suppressions,
@@ -584,6 +686,47 @@ def controler_fichier(
 
     max_pages = seuils.get("max_pages")
     if fmt == "docx":
+        corps_illisible = bool(details.get("corps_illisible"))
+        membres_inv = list(details.get("membres_xml_invalides", []))  # type: ignore[arg-type]
+        if corps_illisible or membres_inv:
+            constats.append(
+                {
+                    "controle": "integrite_ooxml",
+                    "statut": "A_VERIFIER",
+                    "observe": {
+                        "corps_illisible": corps_illisible,
+                        "membres_xml_invalides": membres_inv,
+                    },
+                    "attendu": "XML OOXML sain (sans membre illisible ou entités récursives)",
+                }
+            )
+            _add_action(
+                "CORPS_XML_ILLISIBLE",
+                "CRITIQUE",
+                "Microsoft Word / Inspecteur de document",
+                "Ouvrir, réparer et réenregistrer le .docx : un flux XML requis n'a pas pu être contrôlé",
+                f"Corps illisible={corps_illisible} ; membres XML invalides : {', '.join(membres_inv) or 'word/document.xml'}.",
+            )
+
+        texte_masque = dict(details.get("texte_masque", {}))  # type: ignore[arg-type]
+        nb_masque = int(texte_masque.get("occurrences", 0))  # type: ignore[arg-type]
+        if nb_masque > 0:
+            constats.append(
+                {
+                    "controle": "texte_masque",
+                    "statut": "NON_CONFORME",
+                    "observe": texte_masque,
+                    "attendu": "0 occurrence de texte masqué (w:vanish / w:specVanish / w:webHidden)",
+                }
+            )
+            _add_action(
+                "SUPPRIMER_TEXTE_MASQUE",
+                "CRITIQUE",
+                "Microsoft Word / Inspecteur de document",
+                f"Supprimer les {nb_masque} occurrence(s) de texte masqué avant toute exportation",
+                f"Balises détectées : {', '.join(texte_masque.get('balises', []))}.",
+            )
+
         pages = details.get("pages_declarees")
         if max_pages is not None:
             if pages is None:
@@ -976,8 +1119,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(_format_texte(resultats), end="")
 
-    has_error = any(r.get("statut") != "ok" for r in resultats)
-    return 1 if has_error else 0
+    if any(r.get("statut") != "ok" for r in resultats):
+        return 2
+    if any(r.get("statut_conformite") in ("NON_CONFORME", "A_VERIFIER") for r in resultats):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

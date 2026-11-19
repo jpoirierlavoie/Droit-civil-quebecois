@@ -52,15 +52,35 @@ def _lundi_precedant_25_mai(annee: int) -> date:
     return mai25 - timedelta(days=recul)
 
 
+_REGIME_ALIASES: dict[str, Literal["cpc", "prescription", "li"]] = {
+    "cpc": "cpc",
+    "qc_cpc": "cpc",
+    "prescription": "prescription",
+    "qc_prescription": "prescription",
+    "li": "li",
+    "qc_li": "li",
+}
+
+
+def _normaliser_regime(regime: str) -> Literal["cpc", "prescription", "li"]:
+    norm = _REGIME_ALIASES.get(regime)
+    if norm is None:
+        raise ValueError(
+            f"Régime invalide : {regime!r} (attendu 'cpc', 'prescription', 'li', 'qc_cpc', 'qc_prescription' ou 'qc_li')."
+        )
+    return norm
+
+
 def jours_feries_quebec(
     annee: int,
     fetes_additionnelles: Iterable[date] = (),
+    inclure_feries_cpc: bool = True,
 ) -> dict[date, str]:
     """Retourne la table des jours fériés légaux au Québec pour une année civile.
 
-    Fondements : art. 82 al. 1 C.p.c. et art. 61 (23°) de la Loi d'interprétation
-    (RLRQ, c. I-16). Le 30 septembre (férié fédéral), le 24 décembre et le 31 décembre
-    n'en font pas partie par défaut.
+    Fondements : art. 61 (23°) de la Loi d'interprétation (RLRQ, c. I-16) et, lorsque
+    `inclure_feries_cpc=True`, art. 82 al. 1 C.p.c. (2 janvier et 26 décembre). Le
+    30 septembre (férié fédéral), le 24 décembre et le 31 décembre n'en font pas partie.
     """
     paques = _paques_gregorienne(annee)
     juillet_1 = date(annee, 7, 1)
@@ -68,7 +88,6 @@ def jours_feries_quebec(
 
     feries: dict[date, str] = {
         date(annee, 1, 1): "1er janvier — Jour de l'an (art. 61 (23°) b) I-16)",
-        date(annee, 1, 2): "2 janvier — considéré jour férié en procédure civile (art. 82 al. 1 C.p.c.)",
         paques - timedelta(days=2): "Vendredi saint (art. 61 (23°) c) I-16)",
         paques + timedelta(days=1): "Lundi de Pâques (art. 61 (23°) d) I-16)",
         _lundi_precedant_25_mai(annee): "Lundi précédant le 25 mai — Journée nationale des patriotes (art. 61 (23°) i) I-16)",
@@ -81,8 +100,14 @@ def jours_feries_quebec(
         _nieme_lundi_du_mois(annee, 9, 1): "1er lundi de septembre — Fête du Travail (art. 61 (23°) g) I-16)",
         _nieme_lundi_du_mois(annee, 10, 2): "2e lundi d'octobre — Action de grâces (art. 61 (23°) g.1) I-16)",
         date(annee, 12, 25): "25 décembre — Noël (art. 61 (23°) h) I-16)",
-        date(annee, 12, 26): "26 décembre — considéré jour férié en procédure civile (art. 82 al. 1 C.p.c.)",
     }
+    if inclure_feries_cpc:
+        feries[date(annee, 1, 2)] = (
+            "2 janvier — considéré jour férié en procédure civile (art. 82 al. 1 C.p.c.)"
+        )
+        feries[date(annee, 12, 26)] = (
+            "26 décembre — considéré jour férié en procédure civile (art. 82 al. 1 C.p.c.)"
+        )
     for extra in fetes_additionnelles:
         if extra.year == annee and extra not in feries:
             feries[extra] = "Fête ou fermeture additionnelle fournie (proclamation/directive)"
@@ -92,28 +117,42 @@ def jours_feries_quebec(
 def est_jour_ouvrable(
     jour: date,
     fetes_additionnelles: Iterable[date] = (),
+    inclure_feries_cpc: bool = True,
+    reporter_samedi: bool = True,
 ) -> tuple[bool, str | None]:
-    """Indique si une date est un jour ouvrable aux fins de l'art. 83 al. 3 C.p.c."""
+    """Indique si une date constitue un jour ouvrable / non reporté selon le régime applicable."""
     extras = tuple(fetes_additionnelles)
-    feries = jours_feries_quebec(jour.year, extras)
+    feries = jours_feries_quebec(jour.year, extras, inclure_feries_cpc=inclure_feries_cpc)
     if jour in feries:
         return False, feries[jour]
-    if jour.weekday() == 5:
-        return False, "Samedi (art. 82 al. 1 et 83 al. 3 C.p.c.)"
+    if reporter_samedi and jour.weekday() == 5:
+        motif_samedi = (
+            "Samedi (art. 82 al. 1 et 83 al. 3 C.p.c.)"
+            if inclure_feries_cpc
+            else "Samedi reporté (art. 2879 al. 2 C.c.Q. / art. 52 al. 2 I-16)"
+        )
+        return False, motif_samedi
     if jour.weekday() == 6:
-        return False, "Dimanche — jour férié (art. 61 (23°) a) I-16 et art. 83 al. 3 C.p.c.)"
+        return False, "Dimanche — jour férié (art. 61 (23°) a) I-16)"
     return True, None
 
 
 def _prochain_jour_ouvrable(
     jour: date,
     fetes_additionnelles: Iterable[date] = (),
+    inclure_feries_cpc: bool = True,
+    reporter_samedi: bool = True,
 ) -> tuple[date, list[dict[str, str]]]:
     extras = tuple(fetes_additionnelles)
     courant = jour
     skips: list[dict[str, str]] = []
     while True:
-        ouvrable, motif = est_jour_ouvrable(courant, extras)
+        ouvrable, motif = est_jour_ouvrable(
+            courant,
+            extras,
+            inclure_feries_cpc=inclure_feries_cpc,
+            reporter_samedi=reporter_samedi,
+        )
         if ouvrable:
             return courant, skips
         skips.append({"date": courant.isoformat(), "motif": motif or "Jour non ouvrable"})
@@ -123,12 +162,19 @@ def _prochain_jour_ouvrable(
 def _precedent_jour_ouvrable(
     jour: date,
     fetes_additionnelles: Iterable[date] = (),
+    inclure_feries_cpc: bool = True,
+    reporter_samedi: bool = True,
 ) -> tuple[date, list[dict[str, str]]]:
     extras = tuple(fetes_additionnelles)
     courant = jour
     skips: list[dict[str, str]] = []
     while True:
-        ouvrable, motif = est_jour_ouvrable(courant, extras)
+        ouvrable, motif = est_jour_ouvrable(
+            courant,
+            extras,
+            inclure_feries_cpc=inclure_feries_cpc,
+            reporter_samedi=reporter_samedi,
+        )
         if ouvrable:
             return courant, skips
         skips.append({"date": courant.isoformat(), "motif": motif or "Jour non ouvrable"})
@@ -219,19 +265,25 @@ def _avertissement_date_sensible(d: date) -> str | None:
 def calculer_delai(
     ancrage: date,
     valeur: int,
-    unite: Literal["jours", "mois"] = "jours",
+    unite: Literal["jours", "mois", "ans"] = "jours",
     sens: Literal["avant", "rebours"] = "avant",
     mode_notification: Literal["ordinaire", "technologique"] = "ordinaire",
     heure_notification: time | None = None,
     fetes_additionnelles: Iterable[date] = (),
+    regime: str = "cpc",
+    reporter_samedi: bool | None = None,
 ) -> dict[str, Any]:
-    """Calcule une échéance procédurale selon les art. 82, 83 et 111 al. 2 C.p.c."""
+    """Calcule une échéance selon le régime (`cpc`, `prescription` art. 2879 al. 2 C.c.Q., ou `li` art. 52 L.I.)."""
     if valeur < 0:
         raise ValueError("La valeur du délai doit être positive ou nulle.")
-    if unite not in ("jours", "mois"):
-        raise ValueError(f"Unité invalide : {unite!r} (attendu 'jours' ou 'mois').")
+    if unite not in ("jours", "mois", "ans"):
+        raise ValueError(f"Unité invalide : {unite!r} (attendu 'jours', 'mois' ou 'ans').")
     if sens not in ("avant", "rebours"):
         raise ValueError(f"Sens invalide : {sens!r} (attendu 'avant' ou 'rebours').")
+
+    reg = _normaliser_regime(regime)
+    inclure_feries_cpc = reg == "cpc"
+    eff_reporter_samedi = reporter_samedi if reporter_samedi is not None else (reg in ("cpc", "prescription"))
 
     extras = tuple(fetes_additionnelles)
     avertissements: list[str] = []
@@ -253,15 +305,32 @@ def calculer_delai(
     quantieme_ajuste = False
     if unite == "jours":
         echeance_brute = ancrage_effectif + timedelta(days=delta)
-    else:
+    elif unite == "mois":
         echeance_brute, quantieme_ajuste = _ajouter_mois(ancrage_effectif, delta)
+    else:
+        echeance_brute, quantieme_ajuste = _ajouter_mois(ancrage_effectif, delta * 12)
 
     if sens == "avant":
-        echeance, reports = _prochain_jour_ouvrable(echeance_brute, extras)
+        echeance, reports = _prochain_jour_ouvrable(
+            echeance_brute,
+            extras,
+            inclure_feries_cpc=inclure_feries_cpc,
+            reporter_samedi=eff_reporter_samedi,
+        )
         echeance_report_suivant = echeance
     else:
-        echeance, reports = _precedent_jour_ouvrable(echeance_brute, extras)
-        echeance_report_suivant, _ = _prochain_jour_ouvrable(echeance_brute, extras)
+        echeance, reports = _precedent_jour_ouvrable(
+            echeance_brute,
+            extras,
+            inclure_feries_cpc=inclure_feries_cpc,
+            reporter_samedi=eff_reporter_samedi,
+        )
+        echeance_report_suivant, _ = _prochain_jour_ouvrable(
+            echeance_brute,
+            extras,
+            inclure_feries_cpc=inclure_feries_cpc,
+            reporter_samedi=eff_reporter_samedi,
+        )
         if reports:
             avertissements.append(
                 f"Calcul à rebours (« au moins {valeur} {unite} avant ») : l'échéance brute "
@@ -271,31 +340,72 @@ def calculer_delai(
             )
 
     if quantieme_ajuste:
+        base_quantieme = "art. 83 al. 2 C.p.c." if reg == "cpc" else "computation civile par quantième"
         avertissements.append(
-            f"Ajustement de quantième (art. 83 al. 2 C.p.c.) : le mois d'échéance ne comporte "
+            f"Ajustement de quantième ({base_quantieme}) : le mois d'échéance ne comporte "
             f"pas de quantième {ancrage_effectif.day}, l'échéance brute est ramenée au dernier "
             f"jour du mois ({echeance_brute.isoformat()})."
         )
 
-    non_siege = _dans_periode_non_siege(echeance)
-    if non_siege:
+    if reg == "cpc":
+        non_siege = _dans_periode_non_siege(echeance)
+        if non_siege:
+            avertissements.append(
+                f"Période de non-siège ({non_siege}, art. 82 al. 2 C.p.c.) : les délais continuent "
+                "de courir normalement et ne sont pas suspendus."
+            )
+
+        for candidat in {echeance_brute, echeance}:
+            alerte = _avertissement_date_sensible(candidat)
+            if alerte:
+                avertissements.append(alerte)
+
         avertissements.append(
-            f"Période de non-siège ({non_siege}, art. 82 al. 2 C.p.c.) : les délais continuent "
-            "de courir normalement et ne sont pas suspendus."
+            "Rappel de dépôt (art. 107 al. 4–5 C.p.c.) : le délai expire à 24 h 00 (art. 83 al. 3), "
+            "mais un acte sur support technologique transmis après les heures d'ouverture du greffe "
+            "est réputé déposé à la prochaine ouverture et doit être accompagné du paiement requis."
         )
-
-    for candidat in {echeance_brute, echeance}:
-        alerte = _avertissement_date_sensible(candidat)
-        if alerte:
-            avertissements.append(alerte)
-
-    avertissements.append(
-        "Rappel de dépôt (art. 107 al. 4–5 C.p.c.) : le délai expire à 24 h 00 (art. 83 al. 3), "
-        "mais un acte sur support technologique transmis après les heures d'ouverture du greffe "
-        "est réputé déposé à la prochaine ouverture et doit être accompagné du paiement requis."
-    )
+        fondements = [
+            "art. 82 C.p.c.",
+            "art. 83 C.p.c.",
+            "art. 107 al. 4–5 C.p.c.",
+            "art. 111 al. 2 C.p.c.",
+            "art. 61 (23°) Loi d'interprétation (RLRQ, c. I-16)",
+        ]
+    elif reg == "prescription":
+        avertissements.append(
+            "Régime de prescription extinctive (art. 2879 al. 2 C.c.Q.) : les 2 janvier et "
+            "26 décembre ne sont pas fériés hors C.p.c.; le samedi est reporté au premier jour "
+            "ouvrable suivant lorsque la computation le prévoit."
+        )
+        fondements = [
+            "art. 2879 al. 2 C.c.Q.",
+            "art. 52 al. 1 Loi d'interprétation (RLRQ, c. I-16)",
+            "art. 61 (23°) Loi d'interprétation (RLRQ, c. I-16)",
+        ]
+    else:
+        if eff_reporter_samedi:
+            avertissements.append(
+                "Régime Loi d'interprétation (art. 52 al. 2 L.I.) : report du samedi activé "
+                "uniquement aux fins prévues à l'al. 2 (inscription au registre de la publicité des droits)."
+            )
+            fondements = [
+                "art. 52 al. 1–2 Loi d'interprétation (RLRQ, c. I-16)",
+                "art. 61 (23°) Loi d'interprétation (RLRQ, c. I-16)",
+            ]
+        else:
+            avertissements.append(
+                "Régime Loi d'interprétation (art. 52 al. 1 L.I.) : seuls les jours fériés de l'art. 61 "
+                "(23°) L.I. sont reportés; le samedi n'est pas férié et n'est pas reporté par défaut."
+            )
+            fondements = [
+                "art. 52 al. 1 Loi d'interprétation (RLRQ, c. I-16)",
+                "art. 61 (23°) Loi d'interprétation (RLRQ, c. I-16)",
+            ]
 
     return {
+        "regime": reg,
+        "reporter_samedi": eff_reporter_samedi,
         "ancrage_initial": ancrage.isoformat(),
         "ancrage_effectif": ancrage_effectif.isoformat(),
         "mode_notification": mode_notification,
@@ -310,13 +420,7 @@ def calculer_delai(
         "reportee": bool(reports),
         "reports": reports,
         "avertissements": avertissements,
-        "fondements": [
-            "art. 82 C.p.c.",
-            "art. 83 C.p.c.",
-            "art. 107 al. 4–5 C.p.c.",
-            "art. 111 al. 2 C.p.c.",
-            "art. 61 (23°) Loi d'interprétation (RLRQ, c. I-16)",
-        ],
+        "fondements": fondements,
     }
 
 
@@ -343,6 +447,7 @@ def _parse_heure(val: str) -> time:
 
 def _format_texte(res: dict[str, Any]) -> str:
     lignes = [
+        f"Régime            : {res['regime']} (report samedi={'oui' if res['reporter_samedi'] else 'non'})",
         f"Ancrage initial   : {res['ancrage_initial']}",
         f"Ancrage effectif  : {res['ancrage_effectif']}",
         f"Délai             : {res['valeur']} {res['unite']} ({'à rebours' if res['sens'] == 'rebours' else 'en avant'})",
@@ -371,6 +476,19 @@ def main(argv: list[str] | None = None) -> int:
     groupe = parser.add_mutually_exclusive_group(required=True)
     groupe.add_argument("--jours", type=int, help="Nombre de jours.")
     groupe.add_argument("--mois", type=int, help="Nombre de mois.")
+    groupe.add_argument("--ans", type=int, help="Nombre d'années.")
+    parser.add_argument(
+        "--regime",
+        choices=["cpc", "prescription", "li", "qc_cpc", "qc_prescription", "qc_li"],
+        default="cpc",
+        help="Régime de computation (défaut : cpc ; prescription = art. 2879 al. 2 C.c.Q. ; li = art. 52 L.I.).",
+    )
+    parser.add_argument(
+        "--reporter-samedi",
+        action="store_true",
+        default=None,
+        help="Activer explicitement le report du samedi (p. ex. art. 52 al. 2 L.I. en régime li).",
+    )
     parser.add_argument(
         "--a-rebours",
         action="store_true",
@@ -397,8 +515,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="Afficher le résultat en JSON.")
     args = parser.parse_args(argv)
 
-    unite: Literal["jours", "mois"] = "jours" if args.jours is not None else "mois"
-    valeur = args.jours if args.jours is not None else args.mois
+    if args.jours is not None:
+        unite: Literal["jours", "mois", "ans"] = "jours"
+        valeur = args.jours
+    elif args.mois is not None:
+        unite = "mois"
+        valeur = args.mois
+    else:
+        unite = "ans"
+        valeur = args.ans
     try:
         res = calculer_delai(
             ancrage=args.ancrage,
@@ -408,6 +533,8 @@ def main(argv: list[str] | None = None) -> int:
             mode_notification="technologique" if args.technologique else "ordinaire",
             heure_notification=args.heure,
             fetes_additionnelles=args.fete_additionnelle,
+            regime=args.regime,
+            reporter_samedi=args.reporter_samedi,
         )
     except ValueError as exc:
         print(f"Erreur : {exc}", file=sys.stderr)

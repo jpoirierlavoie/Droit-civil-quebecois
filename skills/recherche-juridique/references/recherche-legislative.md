@@ -20,7 +20,7 @@ Encadre l'interrogation du corpus législatif et réglementaire québécois et f
 
 ## Séquence
 
-1. `lois.find_relevant(query)` ou `lois.list_laws(fonction='loi'|'regles-procedure'|'tarif'|'reglement'|'directive'|'orientation', subject=..., forum=...)` si le texte exact est inconnu (requête en concepts abstraits, zéro nom ni fait identifiant).
+1. Appeler **en parallèle** `lois.find_relevant(query)` et `lois.search_text(query)` — `find_relevant` pouvant omettre certains textes ciblés que `search_text` remonte d'emblée (p. ex. `490 C.p.c.`, `1726–1731 C.c.Q.`) —, ou `lois.list_laws(fonction='loi'|'regles-procedure'|'tarif'|'reglement'|'directive'|'orientation', subject=..., forum=...)` si le texte exact est inconnu (requête en concepts abstraits, zéro nom ni fait identifiant).
 2. `lois.get_structure(law)` (ou `lois.get_division(..., include_text=false)`) pour repérer les numéros d'articles ou paragraphes (`unit='paragraphe'`) sans charger tout un chapitre.
 3. `lois.get_articles(law, numbers=[...])` en **un seul appel groupé** pour tous les articles d'une même loi, plutôt que `N` appels séquentiels `get_article`.
 4. `lois.related_laws(law, rel_type=...)` pour vérifier les règlements d'application (`c-25.01-r.0.2.1`, `c-25.01-r.9`, `c-25.01-r.0.2.01`, `t-16-r.10`), la préséance entre directives (`rel_type='preseance-sur'`) et l'interprétation AMF (`rel_type='interprete'`).
@@ -34,6 +34,6 @@ Encadre l'interrogation du corpus législatif et réglementaire québécois et f
 
 ## Modes d'échec
 
-* **`401`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `lois` :** **Arrêt obligatoire sur le volet législatif.** Nommer le connecteur `lois` et le code/cause retourné, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ou à fournir le texte officiel, et **ne jamais basculer silencieusement sur la mémoire ni sur le web** pour reconstituer un article ou un seuil indexé.
+* **`401`, `403`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `lois` :** Sur un code HTTP **`403`** déclenché par un champ de recherche libre `query` (faux positif du pare-feu applicatif sur guillemets ou opérateurs), reformuler d'abord avec des termes juridiques neutres sans ponctuation ni opérateur, ou interroger directement par `get_structure` / `get_article` ; si le `403` persiste — ou pour tout autre code d'échec —, **arrêt obligatoire sur le volet législatif** : nommer `lois` et la cause, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ou à fournir le texte officiel, et **ne jamais basculer sur la mémoire ni sur le web**.
 * **`hybride_desactive: true` sur `lois.search_text` :** Lorsque le compte titulaire a désactivé la recherche vectorielle hybride (`hybride_permis = 0` dans `acces.poirierlavoie.ca/moi`), `search_text` s'exécute strictement en mode lexical `FTS5` local ; combiner alors synonymes exacts du texte et `find_relevant`.
 * **Contradiction web vs `lois` :** Le texte officiel retourné par `lois` l'emporte sans discussion; signaler la divergence.

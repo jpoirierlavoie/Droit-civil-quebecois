@@ -1,6 +1,6 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Litige civil et commercial québécois : 5 orchestrateurs de phase et 5 services spécialisés (recherche, analyse, rédaction, production, gestion du mandat). Connecteurs « lois », « juris » et « outils ».",
   "contextFileName": [],
   "settings": [

@@ -14,7 +14,7 @@ Encadre la méthode de la boule de neige sur `juris`, le contrôle des citations
 ## Séquence
 
 1. **Filtrer hors ligne :** `juris.parse_citation` écarte les citations mal formées avant d'occuper un lot CanLII.
-2. **Authentifier en lot :** `juris.verify_citations` accepte jusqu'à **25 citations** en un appel (avec `refresh=false` par défaut pour ménager le quota CanLII).
+2. **Authentifier en lot :** `juris.verify_citations` accepte jusqu'à **25 citations** en un appel (avec `refresh=false` par défaut pour ménager le quota CanLII). Transmettre systématiquement `{citation, expected_title, expected_year}` dès qu'un intitulé ou une année figurent au texte (ou en tête de citation neutre) afin de déjouer les combinaisons fabriquées.
 3. **Interpréter les 6 verdicts :**
    * `CONFIRMÉE` : citation exacte; enchaîner sur `juris.get_case` pour lire l'intitulé, la date exacte et les **mots-clés** (source riche d'arrêts de principe et d'articles liés).
    * `DISCORDANTE` : la citation existe mais désigne une autre décision que celle annoncée — **alerte critique d'hallucination IA**, écarter entièrement la source qui l'a produite.
@@ -39,6 +39,6 @@ Au Palier 3, toute décision non lue intégralement en session reste sous le mar
 
 ## Modes d'échec
 
-* **`401`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `juris` :** **Arrêt obligatoire sur la vérification jurisprudentielle.** Nommer le connecteur `juris` et le code/cause retourné, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ; ne jamais inventer un arrêt ni substituer un aperçu web à une lecture intégrale.
+* **`401`, `403`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `juris` :** **Arrêt obligatoire sur la vérification jurisprudentielle** (sur un `403` sur requête libre, reformuler d'abord sans opérateurs ni guillemets ; s'il persiste, s'arrêter). Nommer le connecteur `juris` et le code/cause retourné, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ; ne jamais inventer un arrêt ni substituer un aperçu web à une lecture intégrale.
 * **`[CLEF_ABSENTE]` ou `[CLEF_REFUSEE]` sur `juris` :** L'interrogation de `juris` (y compris la lecture de son index local partagé) exige strictement la clé API CanLII personnelle active du praticien (BYOK). S'arrêter sur la vérification jurisprudentielle et inviter l'avocat à déposer ou renouveler sa clé CanLII dans `acces.poirierlavoie.ca/moi` (ou par en-tête `X-Clef-CanLII`).
 * **Contradiction web vs `juris` :** La fiche et la citation authentifiée sur `juris` l'emportent sans discussion.
