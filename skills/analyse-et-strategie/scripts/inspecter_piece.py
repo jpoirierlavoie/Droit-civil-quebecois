@@ -517,7 +517,10 @@ def _try_optional_pdf_lib(path: Path) -> dict[str, object] | None:
                     acro = resolved_root["/AcroForm"].get_object()
                     has_sig = "/SigFlags" in acro
             except Exception:
-                pass
+                # Certains PDF malformés ou partiellement chiffrés refusent la résolution de /Root ou /AcroForm :
+                # conserver has_acro/has_sig à False sans faire échouer l'inspection pypdf.
+                has_acro = False
+                has_sig = False
             return {
                 "analyseur": "pypdf",
                 "chiffre": False,
