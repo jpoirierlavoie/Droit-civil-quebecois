@@ -322,6 +322,11 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
             )
             if not any("sans heure précisée" in a for a in res_tech_sans_h.get("notes_ancrage", [])):
                 erreurs.append(f"{sid} : mode technologique sans heure doit avertir ({res_tech_sans_h})")
+            res_tech_sec = calcul_mod.calculer_delai(
+                date(2026, 5, 4), 15, "jours", mode_notification="technologique", heure_notification=time(17, 0, 1)
+            )
+            if res_tech_sec.get("heure_notification") != "17:00:01" or res_tech_sec.get("echeance") != "2026-05-20":
+                erreurs.append(f"{sid} : heure 17:00:01 mal formatée ou reportée ({res_tech_sec})")
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 rc_overflow = calcul_mod.main(["9999-12-31", "--jours", "10", "--json"])
             if rc_overflow != 2:
@@ -691,6 +696,13 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                 res_reutil = cotes_mod.verifier_ensemble_cotes([acte_reutil], mode_modifie=True)
                 if "COTE_GELEE_REUTILISEE" not in {a["type"] for a in res_reutil.get("anomalies", [])}:
                     erreurs.append(f"{sid} : réutilisation de cote retirée dans le même acte non détectée ({res_reutil})")
+
+                bord_colon = tmp_dir / "bordereau_colon.md"
+                bord_colon.write_text("P-1 : Contrat\nP-2 : [Retirée]\nP-3 : Facture\n", encoding="utf-8")
+                acte_colon = tmp_dir / "acte_colon.md"
+                acte_colon.write_text("1. Pièce P-1\n2. Pièce P-2 : [Retirée]\n3. Pièce P-3\n", encoding="utf-8")
+                if cotes_mod.main(["--acte", str(acte_colon), "--bordereau", str(bord_colon), "--modifie", "--json"]) != 0:
+                    erreurs.append(f"{sid} : P-2 : [Retirée] avec deux-points non reconnu comme cote gelée")
 
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                     rc_cotes_clean = cotes_mod.main(["--acte", str(acte_ok), "--bordereau", str(bord_ok), "--json"])

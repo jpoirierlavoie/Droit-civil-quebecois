@@ -16,6 +16,10 @@ import sys
 from typing import Any, Iterable, Literal
 
 
+def _format_heure_notif(h: time) -> str:
+    return h.strftime("%H:%M:%S") if h.second else h.strftime("%H:%M")
+
+
 def _configure_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
         reconf = getattr(stream, "reconfigure", None)
@@ -206,7 +210,7 @@ def ajuster_ancrage_technologique(
 
     if apres_17h:
         suivant, _ = _prochain_jour_ouvrable(date_acte + timedelta(days=1), extras)
-        heure_str = heure_acte.strftime("%H:%M") if heure_acte else ""
+        heure_str = _format_heure_notif(heure_acte) if heure_acte else ""
         notes.append(
             f"Notification technologique faite à {heure_str} (après 17 h 00) le "
             f"{date_acte.isoformat()} : réputée faite à 8 h 00 le {suivant.isoformat()} "
@@ -416,7 +420,7 @@ def calculer_delai(
         "ancrage_initial": ancrage.isoformat(),
         "ancrage_effectif": ancrage_effectif.isoformat(),
         "mode_notification": mode_notification,
-        "heure_notification": heure_notification.strftime("%H:%M") if heure_notification else None,
+        "heure_notification": _format_heure_notif(heure_notification) if heure_notification else None,
         "valeur": valeur,
         "unite": unite,
         "sens": sens,

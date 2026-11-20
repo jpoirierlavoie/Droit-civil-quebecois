@@ -53,7 +53,7 @@ _RETRAIT_PATTERNS = (
         re.I,
     ),
     re.compile(
-        r"\b(P|D(?:[A-Za-z]{1,2})?|PI|DI|MP|OP|GC|R|I|A|MC)-(0?[1-9]\d{0,3})([A-Za-z]?)\b\s*\[[^\]]*\b(?:retirée?|withdrawn|annulée?)\b[^\]]*\]",
+        r"\b(P|D(?:[A-Za-z]{1,2})?|PI|DI|MP|OP|GC|R|I|A|MC)-(0?[1-9]\d{0,3})([A-Za-z]?)\b\s*(?:[:—–|-]\s*)?\[[^\]]*\b(?:retirée?|withdrawn|annulée?)\b[^\]]*\]",
         re.I,
     ),
 )

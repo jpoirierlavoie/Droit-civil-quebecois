@@ -12,7 +12,7 @@ Produit des tableaux structurés (Markdown et export `.csv` UTF-8 avec BOM `utf-
 
 * `law="ccq"` : `numbers=["1617", "1618", "1619", "1620"]`
 * `law="cpc"` : `numbers=["54", "339", "340", "341", "342", "343", "344"]`
-* `law="t-16-r.10"` (*Tarif judiciaire en matière civile*) : `lois.get_structure(law="t-16-r.10")` puis `lois.get_articles(...)` en relevant la **date de consolidation** et l'indexation annuelle des droits de greffe!
+* `law="t-16-r.10"` (*Tarif judiciaire en matière civile*, texte plat sans divisions) : appeler directement `lois.get_articles(law="t-16-r.10", from="1", to="25")` (éviter `get_structure` qui est vide) en relevant la **date de consolidation** et l'indexation annuelle des droits de greffe!
 
 ## Obligations
 
