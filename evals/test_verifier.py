@@ -164,9 +164,9 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
-                            "lois": {"httpUrl": verifier.EXPECTED_LEGISLATION_OAUTH_URL},
-                            "juris": {"httpUrl": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
-                            "outils": {"httpUrl": verifier.EXPECTED_OUTILS_URL},
+                            "lois": {"type": "http", "url": verifier.EXPECTED_LEGISLATION_OAUTH_URL},
+                            "juris": {"type": "http", "url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
+                            "outils": {"type": "http", "url": verifier.EXPECTED_OUTILS_URL},
                         },
                     }
                 )
@@ -566,10 +566,28 @@ class VerifierV3Tests(unittest.TestCase):
                 )
                 + "\n",
             )
+            _write_lf(
+                root / "gemini-extension.json",
+                json.dumps(
+                    {
+                        "name": verifier.EXPECTED_PLUGIN_NAME,
+                        "version": "3.1.0",
+                        "contextFileName": [],
+                        "settings": [],
+                        "mcpServers": {
+                            "lois": {"httpUrl": verifier.EXPECTED_LEGISLATION_OAUTH_URL},
+                            "juris": {"type": "http", "url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
+                            "outils": {"type": "http", "url": verifier.EXPECTED_OUTILS_URL},
+                        },
+                    }
+                )
+                + "\n",
+            )
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'headers'" in e for e in errs))
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'eager'" in e for e in errs))
             self.assertTrue(any(".mcp.json" in e for e in errs))
+            self.assertTrue(any("gemini-extension.json" in e and "httpUrl" in e for e in errs))
 
     def test_codex_chatgpt_manifests_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
