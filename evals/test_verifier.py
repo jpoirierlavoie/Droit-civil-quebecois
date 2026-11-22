@@ -74,6 +74,54 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 )
                 + "\n",
             )
+        elif rel == ".codex-plugin/plugin.json":
+            _write_lf(
+                target,
+                json.dumps(
+                    {
+                        "name": verifier.EXPECTED_PLUGIN_NAME,
+                        "version": "3.1.0",
+                        "description": "Plugin v3",
+                        "license": verifier.EXPECTED_LICENSE,
+                        "homepage": verifier.EXPECTED_REPO_URL,
+                        "repository": verifier.EXPECTED_REPO_URL,
+                        "skills": "./skills/",
+                        "interface": {
+                            "displayName": verifier.EXPECTED_DISPLAY_NAME,
+                            "shortDescription": "Litige civil québécois",
+                            "websiteURL": "https://acces.poirierlavoie.ca",
+                            "privacyPolicyURL": "https://acces.poirierlavoie.ca/confidentialite",
+                            "termsOfServiceURL": "https://acces.poirierlavoie.ca/cgu",
+                            "defaultPrompt": ["Test prompt 1"],
+                            "composerIcon": "./assets/logo.svg",
+                            "logo": "./assets/logo.svg",
+                        },
+                    }
+                )
+                + "\n",
+            )
+        elif rel == ".agents/plugins/marketplace.json":
+            _write_lf(
+                target,
+                json.dumps(
+                    {
+                        "name": verifier.EXPECTED_PLUGIN_NAME,
+                        "interface": {"displayName": verifier.EXPECTED_DISPLAY_NAME},
+                        "plugins": [
+                            {
+                                "name": verifier.EXPECTED_PLUGIN_NAME,
+                                "source": {"source": "local", "path": "./"},
+                                "policy": {
+                                    "installation": "AVAILABLE",
+                                    "authentication": "ON_INSTALL",
+                                },
+                                "category": "Productivity",
+                            }
+                        ],
+                    }
+                )
+                + "\n",
+            )
         elif rel == "plugin.json":
             _write_lf(
                 target,
@@ -475,6 +523,8 @@ class VerifierV3Tests(unittest.TestCase):
             root = Path(tmp)
             _build_valid_v3_fixture(root)
             _write_lf(root / ".in_use" / "209", "platform-sync-marker\n")
+            (root / "dist").mkdir(parents=True, exist_ok=True)
+            (root / "dist" / "archive.zip").write_bytes(b"PK\x03\x04\x00\x00")
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertEqual(errs, [])
 
@@ -520,6 +570,33 @@ class VerifierV3Tests(unittest.TestCase):
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'headers'" in e for e in errs))
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'eager'" in e for e in errs))
             self.assertTrue(any(".mcp.json" in e for e in errs))
+
+    def test_codex_chatgpt_manifests_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+
+            cp_path = root / ".codex-plugin" / "plugin.json"
+            cp_data = json.loads(cp_path.read_text(encoding="utf-8"))
+            cp_data["version"] = "3.0.9"
+            cp_data["mcpServers"] = "./.mcp.json"
+            cp_data["requires_local_executor"] = True
+            cp_data["interface"]["shortDescription"] = "x" * 31
+            cp_data["interface"]["defaultPrompt"] = ["p" * 129]
+            _write_lf(cp_path, json.dumps(cp_data, ensure_ascii=False, indent=2) + "\n")
+
+            cm_path = root / ".agents" / "plugins" / "marketplace.json"
+            cm_data = json.loads(cm_path.read_text(encoding="utf-8"))
+            cm_data["plugins"][0]["source"] = {"source": "git", "url": "https://example.com"}
+            _write_lf(cm_path, json.dumps(cm_data, ensure_ascii=False, indent=2) + "\n")
+
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any("versions divergentes" in e for e in errs))
+            self.assertTrue(any("'mcpServers' est interdit" in e for e in errs))
+            self.assertTrue(any("'requires_local_executor' est interdit" in e for e in errs))
+            self.assertTrue(any("interface.shortDescription" in e for e in errs))
+            self.assertTrue(any("interface.defaultPrompt[0]" in e for e in errs))
+            self.assertTrue(any("plugins[0].source" in e for e in errs))
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ Appeler `lois.get_articles(law="cpc", numbers=["99", "101", "105", "107", "111",
 * `.pdf` : couche texte vs numérisation sans texte (`AUCUNE_COUCHE_TEXTE_DETECTEE` → rasteriser/regarder les pages, ne jamais conclure sur page blanche);
 * Images et médias : métadonnées EXIF/conteneur sans déduire la scène ni le son sans perception effective.
 
-**Garde d'angle mort sur clients sans exécution Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** Si `inspecter_piece.py` ne peut pas être exécuté localement, **bloquer tout classement `PUBLIC`** sur un `.docx`, `.xlsx`, `.eml` ou PDF sans texte certain, **divulguer explicitement** que les contrôles automatisés sur octets, XML (commentaires `comments.xml`, révisions `w:ins`/`w:del`, onglets/formules cachés), en-têtes `.eml` (`Bcc`, `X-Unsent`), EXIF/conteneurs et couche texte PDF ont été **omis**, et lister ces vérifications au **bon de travail** manuel de l'avocat.
+**Garde d'angle mort sur clients sans exécution Python (`claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research) :** Si `inspecter_piece.py` ne peut pas être exécuté localement, **bloquer tout classement `PUBLIC`** sur un `.docx`, `.xlsx`, `.eml` ou PDF sans texte certain, **divulguer explicitement** que les contrôles automatisés sur octets, XML (commentaires `comments.xml`, révisions `w:ins`/`w:del`, onglets/formules cachés), en-têtes `.eml` (`Bcc`, `X-Unsent`), EXIF/conteneurs et couche texte PDF ont été **omis**, et lister ces vérifications au **bon de travail** manuel de l'avocat.
 
 ## Recevabilité
 

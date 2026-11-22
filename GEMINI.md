@@ -8,7 +8,7 @@ Directives de développement, architecture multi-dépôts à trois couches et r�
 
 ## 1. Architecture v3.1.0 multi-dépôts et topologie (10 compétences)
 
-`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé :
+`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web/Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé :
 
 ```
              ┌────────────────────────────────────────────────────────┐
@@ -107,7 +107,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 ### Suivi d'état de phase (`etat-dossier/<phase>.md`)
 
-- **Emplacement :** `etat-dossier/<phase>.md` dans le répertoire du dossier client lorsque le disque est inscriptible (Claude Code, Antigravity, Gemini CLI). Sur surfaces sans disque inscriptible (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research), produire directement un **bloc d'état Markdown en ligne** complet à sauvegarder sans prétendre avoir écrit sur disque.
+- **Emplacement :** `etat-dossier/<phase>.md` dans le répertoire du dossier client lorsque le disque est inscriptible (Claude Code, Codex, Antigravity, Gemini CLI). Sur surfaces sans disque inscriptible (`claude.ai`, ChatGPT, Gemini App `/mcp/oauth`, Deep Research), produire directement un **bloc d'état Markdown en ligne** complet à sauvegarder sans prétendre avoir écrit sur disque.
 - **En-tête :** `phase`, `branche`, `date`, `palier`, `dernière mise à jour`.
 - **Corps :** tableau `| Étape | Statut (À faire / En cours / Franchie / Bloquée) | Livrable | Porte | Notes |`.
 - **Règles :** relu au début de chaque tour de la phase ; jamais copié hors du dossier ; faits étiquetés `Établi`, `Rapporté`, `Déduit` ou `[À CONFIRMER]`.
@@ -135,10 +135,10 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 ### Règles transversales de fond (`v3.1.0`)
 
-- **Auto-connexion OAuth 2.1 par défaut, BYOK CanLII et zéro-log :** les 3 manifestes (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) pointent par défaut vers `/mcp/oauth` sans secret ni variable statique (flux OAuth 2.1 PKCE `S256` + inscription dynamique RFC 7591 sans état `/oauth/register` via `acces.poirierlavoie.ca`), tandis que `/mcp` (`Bearer` / `?key=`, refus uniforme `404`) demeure actif pour les CLI/CI sans navigateur et l'API Gemini Deep Research. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
+- **Auto-connexion OAuth 2.1 par défaut, BYOK CanLII et zéro-log :** les 3 manifestes MCP (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) pointent par défaut vers `/mcp/oauth` sans secret ni variable statique (flux OAuth 2.1 PKCE `S256` + inscription dynamique RFC 7591 sans état `/oauth/register` via `acces.poirierlavoie.ca`), tandis que `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` afin d'éviter le badge *Desktop only* sur ChatGPT Web, et que `/mcp` (`Bearer` / `?key=`, refus uniforme `404`) demeure actif pour les CLI/CI sans navigateur, l'API OpenAI Responses et l'API Gemini Deep Research *(ChatGPT Deep Research exclu)*. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
 - **Corpus PDF Vague 1 (`lois`, `110` textes) :** inclut les directives QCCS/QCCQ (`fonction='directive'`, `unit='paragraphe'`, `par.`/`dir.`, `fr`-only ; `QCCA` absent de la Vague 1) et les règlements/orientations AMF (`v-1.1-r.*`, `amf-ig-*`, `fonction='orientation'`), reliés par `rel_type='preseance-sur'|'interprete'` et `articles.links` (`kind='annexe'`, `ps:*`).
 - **Aucune décharge statutaire figée :** privilégier les vecteurs `lois.get_articles`, paires confondables et silences ; ne jamais copier le texte intégral d'articles ni coder de seuils réglementaires en dur dans les scripts.
-- **Production et dégradation nuage (`production-et-conformite` & `analyse-et-strategie`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis. Lorsque les scripts `.py` locaux (`controler_document.py`, `verifier_cotes.py`, `inspecter_piece.py`) ne peuvent pas s'exécuter (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research), **divulguer explicitement** que les contrôles octets/XML/PDF/cotes ont été omis et les inscrire en tête du **bon de travail** manuel.
+- **Production et dégradation nuage (`production-et-conformite` & `analyse-et-strategie`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis. Lorsque les scripts `.py` locaux (`controler_document.py`, `verifier_cotes.py`, `inspecter_piece.py`) ne peuvent pas s'exécuter (`claude.ai`, ChatGPT sans Python local, Gemini App `/mcp/oauth`, Deep Research), **divulguer explicitement** que les contrôles octets/XML/PDF/cotes ont été omis et les inscrire en tête du **bon de travail** manuel.
 - **Précédents internes (`recherche-precedents-internes.md`) :** uniquement fournis par l'avocat, dé-identifiés obligatoirement, savoir-faire et structure uniquement, alerte de conflit, actes publics/jugements classés au-dessus des notes internes.
 - **Honnêteté perceptuelle (`preuve-directe.md`) :** n'analyser un média (audio, vidéo, image) que s'il a été effectivement perçu ; sinon exiger transcription ou captures et étiqueter « support secondaire » ; transcription IA = aide de travail uniquement ; empreinte SHA-256 + métadonnées à la réception (`inspecter_piece.py --journal`, ou bloc en ligne `[SHA-256 : À CALCULER LOCALEMENT]` en nuage).
 
@@ -151,7 +151,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 | # | Axe d'impact | Éléments à inspecter |
 |---|---|---|
 | 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `evals/test_verifier.py`, `verifier.py`, `verifier_tout.py` |
-| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0` + autorisation de pratique professionnelle), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
+| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0` + autorisation de pratique professionnelle), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
 | 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP** | `src/site.ts` / `site.i18n.ts` / `server-card` / `/.well-known/oauth-protected-resource/mcp/oauth` dans `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils` et `MCP-Acces` |
 | 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Socle`**, **`MCP-Acces`**, **`MCP-Legislation`**, **`MCP-Jurisprudence`** et **`MCP-Outils`** (identité `mcp-identite`, BYOK, OAuth 2.1 `/mcp/oauth`, 32 outils, synchronisation Antigravity / Gemini CLI) |
 
@@ -162,8 +162,8 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
 1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE`.
-2. **Parité exacte des manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `CC-BY-NC-SA-4.0` assortie de l'Autorisation complémentaire de pratique professionnelle du droit (`LICENSE`), semver identique partout (`3.1.0`), `"contextFileName": []` et `"settings": []` dans `gemini-extension.json`.
-3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 32 outils inchangés, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity).
+2. **Parité exacte des manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `CC-BY-NC-SA-4.0` assortie de l'Autorisation complémentaire de pratique professionnelle du droit (`LICENSE`), semver identique partout (`3.1.0`, dont `.codex-plugin/plugin.json` avec `shortDescription <= 30` car., `defaultPrompt <= 128` car., et `.agents/plugins/marketplace.json`), `"contextFileName": []` et `"settings": []` dans `gemini-extension.json`.
+3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 32 outils inchangés, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity, 55 OpenAI `plugin:skill`) ; `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop.
 4. **Budgets et structure des compétences (`skills/`) :**
    - Descriptions YAML : `<= 450` car. (phases), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale du greffon `<= 6 000` car.**, incluant `En anglais` et `Ne pas utiliser pour`, sans `<`/`>`.
    - `SKILL.md` : corps `<= 2 200` mots et `<= 16 384` octets (`16 KB`), ouverture par `# `, parité SHA-256 du `SAFETY-KERNEL` v3 (règle 2 `acces.poirierlavoie.ca/moi` + `403`, règle 5 `Perception et précédents` + `donnée brute`) sur les 10 `SKILL.md`, correspondance 1:1 avec `references/*.md` et `scripts/*.py`.
@@ -194,4 +194,7 @@ python verifier_tout.py --mode mock
 # 4. Déploiement local Antigravity / Gemini CLI
 python scripts/synchroniser_plugin_gemini.py --apply
 python scripts/regenerer_cache_mcp.py --apply
+
+# 5. Empaquetage universel ChatGPT (Web + Desktop)
+python scripts/empaqueter_plugin_chatgpt.py --apply
 ```

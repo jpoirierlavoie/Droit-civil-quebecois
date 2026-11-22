@@ -1,0 +1,20 @@
+{
+  "name": "droit-civil-quebecois",
+  "interface": {
+    "displayName": "Droit civil québécois"
+  },
+  "plugins": [
+    {
+      "name": "droit-civil-quebecois",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
