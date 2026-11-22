@@ -2158,18 +2158,20 @@ def run_tier_1_tests(
     manifest_rel_paths = [
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
+        ".codex-plugin/plugin.json",
+        ".agents/plugins/marketplace.json",
         ".mcp.json",
         "plugin.json",
         "mcp_config.json",
         "gemini-extension.json",
     ]
 
-    # T1.1.1 : Présence des 6 manifestes
+    # T1.1.1 : Présence des 8 manifestes
     missing = [p for p in manifest_rel_paths if not (repo_root / p).is_file()]
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.1.1",
-        "Présence des 6 fichiers manifestes",
+        "Présence des 8 fichiers manifestes",
         "all",
         len(missing) == 0,
         elapsed,
@@ -2223,7 +2225,13 @@ def run_tier_1_tests(
     # T1.1.4 : Parité semver 3.1.0
     t0 = time.perf_counter()
     semver_errs = []
-    for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "plugin.json", "gemini-extension.json"):
+    for rel in (
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
+        ".codex-plugin/plugin.json",
+        "plugin.json",
+        "gemini-extension.json",
+    ):
         data = parsed_manifests.get(rel)
         if isinstance(data, dict):
             v = data.get("version")
@@ -2322,6 +2330,55 @@ def run_tier_1_tests(
         len(g_errs) == 0,
         elapsed,
         "; ".join(g_errs) if g_errs else None,
+    )
+
+    # T1.1.9 : Conformité des manifestes ChatGPT / Codex (.codex-plugin et .agents/plugins)
+    t0 = time.perf_counter()
+    cp_json = parsed_manifests.get(".codex-plugin/plugin.json", {})
+    cm_json = parsed_manifests.get(".agents/plugins/marketplace.json", {})
+    cx_errs = []
+    if not isinstance(cp_json, dict) or cp_json.get("name") != "droit-civil-quebecois":
+        cx_errs.append(".codex-plugin/plugin.json name invalide")
+    else:
+        if cp_json.get("skills") != "./skills/":
+            cx_errs.append(".codex-plugin/plugin.json skills != './skills/'")
+        if "mcpServers" in cp_json or "requires_local_executor" in cp_json:
+            cx_errs.append(
+                ".codex-plugin/plugin.json ne doit contenir ni mcpServers ni requires_local_executor"
+            )
+        cp_iface = cp_json.get("interface")
+        if not isinstance(cp_iface, dict):
+            cx_errs.append(".codex-plugin/plugin.json interface absent")
+        else:
+            sdesc = cp_iface.get("shortDescription", "")
+            if not isinstance(sdesc, str) or not sdesc.strip() or len(sdesc) > 30:
+                cx_errs.append(".codex-plugin/plugin.json interface.shortDescription invalide (> 30 car.)")
+            dprompts = cp_iface.get("defaultPrompt")
+            if (
+                not isinstance(dprompts, list)
+                or not (1 <= len(dprompts) <= 3)
+                or any(not isinstance(p, str) or not p.strip() or len(p) > 128 for p in dprompts)
+            ):
+                cx_errs.append(".codex-plugin/plugin.json interface.defaultPrompt invalide (1..3, <= 128 car.)")
+    if not isinstance(cm_json, dict) or cm_json.get("name") != "droit-civil-quebecois":
+        cx_errs.append(".agents/plugins/marketplace.json name invalide")
+    else:
+        cm_plugins = cm_json.get("plugins")
+        if (
+            not isinstance(cm_plugins, list)
+            or len(cm_plugins) != 1
+            or not isinstance(cm_plugins[0], dict)
+            or cm_plugins[0].get("source") != {"source": "local", "path": "./"}
+        ):
+            cx_errs.append(".agents/plugins/marketplace.json plugins[0].source != local './'")
+    elapsed = (time.perf_counter() - t0) * 1000
+    add_result(
+        "T1.1.9",
+        "Conformité des manifestes ChatGPT / Codex (.codex-plugin et .agents/plugins)",
+        "all",
+        len(cx_errs) == 0,
+        elapsed,
+        "; ".join(cx_errs) if cx_errs else None,
     )
 
     # --- 1.2 Endpoint Reachability & Handshake ---

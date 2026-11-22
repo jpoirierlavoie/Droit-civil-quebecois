@@ -11,7 +11,7 @@ Charger selon le cas `lois.get_articles` sur :
 
 ## Contrôles automatisés
 
-1. Exécuter `python scripts/controler_document.py <piece_jointe.docx|pdf> --json` (ou `inspecter_piece.py` dans `analyse-et-strategie`) sur toute pièce jointe afin d'exclure commentaires cachés, marques de révision ou métadonnées compromises. *(Sur surface nuage sans Python — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que les contrôles octets/XML/PDF par script ont été omis et les reporter au bon de travail.)*
+1. Exécuter `python scripts/controler_document.py <piece_jointe.docx|pdf> --json` (ou `inspecter_piece.py` dans `analyse-et-strategie`) sur toute pièce jointe afin d'exclure commentaires cachés, marques de révision ou métadonnées compromises. *(Sur surface nuage sans Python — `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que les contrôles octets/XML/PDF par script ont été omis et les reporter au bon de travail.)*
 2. Exécuter `outils.terminologie_scan` sur le texte de la correspondance (vérification FR/EN, `UNDER ALL RESERVES` vs `WITHOUT PREJUDICE`).
 
 ## Contrôles humains

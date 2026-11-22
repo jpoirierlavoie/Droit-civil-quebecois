@@ -38,6 +38,8 @@ ROOT_ALLOWLIST = frozenset(
         ".github/workflows/verify.yml",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
+        ".codex-plugin/plugin.json",
+        ".agents/plugins/marketplace.json",
         "plugin.json",
         "mcp_config.json",
         "gemini-extension.json",
@@ -50,6 +52,7 @@ ROOT_ALLOWLIST = frozenset(
         "GEMINI.md",
         "verifier.py",
         "verifier_tout.py",
+        "scripts/empaqueter_plugin_chatgpt.py",
         "scripts/regenerer_cache_mcp.py",
         "scripts/synchroniser_plugin_gemini.py",
     }
@@ -235,6 +238,8 @@ MAX_PER_LOAD_BYTES = 65536
 MAX_FILES_PER_SKILL = 100
 MAX_PHASE_LEAVES = 3
 MAX_TOOL_COMPOUND_LEN = 64
+CODEX_MAX_SHORT_DESC_CHARS = 30
+CODEX_MAX_DEFAULT_PROMPT_CHARS = 128
 
 RELEASE_MARKERS = ("[FICHE À RÉDIGER]", "[NON VALIDÉ PAR LA PRATIQUE]")
 
@@ -399,7 +404,7 @@ def _iter_repo_files(racine: Path) -> list[str]:
             continue
         rel = path.relative_to(racine).as_posix()
         parts = rel.split("/")
-        if ".git" in parts or "__pycache__" in parts or ".in_use" in parts:
+        if parts[0] == "dist" or ".git" in parts or "__pycache__" in parts or ".in_use" in parts:
             continue
         files.append(rel)
     return files
@@ -701,12 +706,20 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
     # 4. Manifest consistency & 64-char compound identifier invariant
     claude_plugin = _load_json(racine, ".claude-plugin/plugin.json", erreurs)
     marketplace = _load_json(racine, ".claude-plugin/marketplace.json", erreurs)
+    codex_plugin = _load_json(racine, ".codex-plugin/plugin.json", erreurs)
+    codex_marketplace = _load_json(racine, ".agents/plugins/marketplace.json", erreurs)
     agy_plugin = _load_json(racine, "plugin.json", erreurs)
     agy_mcp = _load_json(racine, "mcp_config.json", erreurs)
     gemini_ext = _load_json(racine, "gemini-extension.json", erreurs)
     mcp_json = _load_json(racine, ".mcp.json", erreurs)
 
-    for rel_mcp in (".mcp.json", "mcp_config.json", "gemini-extension.json"):
+    for rel_mcp in (
+        ".mcp.json",
+        "mcp_config.json",
+        "gemini-extension.json",
+        ".codex-plugin/plugin.json",
+        ".agents/plugins/marketplace.json",
+    ):
         brut = decoded.get(rel_mcp)
         if brut is not None and _HEX_SECRET_RE.search(brut):
             erreurs.append(f"{rel_mcp} : secret hexadécimal potentiel détecté")
@@ -948,6 +961,143 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 "gemini-extension.json : 'settings' doit valoir [] (auto-connexion OAuth 2.1 sans secret statique)"
             )
 
+    if codex_plugin is not None:
+        if codex_plugin.get("name") != EXPECTED_PLUGIN_NAME:
+            erreurs.append(
+                f".codex-plugin/plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
+            )
+        ver = codex_plugin.get("version")
+        if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
+            erreurs.append(".codex-plugin/plugin.json : 'version' semver invalide")
+        else:
+            versions[".codex-plugin/plugin.json"] = ver
+        if codex_plugin.get("license") != EXPECTED_LICENSE:
+            erreurs.append(
+                f".codex-plugin/plugin.json : 'license' doit valoir '{EXPECTED_LICENSE}'"
+            )
+        for field in ("homepage", "repository"):
+            if codex_plugin.get(field) != EXPECTED_REPO_URL:
+                erreurs.append(
+                    f".codex-plugin/plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'"
+                )
+        if codex_plugin.get("skills") != "./skills/":
+            erreurs.append(".codex-plugin/plugin.json : 'skills' doit valoir './skills/'")
+        if "mcpServers" in codex_plugin:
+            erreurs.append(
+                ".codex-plugin/plugin.json : 'mcpServers' est interdit "
+                "(provoque le badge 'Desktop only' sur ChatGPT Web)"
+            )
+        if "requires_local_executor" in codex_plugin:
+            erreurs.append(
+                ".codex-plugin/plugin.json : 'requires_local_executor' est interdit "
+                "(provoque le badge 'Desktop only' sur ChatGPT Web)"
+            )
+        iface = codex_plugin.get("interface")
+        if not isinstance(iface, dict):
+            erreurs.append(".codex-plugin/plugin.json : 'interface' doit être un objet JSON")
+        else:
+            if iface.get("displayName") != EXPECTED_DISPLAY_NAME:
+                erreurs.append(
+                    f".codex-plugin/plugin.json : interface.displayName doit valoir '{EXPECTED_DISPLAY_NAME}'"
+                )
+            short_desc = iface.get("shortDescription")
+            if (
+                not isinstance(short_desc, str)
+                or not short_desc.strip()
+                or len(short_desc) > CODEX_MAX_SHORT_DESC_CHARS
+            ):
+                erreurs.append(
+                    f".codex-plugin/plugin.json : interface.shortDescription doit être une chaîne non vide "
+                    f"d'au plus {CODEX_MAX_SHORT_DESC_CHARS} caractères"
+                )
+            for ufield in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+                uval = iface.get(ufield)
+                if not isinstance(uval, str) or not uval.startswith("https://"):
+                    erreurs.append(
+                        f".codex-plugin/plugin.json : interface.{ufield} doit être une URL HTTPS valide"
+                    )
+            dprompts = iface.get("defaultPrompt")
+            if (
+                not isinstance(dprompts, list)
+                or not (1 <= len(dprompts) <= 3)
+                or any(not isinstance(p, str) or not p.strip() for p in dprompts)
+            ):
+                erreurs.append(
+                    ".codex-plugin/plugin.json : interface.defaultPrompt doit contenir entre 1 et 3 "
+                    "chaînes non vides"
+                )
+            else:
+                for pidx, pval in enumerate(dprompts):
+                    if len(pval) > CODEX_MAX_DEFAULT_PROMPT_CHARS:
+                        erreurs.append(
+                            f".codex-plugin/plugin.json : interface.defaultPrompt[{pidx}] dépasse "
+                            f"{CODEX_MAX_DEFAULT_PROMPT_CHARS} caractères ({len(pval)})"
+                        )
+            for afield in ("logo", "composerIcon"):
+                aval = iface.get(afield)
+                if (
+                    not isinstance(aval, str)
+                    or not aval.startswith("./")
+                    or ".." in aval
+                    or "://" in aval
+                ):
+                    erreurs.append(
+                        f".codex-plugin/plugin.json : interface.{afield} doit être un chemin relatif "
+                        "valide commençant par './'"
+                    )
+                elif not (racine / aval[2:]).is_file():
+                    erreurs.append(
+                        f".codex-plugin/plugin.json : fichier interface.{afield} introuvable ({aval})"
+                    )
+
+    if codex_marketplace is not None:
+        if codex_marketplace.get("name") != EXPECTED_PLUGIN_NAME:
+            erreurs.append(
+                f".agents/plugins/marketplace.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
+            )
+        cm_iface = codex_marketplace.get("interface")
+        if not isinstance(cm_iface, dict) or cm_iface.get("displayName") != EXPECTED_DISPLAY_NAME:
+            erreurs.append(
+                f".agents/plugins/marketplace.json : interface.displayName doit valoir '{EXPECTED_DISPLAY_NAME}'"
+            )
+        cm_plugins = codex_marketplace.get("plugins")
+        if not isinstance(cm_plugins, list) or len(cm_plugins) != 1 or not isinstance(
+            cm_plugins[0], dict
+        ):
+            erreurs.append(
+                ".agents/plugins/marketplace.json : 'plugins' doit contenir exactement un objet"
+            )
+        else:
+            cm_entry = cm_plugins[0]
+            if cm_entry.get("name") != EXPECTED_PLUGIN_NAME:
+                erreurs.append(
+                    ".agents/plugins/marketplace.json : plugins[0].name doit valoir "
+                    f"'{EXPECTED_PLUGIN_NAME}'"
+                )
+            if cm_entry.get("source") != {"source": "local", "path": "./"}:
+                erreurs.append(
+                    ".agents/plugins/marketplace.json : plugins[0].source doit valoir "
+                    "{'source': 'local', 'path': './'}"
+                )
+            cm_policy = cm_entry.get("policy")
+            if not isinstance(cm_policy, dict):
+                erreurs.append(
+                    ".agents/plugins/marketplace.json : plugins[0].policy doit être un objet JSON"
+                )
+            else:
+                if cm_policy.get("installation") not in (
+                    "AVAILABLE",
+                    "INSTALLED_BY_DEFAULT",
+                    "NOT_AVAILABLE",
+                ):
+                    erreurs.append(
+                        ".agents/plugins/marketplace.json : plugins[0].policy.installation invalide"
+                    )
+                if cm_policy.get("authentication") not in ("ON_INSTALL", "ON_USE"):
+                    erreurs.append(
+                        ".agents/plugins/marketplace.json : plugins[0].policy.authentication invalide"
+                    )
+
     if len(set(versions.values())) > 1:
         detail = ", ".join(f"{k}={v}" for k, v in sorted(versions.items()))
         erreurs.append(f"versions divergentes entre manifestes : {detail}")
@@ -963,6 +1113,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         for tname in tool_names:
             cc_id = f"mcp__plugin_{EXPECTED_PLUGIN_NAME}_{srv}__{tname}"
             ag_id = f"mcp_{EXPECTED_PLUGIN_NAME}_{srv}_{tname}"
+            oai_id = f"mcp__{srv}__{tname}"
             if len(cc_id) > MAX_TOOL_COMPOUND_LEN:
                 erreurs.append(
                     f"identifiant outil Claude Code > {MAX_TOOL_COMPOUND_LEN} car. ({len(cc_id)}) : {cc_id}"
@@ -970,6 +1121,10 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             if len(ag_id) > MAX_TOOL_COMPOUND_LEN:
                 erreurs.append(
                     f"identifiant outil Antigravity > {MAX_TOOL_COMPOUND_LEN} car. ({len(ag_id)}) : {ag_id}"
+                )
+            if len(oai_id) > MAX_TOOL_COMPOUND_LEN:
+                erreurs.append(
+                    f"identifiant outil OpenAI / Codex > {MAX_TOOL_COMPOUND_LEN} car. ({len(oai_id)}) : {oai_id}"
                 )
 
     # 5. Skills, budgets, kernel parity, graph rules, Enchaînements & templates
@@ -996,6 +1151,12 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         is_phase = skill in PHASE_SKILLS
         if len(skill) > 64 or not _SKILL_NAME_RE.match(skill):
             erreurs.append(f"skills/{skill} : nom de dossier invalide (kebab-case <= 64 car.)")
+        oai_skill_id = f"{EXPECTED_PLUGIN_NAME}:{skill}"
+        if len(oai_skill_id) > MAX_TOOL_COMPOUND_LEN:
+            erreurs.append(
+                f"skills/{skill} : identifiant composé OpenAI > {MAX_TOOL_COMPOUND_LEN} car. "
+                f"({len(oai_skill_id)}) : {oai_skill_id}"
+            )
 
         skill_dir = skills_root / skill
         skill_file_count = sum(

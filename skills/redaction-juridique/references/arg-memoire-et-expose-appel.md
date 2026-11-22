@@ -30,6 +30,6 @@ Appliquer strictement `arg-citations.md` : citations neutres vérifiées via `ju
 
 ## Contrôle
 
-1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01` — ou, sans Python local sur `claude.ai`, Gemini App `/mcp/oauth` ou Deep Research, divulguer explicitement les vérifications octets/XML/PDF omises et les reporter au bon de travail manuel) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`).
+1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01` — ou, sans Python local sur `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth` ou Deep Research, divulguer explicitement les vérifications octets/XML/PDF omises et les reporter au bon de travail manuel) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`).
 2. Vérifier le délai de dépôt du mémoire (`373` : `3 mois` pour l'appelant, caducité si expiré sans prolongation demandée *avant* échéance) via `gestion-du-mandat`.
 3. Exécuter `outils.terminologie_scan`.
