@@ -37,7 +37,7 @@ PORTABLE_METADATA_KEYS = (
     "license",
     "keywords",
 )
-ROOT_DOCS = ("LICENSE", "SECURITY.md", "README.md")
+ROOT_DOCS = ("LICENSE", "NOTICE", "SECURITY.md", "README.md")
 MAX_SKILL_IDENTITY_LEN = 64
 
 

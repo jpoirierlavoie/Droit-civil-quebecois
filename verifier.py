@@ -46,6 +46,7 @@ ROOT_ALLOWLIST = frozenset(
         ".mcp.json",
         "assets/logo.svg",
         "LICENSE",
+        "NOTICE",
         "SECURITY.md",
         "README.md",
         "CLAUDE.md",
@@ -164,7 +165,7 @@ SERVICE_SKILLS = frozenset(
 )
 EXPECTED_SKILLS = PHASE_SKILLS | SERVICE_SKILLS
 
-EXPECTED_LICENSE = "CC-BY-NC-SA-4.0"
+EXPECTED_LICENSE = "Apache-2.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
 EXPECTED_LEGISLATION_OAUTH_URL = "https://legislation.poirierlavoie.ca/mcp/oauth"
 EXPECTED_JURISPRUDENCE_OAUTH_URL = "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
@@ -688,13 +689,15 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     license_text = decoded.get("LICENSE")
     if license_text is not None:
-        for req_marker in (
-            EXPECTED_LICENSE,
-            "AUTORISATION COMPLÉMENTAIRE DE PRATIQUE PROFESSIONNELLE DU DROIT",
-            "COMPANION PROFESSIONAL LEGAL PRACTICE GRANT",
-        ):
+        for req_marker in ("Apache License", "Version 2.0, January 2004"):
             if req_marker not in license_text:
                 erreurs.append(f"LICENSE : mention obligatoire absente ({req_marker})")
+
+    notice_text = decoded.get("NOTICE")
+    if notice_text is not None:
+        for req_marker in (EXPECTED_LICENSE, "LégisQuébec", "CanLII", "CC BY-NC-SA 4.0"):
+            if req_marker not in notice_text:
+                erreurs.append(f"NOTICE : mention obligatoire absente ({req_marker})")
 
     # 3. Byte-for-byte CLAUDE.md / GEMINI.md parity
     if "CLAUDE.md" in decoded and "GEMINI.md" in decoded:

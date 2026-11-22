@@ -151,7 +151,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 | # | Axe d'impact | Éléments à inspecter |
 |---|---|---|
 | 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `evals/test_verifier.py`, `verifier.py`, `verifier_tout.py` |
-| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`CC-BY-NC-SA-4.0` + autorisation de pratique professionnelle), `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
+| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`Apache-2.0`), `NOTICE`, `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
 | 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP** | `src/site.ts` / `site.i18n.ts` / `server-card` / `/.well-known/oauth-protected-resource/mcp/oauth` dans `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils` et `MCP-Acces` |
 | 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Socle`**, **`MCP-Acces`**, **`MCP-Legislation`**, **`MCP-Jurisprudence`** et **`MCP-Outils`** (identité `mcp-identite`, BYOK, OAuth 2.1 `/mcp/oauth`, 32 outils, synchronisation Antigravity / Gemini CLI) |
 
@@ -161,8 +161,8 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
-1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE`.
-2. **Parité exacte des manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `CC-BY-NC-SA-4.0` assortie de l'Autorisation complémentaire de pratique professionnelle du droit (`LICENSE`), semver identique partout (`3.1.0`, dont `.codex-plugin/plugin.json` avec `shortDescription <= 30` car., `defaultPrompt <= 128` car., et `.agents/plugins/marketplace.json`), `"contextFileName": []` et `"settings": []` dans `gemini-extension.json`.
+1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE` et `NOTICE`.
+2. **Parité exacte des manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `Apache-2.0` (`LICENSE`) accompagnée de `NOTICE` (reconnaissance des sources officielles et non-revendication), semver identique partout (`3.1.0`, dont `.codex-plugin/plugin.json` avec `shortDescription <= 30` car., `defaultPrompt <= 128` car., et `.agents/plugins/marketplace.json`), `"contextFileName": []` et `"settings": []` dans `gemini-extension.json`.
 3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 32 outils inchangés, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity, 55 OpenAI `plugin:skill`) ; `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop.
 4. **Budgets et structure des compétences (`skills/`) :**
    - Descriptions YAML : `<= 450` car. (phases), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale du greffon `<= 6 000` car.**, incluant `En anglais` et `Ne pas utiliser pour`, sans `<`/`>`.

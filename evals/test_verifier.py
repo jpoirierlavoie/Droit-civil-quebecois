@@ -179,9 +179,13 @@ def _build_valid_v3_fixture(root: Path) -> None:
         elif rel == "LICENSE":
             _write_lf(
                 target,
+                "Apache License\nVersion 2.0, January 2004\n",
+            )
+        elif rel == "NOTICE":
+            _write_lf(
+                target,
                 f"SPDX: {verifier.EXPECTED_LICENSE}\n"
-                "AUTORISATION COMPLÉMENTAIRE DE PRATIQUE PROFESSIONNELLE DU DROIT\n"
-                "COMPANION PROFESSIONAL LEGAL PRACTICE GRANT\n",
+                "LégisQuébec · CanLII · CC BY-NC-SA 4.0\n",
             )
         elif rel == "evals/scenarios.json":
             continue
@@ -477,11 +481,14 @@ class VerifierV3Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _build_valid_v3_fixture(root)
-            (root / "LICENSE").write_bytes(b"CC-BY-NC-SA-4.0\r\n")
+            (root / "LICENSE").write_bytes(b"Apache-2.0\r\n")
+            _write_lf(root / "NOTICE", "Apache-2.0\n")
             errs, _ = verifier.verifier(root)
             self.assertTrue(any("LICENSE : fins de ligne CR/CRLF" in e for e in errs))
-            self.assertTrue(any("AUTORISATION COMPLÉMENTAIRE" in e for e in errs))
-            self.assertTrue(any("COMPANION PROFESSIONAL" in e for e in errs))
+            self.assertTrue(any("Apache License" in e for e in errs))
+            self.assertTrue(any("Version 2.0, January 2004" in e for e in errs))
+            self.assertTrue(any("NOTICE : mention obligatoire absente (LégisQuébec)" in e for e in errs))
+            self.assertTrue(any("NOTICE : mention obligatoire absente (CC BY-NC-SA 4.0)" in e for e in errs))
 
             p_skill = root / "skills" / "recherche-juridique" / "SKILL.md"
             _write_lf(
