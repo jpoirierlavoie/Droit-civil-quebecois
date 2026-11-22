@@ -919,41 +919,44 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 "'lois', 'juris' et 'outils'"
             )
         else:
-            for srv_name, exp_url in EXPECTED_GOOGLE_OAUTH_URLS.items():
+            expected_gemini_urls = {
+                **EXPECTED_GOOGLE_OAUTH_URLS,
+                "outils": EXPECTED_OUTILS_URL,
+            }
+            for srv_name, exp_url in expected_gemini_urls.items():
                 gsrv = g_servers[srv_name]
                 if not isinstance(gsrv, dict):
                     erreurs.append(
                         f"gemini-extension.json : mcpServers.{srv_name} doit être un objet JSON"
                     )
                     continue
-                if gsrv.get("httpUrl") != exp_url:
+                if "httpUrl" in gsrv:
                     erreurs.append(
-                        f"gemini-extension.json : mcpServers.{srv_name}.httpUrl doit valoir "
-                        f"'{exp_url}'"
+                        f"gemini-extension.json : mcpServers.{srv_name} utilise la clé obsolète "
+                        "'httpUrl' (migrer vers 'type': 'http' et 'url')"
+                    )
+                if gsrv.get("type") != "http":
+                    erreurs.append(
+                        f"gemini-extension.json : mcpServers.{srv_name}.type doit valoir 'http'"
+                    )
+                if gsrv.get("url") != exp_url:
+                    erreurs.append(
+                        f"gemini-extension.json : mcpServers.{srv_name}.url doit valoir '{exp_url}'"
                     )
                 if "headers" in gsrv:
-                    erreurs.append(
-                        f"gemini-extension.json : mcpServers.{srv_name} ne doit pas contenir 'headers' "
-                        "(OAuth 2.1 sans configuration préalable)"
+                    suffix = (
+                        " (OAuth 2.1 sans configuration préalable)"
+                        if srv_name in EXPECTED_GOOGLE_OAUTH_URLS
+                        else ""
                     )
-                if set(gsrv.keys()) != {"httpUrl"}:
                     erreurs.append(
-                        f"gemini-extension.json : mcpServers.{srv_name} ne doit contenir que la clé 'httpUrl'"
+                        f"gemini-extension.json : mcpServers.{srv_name} ne doit pas contenir "
+                        f"'headers'{suffix}"
                     )
-            g_outils = g_servers["outils"]
-            if not isinstance(g_outils, dict):
-                erreurs.append(
-                    "gemini-extension.json : mcpServers.outils doit être un objet JSON"
-                )
-            else:
-                if g_outils.get("httpUrl") != EXPECTED_OUTILS_URL:
+                if set(gsrv.keys()) != {"type", "url"}:
                     erreurs.append(
-                        "gemini-extension.json : mcpServers.outils.httpUrl "
-                        f"doit valoir '{EXPECTED_OUTILS_URL}'"
-                    )
-                if set(g_outils.keys()) != {"httpUrl"}:
-                    erreurs.append(
-                        "gemini-extension.json : mcpServers.outils ne doit contenir que la clé 'httpUrl'"
+                        f"gemini-extension.json : mcpServers.{srv_name} ne doit contenir que les "
+                        "clés 'type' et 'url'"
                     )
         settings = gemini_ext.get("settings")
         if settings != []:

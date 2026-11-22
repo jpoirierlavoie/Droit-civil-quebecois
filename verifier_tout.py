@@ -2320,7 +2320,7 @@ def run_tier_1_tests(
         g_errs.append(f"gemini-extension.json settings doit valoir [] (trouvé {settings!r})")
     for exp_k, exp_url in URL_MANIFESTES_ATTENDUES.items():
         gsrv = g_servers.get(exp_k)
-        if not isinstance(gsrv, dict) or gsrv.get("httpUrl") != exp_url or "headers" in gsrv:
+        if not isinstance(gsrv, dict) or gsrv.get("type") != "http" or gsrv.get("url") != exp_url or "headers" in gsrv or "httpUrl" in gsrv:
             g_errs.append(f"gemini-extension.json {exp_k} non conforme OAuth 2.1 ({gsrv!r})")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
@@ -3610,9 +3610,9 @@ def run_tier_3_tests(
         a_url = agy_data.get("mcpServers", {}).get(s_name, {}).get("url")
         if a_url != exp_url:
             url_errs.append(f"mcp_config.json {s_name}.url={a_url} != {exp_url}")
-        g_url = gem_data.get("mcpServers", {}).get(s_name, {}).get("httpUrl")
-        if g_url != exp_url:
-            url_errs.append(f"gemini-extension.json {s_name}.httpUrl={g_url} != {exp_url}")
+        g_srv = gem_data.get("mcpServers", {}).get(s_name, {})
+        if g_srv.get("url") != exp_url or g_srv.get("type") != "http":
+            url_errs.append(f"gemini-extension.json {s_name}={g_srv!r} != http:{exp_url}")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T3.1.2",
