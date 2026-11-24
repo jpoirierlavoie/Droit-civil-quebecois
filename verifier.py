@@ -36,6 +36,7 @@ ROOT_ALLOWLIST = frozenset(
         ".github/workflows/scorecard.yml",
         ".github/workflows/trivy.yml",
         ".github/workflows/verify.yml",
+        ".antigravity-plugin/plugin.json",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
         ".codex-plugin/plugin.json",
@@ -49,6 +50,10 @@ ROOT_ALLOWLIST = frozenset(
         "NOTICE",
         "SECURITY.md",
         "README.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
+        "AGENTS.md",
         "CLAUDE.md",
         "GEMINI.md",
         "verifier.py",
@@ -68,8 +73,10 @@ EVALS_ALLOWLIST = frozenset(
     }
 )
 
+ANTIGRAVITY_SCHEMA = "https://antigravity.google/schemas/v1/plugin.json"
 ANTIGRAVITY_PLUGIN_KEYS = frozenset(
     {
+        "$schema",
         "name",
         "displayName",
         "version",
@@ -79,11 +86,29 @@ ANTIGRAVITY_PLUGIN_KEYS = frozenset(
         "author",
         "homepage",
         "repository",
+        "license",
+        "keywords",
         "disabled",
     }
 )
 
-ANTIGRAVITY_AUTHOR_KEYS = frozenset({"name", "url"})
+ANTIGRAVITY_AUTHOR_KEYS = frozenset({"name", "email", "url"})
+
+AGENT_PLUGINS_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+PORTABLE_PLUGIN_KEYS = frozenset(
+    {
+        "$schema",
+        "name",
+        "version",
+        "description",
+        "author",
+        "homepage",
+        "repository",
+        "license",
+        "keywords",
+        "extensions",
+    }
+)
 
 EXPECTED_PLUGIN_NAME = "droit-civil-quebecois"
 EXPECTED_DISPLAY_NAME = "Droit civil québécois"
@@ -99,6 +124,7 @@ LEGACY_PLUGIN_ALLOW_MIGRATION = frozenset(
     {
         "verifier.py",
         "README.md",
+        "AGENTS.md",
         "CLAUDE.md",
         "GEMINI.md",
         "scripts/synchroniser_plugin_gemini.py",
@@ -699,19 +725,22 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             if req_marker not in notice_text:
                 erreurs.append(f"NOTICE : mention obligatoire absente ({req_marker})")
 
-    # 3. Byte-for-byte CLAUDE.md / GEMINI.md parity
-    if "CLAUDE.md" in decoded and "GEMINI.md" in decoded:
-        if decoded["CLAUDE.md"] != decoded["GEMINI.md"]:
-            erreurs.append("CLAUDE.md et GEMINI.md doivent être identiques octet pour octet")
+    # 3. Byte-for-byte AGENTS.md / CLAUDE.md / GEMINI.md parity
+    if "AGENTS.md" in decoded and "CLAUDE.md" in decoded and "GEMINI.md" in decoded:
+        if not (decoded["AGENTS.md"] == decoded["CLAUDE.md"] == decoded["GEMINI.md"]):
+            erreurs.append(
+                "AGENTS.md, CLAUDE.md et GEMINI.md doivent être identiques octet pour octet"
+            )
         if len(decoded["GEMINI.md"].encode("utf-8")) >= 24000:
-            erreurs.append("GEMINI.md dépasse 24 000 octets UTF-8")
+            erreurs.append("AGENTS.md / CLAUDE.md / GEMINI.md dépasse 24 000 octets UTF-8")
 
     # 4. Manifest consistency & 64-char compound identifier invariant
     claude_plugin = _load_json(racine, ".claude-plugin/plugin.json", erreurs)
     marketplace = _load_json(racine, ".claude-plugin/marketplace.json", erreurs)
     codex_plugin = _load_json(racine, ".codex-plugin/plugin.json", erreurs)
     codex_marketplace = _load_json(racine, ".agents/plugins/marketplace.json", erreurs)
-    agy_plugin = _load_json(racine, "plugin.json", erreurs)
+    agy_plugin = _load_json(racine, ".antigravity-plugin/plugin.json", erreurs)
+    portable_plugin = _load_json(racine, "plugin.json", erreurs)
     agy_mcp = _load_json(racine, "mcp_config.json", erreurs)
     gemini_ext = _load_json(racine, "gemini-extension.json", erreurs)
     mcp_json = _load_json(racine, ".mcp.json", erreurs)
@@ -720,6 +749,8 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         ".mcp.json",
         "mcp_config.json",
         "gemini-extension.json",
+        ".antigravity-plugin/plugin.json",
+        "plugin.json",
         ".codex-plugin/plugin.json",
         ".agents/plugins/marketplace.json",
     ):
@@ -803,36 +834,48 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         unknown_keys = sorted(set(agy_plugin) - ANTIGRAVITY_PLUGIN_KEYS)
         if unknown_keys:
             erreurs.append(
-                f"plugin.json : clés non reconnues par Antigravity : {', '.join(unknown_keys)}"
+                f".antigravity-plugin/plugin.json : clés non reconnues par Antigravity : {', '.join(unknown_keys)}"
+            )
+        if agy_plugin.get("$schema") != ANTIGRAVITY_SCHEMA:
+            erreurs.append(
+                f".antigravity-plugin/plugin.json : '$schema' doit valoir '{ANTIGRAVITY_SCHEMA}'"
             )
         if agy_plugin.get("name") != EXPECTED_PLUGIN_NAME:
-            erreurs.append(f"plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'")
+            erreurs.append(
+                f".antigravity-plugin/plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
+            )
         if agy_plugin.get("displayName") != EXPECTED_DISPLAY_NAME:
-            erreurs.append(f"plugin.json : 'displayName' doit valoir '{EXPECTED_DISPLAY_NAME}'")
+            erreurs.append(
+                f".antigravity-plugin/plugin.json : 'displayName' doit valoir '{EXPECTED_DISPLAY_NAME}'"
+            )
         ver = agy_plugin.get("version")
         if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
-            erreurs.append("plugin.json : 'version' semver invalide")
+            erreurs.append(".antigravity-plugin/plugin.json : 'version' semver invalide")
         else:
-            versions["plugin.json"] = ver
+            versions[".antigravity-plugin/plugin.json"] = ver
+        if agy_plugin.get("license") != EXPECTED_LICENSE:
+            erreurs.append(
+                f".antigravity-plugin/plugin.json : 'license' doit valoir '{EXPECTED_LICENSE}'"
+            )
         for field in ("homepage", "repository"):
             if agy_plugin.get(field) != EXPECTED_REPO_URL:
                 erreurs.append(
-                    f"plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'"
+                    f".antigravity-plugin/plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'"
                 )
         author = agy_plugin.get("author")
         if isinstance(author, dict):
             bad_author = sorted(set(author) - ANTIGRAVITY_AUTHOR_KEYS)
             if bad_author:
                 erreurs.append(
-                    f"plugin.json : clés non supportées dans author : {', '.join(bad_author)}"
+                    f".antigravity-plugin/plugin.json : clés non supportées dans author : {', '.join(bad_author)}"
                 )
         elif author is not None and not isinstance(author, str):
-            erreurs.append("plugin.json : 'author' doit être une chaîne ou un objet")
+            erreurs.append(".antigravity-plugin/plugin.json : 'author' doit être une chaîne ou un objet")
         logo = agy_plugin.get("logo")
         if not isinstance(logo, str) or not logo or logo.startswith("/") or "://" in logo:
-            erreurs.append("plugin.json : 'logo' doit être un chemin relatif valide")
+            erreurs.append(".antigravity-plugin/plugin.json : 'logo' doit être un chemin relatif valide")
         elif not (racine / logo).is_file():
-            erreurs.append(f"plugin.json : fichier logo introuvable ({logo})")
+            erreurs.append(f".antigravity-plugin/plugin.json : fichier logo introuvable ({logo})")
         prompts = agy_plugin.get("suggestedPrompts")
         if (
             not isinstance(prompts, list)
@@ -840,8 +883,50 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             or any(not isinstance(p, str) or not p.strip() for p in prompts)
         ):
             erreurs.append(
-                "plugin.json : 'suggestedPrompts' doit contenir entre 1 et 3 chaînes non vides"
+                ".antigravity-plugin/plugin.json : 'suggestedPrompts' doit contenir entre 1 et 3 chaînes non vides"
             )
+
+    if portable_plugin is not None:
+        for forb in ("mcpServers", "requires_local_executor", "skills"):
+            if forb in portable_plugin:
+                erreurs.append(
+                    f"plugin.json : '{forb}' est interdit dans le manifeste portable Agent Plugins 1.0"
+                )
+        unknown_p_keys = sorted(
+            set(portable_plugin) - PORTABLE_PLUGIN_KEYS - {"mcpServers", "requires_local_executor", "skills"}
+        )
+        if unknown_p_keys:
+            erreurs.append(
+                f"plugin.json : clés non reconnues par Agent Plugins 1.0 : {', '.join(unknown_p_keys)}"
+            )
+        if portable_plugin.get("$schema") != AGENT_PLUGINS_SCHEMA:
+            erreurs.append(f"plugin.json : '$schema' doit valoir '{AGENT_PLUGINS_SCHEMA}'")
+        if portable_plugin.get("name") != EXPECTED_PLUGIN_NAME:
+            erreurs.append(f"plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'")
+        ver = portable_plugin.get("version")
+        if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
+            erreurs.append("plugin.json : 'version' semver invalide")
+        else:
+            versions["plugin.json"] = ver
+        if portable_plugin.get("license") != EXPECTED_LICENSE:
+            erreurs.append(f"plugin.json : 'license' doit valoir '{EXPECTED_LICENSE}'")
+        for field in ("homepage", "repository"):
+            if portable_plugin.get(field) != EXPECTED_REPO_URL:
+                erreurs.append(f"plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'")
+        exts = portable_plugin.get("extensions")
+        if (
+            not isinstance(exts, dict)
+            or not isinstance(exts.get("com.openai"), dict)
+            or not isinstance(exts["com.openai"].get("interface"), dict)
+        ):
+            erreurs.append(
+                "plugin.json : 'extensions.com.openai.interface' doit être un objet JSON"
+            )
+        elif codex_plugin is not None and isinstance(codex_plugin.get("interface"), dict):
+            if exts["com.openai"]["interface"] != codex_plugin["interface"]:
+                erreurs.append(
+                    "plugin.json : extensions.com.openai.interface diverge de .codex-plugin/plugin.json interface"
+                )
 
     if agy_mcp is not None:
         agy_servers = agy_mcp.get("mcpServers")

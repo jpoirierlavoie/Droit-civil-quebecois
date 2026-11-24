@@ -1,6 +1,12 @@
 # Droit civil québécois (`v3.1.0`)
 
+[![Vérification](https://github.com/jpoirierlavoie/droit-civil-quebecois/actions/workflows/verify.yml/badge.svg)](https://github.com/jpoirierlavoie/droit-civil-quebecois/actions/workflows/verify.yml)
+[![Licence Apache-2.0](https://img.shields.io/badge/Licence-Apache--2.0-blue.svg)](LICENSE)
+[![Dernière version](https://img.shields.io/github/v/release/jpoirierlavoie/droit-civil-quebecois)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest)
+
 Greffon multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web et Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI et Gemini API Deep Research) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)* regroupant **10 compétences** (5 orchestrateurs de phase et 5 compétences de service), **59 feuilles de référence granulaires**, **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils officiels) adossés au portail d'accès [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`).
+
+> **In English:** Open-source (`Apache-2.0`) cross-platform agent plugin for **Québec civil and commercial litigation** *(excluding family and criminal law)* across **Claude**, **ChatGPT / Codex**, and **Gemini / Antigravity**. It bundles 10 structured skills, 59 reference sheets, 4 zero-dependency Python verification scripts, and 3 specialized MCP connectors (`lois`, `juris`, `outils` — 32 tools). Authenticated legal-research servers (`lois`, `juris`) require active membership in the Barreau du Québec and a personal CanLII API key (BYOK) via [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca).
 
 ---
 
@@ -51,7 +57,7 @@ Greffon multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Resea
 | **`juris`** | OAuth (défaut) : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`<br>Direct : `https://jurisprudence.poirierlavoie.ca/mcp` | `/mcp/oauth` : **OAuth 2.1 PKCE `S256`** + RFC 7591 sans état via `acces.poirierlavoie.ca` (`401` RFC 9728)<br>`/mcp` : `Authorization: Bearer` ou `?key=` pour CLI/API sans navigateur (`404` uniforme)<br>**BYOK CanLII strict :** clé API CanLII personnelle requise (coffre chiffré ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
 | **`outils`** | Public : `https://outils.poirierlavoie.ca/mcp` | Accès public libre (sans secret, lecture seule D1) | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
-> Depuis `v3.1.0`, les trois manifestes (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) branchent automatiquement `lois` et `juris` sur `/mcp/oauth` sans secret ni variable d'environnement locale à configurer. La monture directe `/mcp` demeure disponible pour l'exécution sans navigateur (CI, scripts, Gemini API Deep Research). Aucun secret n'est stocké dans le dépôt, et tous les identifiants composés respectent le plafond `<= 64` caractères (max **62/64** sous Claude Code, **52/64** sous Antigravity).
+> Depuis `v3.1.0`, les trois manifestes MCP (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) branchent automatiquement `lois` et `juris` sur `/mcp/oauth` sans secret ni variable d'environnement locale à configurer. Les manifestes de plateformes (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. La monture directe `/mcp` demeure disponible pour l'exécution sans navigateur (CI, scripts, Gemini API Deep Research). Aucun secret n'est stocké dans le dépôt, et tous les identifiants composés respectent le plafond `<= 64` caractères (max **62/64** sous Claude Code, **52/64** sous Antigravity).
 
 ### Catalogue exact des 32 outils (`v3.1.0`)
 
@@ -114,11 +120,16 @@ Aucune variable d'environnement locale requise : installer depuis la place de ma
 
 ### 3. Google Antigravity
 
-Synchroniser le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` ; les connecteurs `lois` et `juris` s'authentifient automatiquement par OAuth 2.1 + PKCE (`http://127.0.0.1:<port>/oauth-callback` ou `https://antigravity.google/oauth-callback`), sans variable d'environnement à saisir (identifiants nativement `<= 64` car., max 52 sous Antigravity) :
+Installer depuis le dépôt GitHub grâce au manifeste dédié `.antigravity-plugin/plugin.json`, ou synchroniser localement vers `~/.gemini/config/plugins/droit-civil-quebecois` ; les connecteurs `lois` et `juris` s'authentifient automatiquement par OAuth 2.1 + PKCE (`http://127.0.0.1:<port>/oauth-callback`, `https://antigravity.google/oauth-callback` ou `https://antigravity.google.com/oauth/callback`), sans variable d'environnement à saisir (identifiants nativement `<= 64` car., max 52 sous Antigravity) :
 
-```powershell
+```bash
+agy plugin install https://github.com/jpoirierlavoie/droit-civil-quebecois
+```
+
+```bash
+# Synchronisation locale alternative depuis un clone du dépôt
 python scripts/synchroniser_plugin_gemini.py --apply
-python scripts/regenerer_cache_mcp.py --apply   # optionnel : reconstruit le cache depuis les dépôts locaux
+python scripts/regenerer_cache_mcp.py --apply   # optionnel (mainteneur : nécessite les 3 dépôts MCP frères)
 ```
 
 ### 4. Gemini CLI
@@ -135,8 +146,8 @@ Brancher les montages OAuth 2.1 **`https://legislation.poirierlavoie.ca/mcp/oaut
 
 ### 6. ChatGPT (Web & Desktop), OpenAI Codex et API OpenAI Responses
 
-- **ChatGPT Web & Desktop (greffon universel + 3 connecteurs MCP) :** générer puis téléverser l'archive universelle `dist/droit-civil-quebecois-chatgpt-universal.zip` (`python scripts/empaqueter_plugin_chatgpt.py --apply`, manifeste Portable Agent Plugins 1.0 `plugin.json` sans `mcpServers` afin d'éviter le badge *Desktop only* sur le Web — ou synchroniser le dépôt via `.agents/plugins/marketplace.json`), puis ajouter une seule fois dans `https://chatgpt.com/plugins` (**+ → Add custom MCP server**) les 3 connecteurs distants : `lois` (`https://legislation.poirierlavoie.ca/mcp/oauth`, **OAuth**), `juris` (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`, **OAuth**) et `outils` (`https://outils.poirierlavoie.ca/mcp`, **No authentication**), synchronisés automatiquement entre Web et Desktop.
-- **OpenAI Codex (CLI / poste local) :** installer le greffon via `.agents/plugins/marketplace.json` (`etat-dossier/` et les 4 scripts Python stdlib s'exécutent nativement) et enregistrer `lois`, `juris` (`/mcp/oauth`) et `outils` (`/mcp`) via `codex mcp add`.
+- **ChatGPT Web & Desktop (greffon universel + 3 connecteurs MCP) :** télécharger en un clic l'archive prête à l'emploi `droit-civil-quebecois-chatgpt-universal.zip` depuis la [dernière publication GitHub (`Releases`)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest) *(ou la générer localement via `python scripts/empaqueter_plugin_chatgpt.py --apply` ; format Portable Agent Plugins 1.0 `plugin.json` sans `mcpServers` afin d'éviter le badge *Desktop only* sur le Web)*, puis l'importer et ajouter une seule fois dans `https://chatgpt.com/plugins` (**+ → Add custom MCP server**) les 3 connecteurs distants : `lois` (`https://legislation.poirierlavoie.ca/mcp/oauth`, **OAuth**), `juris` (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`, **OAuth**) et `outils` (`https://outils.poirierlavoie.ca/mcp`, **No authentication**), synchronisés automatiquement entre Web et Desktop.
+- **OpenAI Codex (CLI / poste local) :** installer le greffon depuis la racine du dépôt (`plugin.json` Portable Agent Plugins 1.0 ou `.agents/plugins/marketplace.json`, où `etat-dossier/` et les 4 scripts Python stdlib s'exécutent nativement) et enregistrer `lois`, `juris` (`/mcp/oauth`) et `outils` (`/mcp`) via `codex mcp add`.
 - **API OpenAI Responses (modèles généraux et de raisonnement) :** déclarer les 3 serveurs en `"type": "mcp"` avec `"require_approval": "never"` sur `/mcp` + en-tête `Authorization: Bearer <jeton>` (`lois`, `juris`) et `outils`, sur questions juridiques anonymisées préfixées du préambule `SAFETY-KERNEL` v3.
 - **Exclusion explicite de ChatGPT Deep Research :** *ChatGPT Deep Research* (et les modèles `*-deep-research` d'OpenAI), qui requièrent une façade générique à deux outils (`search`/`fetch`) incompatible avec les 32 outils spécialisés et le contrôle intégral du Palier 3, **sont exclus** du greffon ; employer **Claude Research** ou **Gemini Deep Research** pour les recherches autonomes multi-étapes.
 
@@ -171,17 +182,27 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ---
 
+## État de maturité et contribution ouverte
+
+L'infrastructure centrale `v3.1.0` (10 compétences, noyau `SAFETY-KERNEL`, 32 outils MCP OAuth 2.1/BYOK et 4 scripts Python stdlib) est fonctionnelle et testée en continu. Toutefois, plusieurs fiches de référence et compétences de phase conservent encore des marqueurs `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]` en attente de rédaction ou de validation par la pratique (suivis automatiquement par `python verifier.py --release`).
+
+- **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+- **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).
+
+---
+
 ## Vérification et qualité
 
-```powershell
-$env:PYTHONUTF8 = "1"
-python verifier.py                                  # Contrôle statique strict (muet, code 0)
-python verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
-python verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
-python evals/executer_evals.py --auto-test          # Validation des 77 scénarios, 4 scripts locaux et test_verifier.py
-python -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
-python verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
-python verifier_tout.py --mode live --require-antigravity-cache  # Vérification distante + cache local
+```bash
+# Linux / macOS (sous Windows PowerShell : $env:PYTHONUTF8 = "1" et python ...)
+PYTHONUTF8=1 python3 verifier.py                                  # Contrôle statique strict (muet, code 0)
+PYTHONUTF8=1 python3 verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
+PYTHONUTF8=1 python3 verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
+PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 77 scénarios, 4 scripts locaux et test_verifier.py
+PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
+PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
+PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT
+# PYTHONUTF8=1 python3 verifier_tout.py --mode live --require-antigravity-cache  # Vérification distante + cache local
 ```
 
 ---

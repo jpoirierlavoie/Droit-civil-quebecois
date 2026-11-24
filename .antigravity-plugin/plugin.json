@@ -1,0 +1,33 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "droit-civil-quebecois",
+  "displayName": "Droit civil québécois",
+  "version": "3.1.0",
+  "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement) et 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) branchés sur « lois », « juris » et « outils ».",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Ouvre ce nouveau dossier civil : vérifie le contrôle de conflit, l'identification du client, la prescription et les urgences",
+    "Analyse ces pièces (courriels, PDF, enregistrement), tiens le journal de garde, signale le caviardage art. 108 C.p.c. et bâtis la théorie de la cause",
+    "Rédige une demande introductive complète, contrôle la pagination et les cotes avec les scripts de production et génère le bon de travail"
+  ],
+  "author": {
+    "name": "Jason Poirier Lavoie",
+    "email": "jason@poirierlavoie.ca",
+    "url": "https://acces.poirierlavoie.ca"
+  },
+  "homepage": "https://github.com/jpoirierlavoie/droit-civil-quebecois",
+  "repository": "https://github.com/jpoirierlavoie/droit-civil-quebecois",
+  "license": "Apache-2.0",
+  "keywords": [
+    "québec",
+    "droit civil",
+    "litige",
+    "C.c.Q.",
+    "C.p.c.",
+    "recherche juridique",
+    "rédaction juridique",
+    "preuve",
+    "production",
+    "déontologie"
+  ]
+}

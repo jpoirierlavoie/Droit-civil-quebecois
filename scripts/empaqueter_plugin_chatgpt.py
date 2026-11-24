@@ -17,14 +17,30 @@ import sys
 import zipfile
 from pathlib import Path
 
-SRC_DIR = Path(os.environ.get("PCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1])).resolve()
+SRC_DIR = Path(os.environ.get("DCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1])).resolve()
 AGENT_PLUGINS_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 UNIVERSAL_ZIP_NAME = "droit-civil-quebecois-chatgpt-universal.zip"
 STALE_ZIP_NAMES = (
     "droit-civil-quebecois-chatgpt-plugin.zip",
     "droit-civil-quebecois-chatgpt-skills-only.zip",
 )
-FORBIDDEN_ARCHIVE_NAMES = frozenset({".mcp.json", "mcp.json", ".codex-plugin", ".app.json"})
+FORBIDDEN_ARCHIVE_NAMES = frozenset(
+    {
+        ".mcp.json",
+        "mcp.json",
+        ".codex-plugin",
+        ".antigravity-plugin",
+        ".claude-plugin",
+        ".agents",
+        ".github",
+        ".app.json",
+        "mcp_config.json",
+        "gemini-extension.json",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "GEMINI.md",
+    }
+)
 FORBIDDEN_CODEX_KEYS = frozenset({"mcpServers", "apps", "requires_local_executor"})
 FORBIDDEN_TOP_LEVEL_KEYS = frozenset({"skills", "mcpServers", "apps", "requires_local_executor"})
 PORTABLE_METADATA_KEYS = (
@@ -138,6 +154,14 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError(".codex-plugin/plugin.json doit contenir un objet JSON")
 
     portable_manifest = construire_manifeste_portable(codex_manifest)
+    root_manifest_path = SRC_DIR / "plugin.json"
+    if not root_manifest_path.is_file():
+        raise FileNotFoundError(f"Manifeste racine introuvable : {root_manifest_path}")
+    root_manifest = json.loads(root_manifest_path.read_text(encoding="utf-8"))
+    if root_manifest != portable_manifest:
+        raise ValueError(
+            "plugin.json racine diverge de la forme portable construite depuis .codex-plugin/plugin.json"
+        )
     manifest_bytes = (json.dumps(portable_manifest, ensure_ascii=False, indent=2) + "\n").encode(
         "utf-8"
     )

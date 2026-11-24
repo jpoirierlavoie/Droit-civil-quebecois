@@ -26,6 +26,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Vérifier l'étiquette, les invariants et construire l'archive ChatGPT
+        env:
+          TAG: ${{ github.ref_name }}
+          PYTHONUTF8: "1"
+        run: |
+          set -euo pipefail
+          manifest_version="$(python -c 'import json; print(json.load(open("plugin.json", encoding="utf-8"))["version"])')"
+          if [ "$TAG" != "v${manifest_version}" ]; then
+            echo "Tag ${TAG} ne correspond pas à la version des manifestes (v${manifest_version})." >&2
+            exit 1
+          fi
+          sortie="$(python verifier.py 2>&1)"
+          if [ -n "$sortie" ]; then
+            echo "$sortie" >&2
+            exit 1
+          fi
+          python evals/executer_evals.py --auto-test
+          python scripts/empaqueter_plugin_chatgpt.py --apply
+          (cd dist && sha256sum droit-civil-quebecois-chatgpt-universal.zip > droit-civil-quebecois-chatgpt-universal.zip.sha256)
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,4 +61,7 @@ jobs:
             echo "Release ${TAG} already exists."
             exit 0
           fi
-          gh release create "$TAG" --repo "$REPO" --verify-tag --generate-notes
+          gh release create "$TAG" \
+            "dist/droit-civil-quebecois-chatgpt-universal.zip" \
+            "dist/droit-civil-quebecois-chatgpt-universal.zip.sha256" \
+            --repo "$REPO" --verify-tag --generate-notes

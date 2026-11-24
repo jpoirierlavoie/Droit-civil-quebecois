@@ -47,15 +47,6 @@ jobs:
           esac
           case "$ECOSYSTEM" in
             github_actions|github-actions) ;;
-            npm_and_yarn|npm)
-              case "$DEP_TYPE" in
-                direct:development|indirect) ;;
-                *)
-                  echo "Skipping auto-merge for npm dependency-type=${DEP_TYPE}."
-                  exit 0
-                  ;;
-              esac
-              ;;
             *)
               echo "Skipping auto-merge for ecosystem=${ECOSYSTEM}."
               exit 0

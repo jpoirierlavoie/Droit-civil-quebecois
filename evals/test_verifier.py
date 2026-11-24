@@ -8,9 +8,12 @@ Bibliothèque standard Python uniquement. Exécutable directement ou via
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -37,6 +40,26 @@ def _write_lf(path: Path, text: str) -> None:
 
 def _build_valid_v3_fixture(root: Path) -> None:
     """Construit un dépôt minimal 100 % conforme aux règles v3.1.0."""
+    codex_interface = {
+        "displayName": verifier.EXPECTED_DISPLAY_NAME,
+        "shortDescription": "Litige civil québécois",
+        "websiteURL": "https://acces.poirierlavoie.ca",
+        "privacyPolicyURL": "https://acces.poirierlavoie.ca/confidentialite",
+        "termsOfServiceURL": "https://acces.poirierlavoie.ca/cgu",
+        "defaultPrompt": ["Test prompt 1"],
+        "composerIcon": "./assets/logo.svg",
+        "logo": "./assets/logo.svg",
+    }
+    common_meta = {
+        "name": verifier.EXPECTED_PLUGIN_NAME,
+        "version": "3.1.0",
+        "description": "Plugin v3",
+        "author": {"name": "Test"},
+        "homepage": verifier.EXPECTED_REPO_URL,
+        "repository": verifier.EXPECTED_REPO_URL,
+        "license": verifier.EXPECTED_LICENSE,
+        "keywords": ["québec", "droit civil"],
+    }
     for rel in sorted(verifier.ROOT_ALLOWLIST | verifier.EVALS_ALLOWLIST):
         target = root / rel
         if rel in (".claude-plugin/plugin.json",):
@@ -79,23 +102,9 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 target,
                 json.dumps(
                     {
-                        "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.1.0",
-                        "description": "Plugin v3",
-                        "license": verifier.EXPECTED_LICENSE,
-                        "homepage": verifier.EXPECTED_REPO_URL,
-                        "repository": verifier.EXPECTED_REPO_URL,
+                        **common_meta,
                         "skills": "./skills/",
-                        "interface": {
-                            "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                            "shortDescription": "Litige civil québécois",
-                            "websiteURL": "https://acces.poirierlavoie.ca",
-                            "privacyPolicyURL": "https://acces.poirierlavoie.ca/confidentialite",
-                            "termsOfServiceURL": "https://acces.poirierlavoie.ca/cgu",
-                            "defaultPrompt": ["Test prompt 1"],
-                            "composerIcon": "./assets/logo.svg",
-                            "logo": "./assets/logo.svg",
-                        },
+                        "interface": codex_interface,
                     }
                 )
                 + "\n",
@@ -122,11 +131,12 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 )
                 + "\n",
             )
-        elif rel == "plugin.json":
+        elif rel == ".antigravity-plugin/plugin.json":
             _write_lf(
                 target,
                 json.dumps(
                     {
+                        "$schema": verifier.ANTIGRAVITY_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
                         "version": "3.1.0",
@@ -136,6 +146,20 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "author": {"name": "Test"},
                         "homepage": verifier.EXPECTED_REPO_URL,
                         "repository": verifier.EXPECTED_REPO_URL,
+                        "license": verifier.EXPECTED_LICENSE,
+                        "keywords": ["québec", "droit civil"],
+                    }
+                )
+                + "\n",
+            )
+        elif rel == "plugin.json":
+            _write_lf(
+                target,
+                json.dumps(
+                    {
+                        "$schema": verifier.AGENT_PLUGINS_SCHEMA,
+                        **common_meta,
+                        "extensions": {"com.openai": {"interface": codex_interface}},
                     }
                 )
                 + "\n",
@@ -174,7 +198,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
             )
         elif rel == ".mcp.json":
             _write_lf(target, json.dumps({"mcpServers": verifier.EXPECTED_MCP_SERVERS}) + "\n")
-        elif rel in ("CLAUDE.md", "GEMINI.md"):
+        elif rel in ("AGENTS.md", "CLAUDE.md", "GEMINI.md"):
             _write_lf(target, "# Contrat v3\n")
         elif rel == "LICENSE":
             _write_lf(
@@ -622,6 +646,107 @@ class VerifierV3Tests(unittest.TestCase):
             self.assertTrue(any("interface.shortDescription" in e for e in errs))
             self.assertTrue(any("interface.defaultPrompt[0]" in e for e in errs))
             self.assertTrue(any("plugins[0].source" in e for e in errs))
+
+    def test_agents_claude_gemini_parity_enforced(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            _write_lf(root / "AGENTS.md", "# Contrat modifié\n")
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any("AGENTS.md, CLAUDE.md et GEMINI.md" in e for e in errs))
+
+    def test_antigravity_and_portable_root_manifest_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+
+            agy_path = root / ".antigravity-plugin" / "plugin.json"
+            agy_data = json.loads(agy_path.read_text(encoding="utf-8"))
+            agy_data["$schema"] = "https://example.com/bad.json"
+            agy_data["license"] = "MIT"
+            _write_lf(agy_path, json.dumps(agy_data, ensure_ascii=False, indent=2) + "\n")
+
+            port_path = root / "plugin.json"
+            port_data = json.loads(port_path.read_text(encoding="utf-8"))
+            port_data["$schema"] = "https://example.com/bad-portable.json"
+            port_data["mcpServers"] = "./.mcp.json"
+            port_data["displayName"] = "Interdit"
+            port_data["extensions"]["com.openai"]["interface"]["shortDescription"] = "Autre"
+            _write_lf(port_path, json.dumps(port_data, ensure_ascii=False, indent=2) + "\n")
+
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any(".antigravity-plugin/plugin.json : '$schema'" in e for e in errs))
+            self.assertTrue(any(".antigravity-plugin/plugin.json : 'license'" in e for e in errs))
+            self.assertTrue(any("plugin.json : '$schema'" in e for e in errs))
+            self.assertTrue(any("plugin.json : 'mcpServers' est interdit" in e for e in errs))
+            self.assertTrue(any("clés non reconnues par Agent Plugins 1.0" in e for e in errs))
+            self.assertTrue(any("diverge de .codex-plugin/plugin.json" in e for e in errs))
+
+    def test_empaqueter_plugin_chatgpt_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            env = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
+            res = subprocess.run(
+                [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"],
+                cwd=RACINE,
+                env=env,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
+            zip_path = root / "dist" / "droit-civil-quebecois-chatgpt-universal.zip"
+            self.assertTrue(zip_path.is_file())
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                names = set(zf.namelist())
+            for req in ("plugin.json", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "assets/logo.svg"):
+                self.assertIn(req, names)
+            for forbidden in (
+                ".antigravity-plugin/plugin.json",
+                ".codex-plugin/plugin.json",
+                ".claude-plugin/plugin.json",
+                ".agents/plugins/marketplace.json",
+                ".mcp.json",
+                "mcp_config.json",
+                "gemini-extension.json",
+                "AGENTS.md",
+                "CLAUDE.md",
+                "GEMINI.md",
+            ):
+                self.assertNotIn(forbidden, names)
+
+    def test_synchroniser_plugin_gemini_promotes_antigravity_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            root = tmp_path / "repo"
+            _build_valid_v3_fixture(root)
+            plugins_root = tmp_path / "plugins_root"
+            plugins_root.mkdir(parents=True, exist_ok=True)
+            dst_dir = plugins_root / "droit-civil-quebecois"
+            env = {
+                **os.environ,
+                "DCQ_PLUGIN_SRC_DIR": str(root),
+                "GEMINI_PLUGINS_ROOT": str(plugins_root),
+                "GEMINI_PLUGIN_DST_DIR": str(dst_dir),
+                "PYTHONUTF8": "1",
+            }
+            res = subprocess.run(
+                [sys.executable, str(RACINE / "scripts" / "synchroniser_plugin_gemini.py"), "--apply"],
+                cwd=RACINE,
+                env=env,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
+            promoted = dst_dir / "plugin.json"
+            self.assertTrue(promoted.is_file())
+            self.assertEqual(
+                promoted.read_bytes(),
+                (root / ".antigravity-plugin" / "plugin.json").read_bytes(),
+            )
+            self.assertFalse((dst_dir / ".antigravity-plugin").exists())
 
 
 if __name__ == "__main__":
