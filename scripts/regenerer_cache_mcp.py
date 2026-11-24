@@ -1,7 +1,8 @@
 """
-regenerer_cache_mcp.py
+regenerer_cache_mcp.py (script mainteneur uniquement)
 Regénère de façon déterministe les 32 fichiers JSON de schémas d'outils et les 3 instructions.md
 dans ~/.gemini/antigravity/mcp/ à partir des descripteurs TypeScript faisant autorité.
+Prérequis : clones locaux frères de MCP-Legislation, MCP-Jurisprudence et MCP-Outils + Node.js (`npx tsx`).
 Usage:
     python scripts/regenerer_cache_mcp.py          # validation / dry-run
     python scripts/regenerer_cache_mcp.py --apply  # écriture sur disque
@@ -16,7 +17,7 @@ from pathlib import Path
 BASE_CACHE = Path(
     os.environ.get(
         "ANTIGRAVITY_MCP_CACHE_DIR",
-        Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "antigravity" / "mcp",
+        Path.home() / ".gemini" / "antigravity" / "mcp",
     )
 )
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -158,15 +159,19 @@ def main():
             
         for name, tool_data in sorted(tools.items()):
             # Vérifications d'intégrité
-            assert len(tool_data["description"]) > 50, f"Description tronquée pour {name}"
+            if len(tool_data["description"]) <= 50:
+                raise ValueError(f"Description tronquée pour {name}")
             params = tool_data["parameters"]
-            assert params.get("type") == "object", f"Parameters non-object pour {name}"
-            assert params.get("additionalProperties") is False, f"additionalProperties non-false pour {name}"
+            if params.get("type") != "object":
+                raise ValueError(f"Parameters non-object pour {name}")
+            if params.get("additionalProperties") is not False:
+                raise ValueError(f"additionalProperties non-false pour {name}")
             props = params.get("properties", {})
             for p_name, p_schema in props.items():
-                assert bool(p_schema.get("description")), f"{name}.{p_name} sans description"
-                if p_schema.get("type") == "array":
-                    assert bool(p_schema.get("items")), f"{name}.{p_name} array sans items"
+                if not p_schema.get("description"):
+                    raise ValueError(f"{name}.{p_name} sans description")
+                if p_schema.get("type") == "array" and not p_schema.get("items"):
+                    raise ValueError(f"{name}.{p_name} array sans items")
             
             if apply_mode:
                 out_path = target_dir / f"{name}.json"

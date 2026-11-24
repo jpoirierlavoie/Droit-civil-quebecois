@@ -31,3 +31,7 @@ jobs:
         run: python evals/executer_evals.py --auto-test
       - name: Vérification E2E multi-paliers (mock)
         run: python verifier_tout.py --mode mock
+      - name: Validation de l'archive universelle ChatGPT
+        run: |
+          python scripts/empaqueter_plugin_chatgpt.py
+          python scripts/empaqueter_plugin_chatgpt.py --apply

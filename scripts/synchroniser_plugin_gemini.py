@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 synchroniser_plugin_gemini.py
 Synchronise le plugin droit-civil-quebecois vers le répertoire de plugins Gemini installé.
@@ -5,15 +6,19 @@ Usage:
     python scripts/synchroniser_plugin_gemini.py          # dry-run
     python scripts/synchroniser_plugin_gemini.py --apply  # copie effective
 """
+from __future__ import annotations
+
+import filecmp
 import os
+import shutil
 import sys
 import time
-import shutil
-import filecmp
 from pathlib import Path
 
-SRC_DIR = Path(os.environ.get("PCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1]))
-PLUGINS_ROOT = Path(os.environ.get("USERPROFILE", Path.home())) / ".gemini" / "config" / "plugins"
+SRC_DIR = Path(os.environ.get("DCQ_PLUGIN_SRC_DIR", Path(__file__).resolve().parents[1]))
+PLUGINS_ROOT = Path(
+    os.environ.get("GEMINI_PLUGINS_ROOT", Path.home() / ".gemini" / "config" / "plugins")
+)
 DST_DIR = Path(
     os.environ.get(
         "GEMINI_PLUGIN_DST_DIR",
@@ -21,30 +26,27 @@ DST_DIR = Path(
     )
 )
 
-BUNDLE_ROOT_FILES = [
-    Path("plugin.json"),
-    Path("mcp_config.json"),
-    Path("LICENSE"),
-    Path("NOTICE"),
-    Path("SECURITY.md"),
-    Path("README.md"),
+BUNDLE_ROOT_FILES: list[tuple[Path, Path]] = [
+    (Path(".antigravity-plugin/plugin.json"), Path("plugin.json")),
+    (Path("mcp_config.json"), Path("mcp_config.json")),
+    (Path("LICENSE"), Path("LICENSE")),
+    (Path("NOTICE"), Path("NOTICE")),
+    (Path("SECURITY.md"), Path("SECURITY.md")),
+    (Path("README.md"), Path("README.md")),
 ]
 
-def collect_bundle_files():
-    files = list(BUNDLE_ROOT_FILES)
-    # Assets
-    assets_dir = SRC_DIR / "assets"
-    if assets_dir.is_dir():
-        for p in assets_dir.rglob("*"):
-            if p.is_file() and not p.name.endswith(".pyc") and "__pycache__" not in p.parts:
-                files.append(p.relative_to(SRC_DIR))
-    # Skills
-    skills_dir = SRC_DIR / "skills"
-    if skills_dir.is_dir():
-        for p in skills_dir.rglob("*"):
-            if p.is_file() and not p.name.endswith(".pyc") and "__pycache__" not in p.parts:
-                files.append(p.relative_to(SRC_DIR))
-    return sorted(files)
+
+def collect_bundle_files() -> list[tuple[Path, Path]]:
+    files: list[tuple[Path, Path]] = list(BUNDLE_ROOT_FILES)
+    for folder in ("assets", "skills"):
+        folder_dir = SRC_DIR / folder
+        if folder_dir.is_dir():
+            for p in folder_dir.rglob("*"):
+                if p.is_file() and not p.name.endswith(".pyc") and "__pycache__" not in p.parts:
+                    rel = p.relative_to(SRC_DIR)
+                    files.append((rel, rel))
+    return sorted(files, key=lambda pair: pair[1].as_posix())
+
 
 def _verifier_confinement(cible: Path, racine: Path, nom: str) -> Path:
     racine_res = racine.resolve()
@@ -62,7 +64,7 @@ def _verifier_confinement(cible: Path, racine: Path, nom: str) -> Path:
     return cible_res
 
 
-def main():
+def main() -> None:
     apply_mode = "--apply" in sys.argv
     print(f"[*] Synchronisation du plugin Gemini (mode: {'APPLY' if apply_mode else 'DRY-RUN'})...")
     print(f"    Source:      {SRC_DIR}")
@@ -74,26 +76,28 @@ def main():
     copied = 0
     identical = 0
     mcp_config_copied = False
-    
-    for rel_path in files:
-        s = SRC_DIR / rel_path
-        d = dst_dir / rel_path
-        assert s.exists(), f"Fichier source introuvable: {s}"
-        
+
+    for src_rel, dst_rel in files:
+        s = SRC_DIR / src_rel
+        d = dst_dir / dst_rel
+        if not s.is_file():
+            raise FileNotFoundError(f"Fichier source introuvable: {s}")
+
         is_same = d.exists() and filecmp.cmp(s, d, shallow=False)
         if not is_same:
-            print(f"  [COPIE] {rel_path}")
+            label = f"{src_rel} -> {dst_rel}" if src_rel != dst_rel else f"{dst_rel}"
+            print(f"  [COPIE] {label}")
             if apply_mode:
                 d.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(s, d)
             copied += 1
-            if rel_path == Path("mcp_config.json"):
+            if dst_rel == Path("mcp_config.json"):
                 mcp_config_copied = True
         else:
-            print(f"  [CONFORME] {rel_path}")
+            print(f"  [CONFORME] {dst_rel}")
             identical += 1
-            
-    expected_set = set(files)
+
+    expected_set = {dst_rel for _, dst_rel in files}
     stale_files = []
     if dst_dir.is_dir():
         for existing in sorted(dst_dir.rglob("*")):
@@ -119,9 +123,13 @@ def main():
     )
 
     if apply_mode:
-        # Re-vérification stricte
-        diffs = [rel for rel in files if not filecmp.cmp(SRC_DIR / rel, dst_dir / rel, shallow=False)]
-        assert len(diffs) == 0, f"Différences persistantes après copie: {diffs}"
+        diffs = [
+            dst_rel
+            for src_rel, dst_rel in files
+            if not filecmp.cmp(SRC_DIR / src_rel, dst_dir / dst_rel, shallow=False)
+        ]
+        if diffs:
+            raise RuntimeError(f"Différences persistantes après copie: {diffs}")
         print("[OK] Vérification post-synchronisation : 100% conforme.")
         if mcp_config_copied:
             time.sleep(2.5)
@@ -132,6 +140,7 @@ def main():
                 "'python scripts/regenerer_cache_mcp.py --apply' pour reconstruire le cache "
                 "à partir des dépôts locaux."
             )
+
 
 if __name__ == "__main__":
     main()

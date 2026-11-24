@@ -1,40 +1,21 @@
 # droit-civil-quebecois — Architecture, principes et consignes de travail
 
-Directives de développement, architecture multi-dépôts à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.1.0`). Ce document gouverne de façon identique Claude et Google Antigravity / Gemini CLI (`CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
+Directives de développement, architecture multi-dépôts à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.1.0`). Ce document gouverne de façon identique OpenAI Codex, Claude Code et Google Antigravity / Gemini CLI (`AGENTS.md`, `CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
 
-> **Note Gemini CLI (`gemini-extension.json`) :** La racine déclare `"contextFileName": []` afin que `GEMINI.md` ne soit **jamais** injecté comme contexte système dans les sessions d'usage juridique normal des utilisateurs finaux. Il s'applique exclusivement aux agents qui modifient ce dépôt.
+> **Portée en session finale :** `gemini-extension.json` fixe `"contextFileName": []`, Antigravity ignore les fichiers `AGENTS.md`/`GEMINI.md` à la racine d'un greffon (seul `rules/` est chargé) et l'archive universelle ChatGPT exclut `AGENTS.md`, `CLAUDE.md` et `GEMINI.md`. Ces instructions ne s'appliquent qu'aux agents qui modifient ce dépôt.
 
 ---
 
 ## 1. Architecture v3.1.0 multi-dépôts et topologie (10 compétences)
 
-`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web/Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé :
+`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web/Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 32 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé (`MCP-Socle`) :
 
-```
-             ┌────────────────────────────────────────────────────────┐
-             │      droit-civil-quebecois (Plugin Cadre v3.1.0)       │
-             │   5 orchestrateurs phase-* · 5 services · 59 feuilles  │
-             │              4 scripts Python stdlib                   │
-             └──────┬───────────────────────┬──────────────────┬──────┘
-                    │ /mcp/oauth (OAuth 2.1)│ /mcp/oauth       │ /mcp (public)
-                    │ /mcp (Bearer / 404)   │ /mcp (404)       │
-                    ▼                       ▼                  ▼
-         ┌─────────────────────┐ ┌─────────────────────┐ ┌──────────────────────────┐
-         │   MCP-Legislation   │ │  MCP-Jurisprudence  │ │        MCP-Outils        │
-         │  D1 + Vectorize +   │ │  D1 cache CanLII    │ │   Public, 3 D1 lecture   │
-         │  Workers AI +       │ │  BYOK CanLII strict │ │   seule, zéro secret,    │
-         │  hybride_permis     │ │  sans fetched_at    │ │   zéro journalisation    │
-         └──────────┬──────────┘ └──────────┬──────────┘ └──────────────────────────┘
-                    │                       │
-                    ├───────────┬───────────┴────┐
-                    │           ▼ (MCP-Socle)    ▼ (D1 partagée `mcp-identite`)
-                    │  ┌──────────────────┐  ┌──────────────────────────────────────┐
-                    │  │    MCP-Socle     │  │              MCP-Acces               │
-                    │  │ Transport 2026   │  │     https://acces.poirierlavoie.ca   │
-                    └──│ Auth · OAuth 2.1 │◄─┤ Admission Barreau · Coffre AES-GCM · │
-                       │ Coffre · Gouverne│  │ Portail /moi · Serveur OAuth PKCE    │
-                       └──────────────────┘  └──────────────────────────────────────┘
-```
+- **Greffon cadre (`droit-civil-quebecois`) :** 5 orchestrateurs `phase-*`, 5 services transversaux, 59 feuilles, 4 scripts stdlib.
+- **Connecteurs MCP :**
+  - `lois` (`MCP-Legislation`) : D1 + Vectorize + Workers AI (`hybride_permis`) — `/mcp/oauth` (OAuth 2.1) et `/mcp` (Bearer / `404`).
+  - `juris` (`MCP-Jurisprudence`) : D1 cache CanLII + BYOK CanLII strict sans `fetched_at` — `/mcp/oauth` (OAuth 2.1) et `/mcp` (`404`).
+  - `outils` (`MCP-Outils`) : Public, 3 D1 lecture seule, zéro secret, zéro journalisation — `/mcp`.
+- **Socle & Identité :** `MCP-Socle` (transport 2026, auth, OAuth 2.1, coffre, gouverne) et `MCP-Acces` (`https://acces.poirierlavoie.ca` — admission Barreau, coffre AES-GCM, portail `/moi`, serveur OAuth PKCE, D1 partagée `mcp-identite`).
 
 ### Cartographie des 10 compétences, 59 feuilles et 4 scripts (`skills/`)
 
@@ -43,29 +24,18 @@ Conception **Découverte progressive à 3 niveaux** + **Calibration de rigueur �
 #### A. Cinq orchestrateurs de phase (`PHASE_SKILLS` — listes de contrôle, portes et enchaînements uniquement, aucune règle de fond)
 
 1. **`skills/phase-ouverture-dossier`** (`0` feuille) — Conflit, identification/mandat, réception/tri des pièces, triage d'urgence, recherche préliminaire, note stratégique, mise en demeure ou suite.
-2. **`skills/phase-introduction-reponse`** (`3` feuilles de branche) — `references/branche-demandeur.md`, `references/branche-defendeur.md`, `references/branche-urgence.md`.
+2. **`skills/phase-introduction-reponse`** (`3` feuilles) — `references/branche-demandeur.md`, `branche-defendeur.md`, `branche-urgence.md`.
 3. **`skills/phase-interrogatoires-instruction`** (`0` feuille) — Communication de preuve, plan d'interrogatoire, tenue, extraction de transcription, engagements/objections (`5 j` sur art. 228 al. 2), expertise, modifications (`206–208`).
-4. **`skills/phase-preparation-audience`** (`1` feuille de branche) — Mise en état, CRA/conférence préparatoire, témoins, cahiers, plan d'argumentation, admissions, contrôle complet de production ; `references/branche-audience-interlocutoire.md`.
+4. **`skills/phase-preparation-audience`** (`1` feuille) — Mise en état, CRA/conférence préparatoire, témoins, cahiers, plan d'argumentation, admissions, contrôle complet de production ; `references/branche-audience-interlocutoire.md`.
 5. **`skills/phase-jugement-et-suites`** (`0` feuille) — Réception du jugement, analyse des erreurs/norme, délai d'appel/permission/rétractation, rapport au client, recours/exécution, frais/intérêts, clôture du dossier.
 
 #### B. Cinq compétences de service (`SERVICE_SKILLS`)
 
-1. **`skills/recherche-juridique`** (`6` feuilles)
-   - `grille-prealables.md`, `recherche-legislative.md`, `recherche-jurisprudentielle.md`, `recherche-doctrinale.md`, `recherche-precedents-internes.md`, `recherche-livrables.md`.
-2. **`skills/analyse-et-strategie`** (`12` feuilles, `1` script)
-   - `piece-reception-et-qualification.md`, `preuve-directe.md`, `preuve-indirecte.md`, `preuve-documents-judiciaires.md`, `preuve-recevabilite-force-probante.md`, `preuve-privilege-confidentialite-caviardage.md`, `produit-theorie-de-la-cause.md`, `produit-note-et-memo.md`, `produit-matrice-allegations.md`, `produit-fiche-preuve-et-temoins.md`, `produit-chronologie.md`, `produit-interrogatoire.md`.
-   - Script : `scripts/inspecter_piece.py` (inspection locale .docx/.xlsx/.eml/.pdf/images/médias + `--journal` journal de garde, zéro réseau).
-3. **`skills/redaction-juridique`** (`25` feuilles)
-   - Socle : `fondamentaux-actes.md`, `anti-contamination-bilingue.md`.
-   - Actes (`12`) : `acte-demande-introductive.md`, `acte-defense-et-expose-sommaire.md`, `acte-demandes-cours-instance.md`, `acte-moyens-preliminaires.md`, `acte-reconvention-intervention-garantie.md`, `acte-injonction.md`, `acte-saisie-avant-jugement.md`, `acte-mesures-provisionnelles-autres.md`, `acte-pourvoi-controle-judiciaire.md`, `acte-appel-declaration-permission.md`, `acte-retractation-jugement.md`, `acte-execution-et-oppositions.md`.
-   - Argumentation (`4`) : `arg-plan-argumentation.md`, `arg-argumentation-ecrite.md`, `arg-memoire-et-expose-appel.md`, `arg-citations.md`.
-   - Correspondance & contrats (`7`) : `corr-mise-en-demeure.md`, `corr-confrere-et-tribunal.md`, `corr-client.md`, `contrat-protocole-instance.md`, `contrat-ententes-judiciaires.md`, `contrat-transaction-quittance.md`, `contrat-civil-commercial.md`.
-4. **`skills/production-et-conformite`** (`7` feuilles, `2` scripts)
-   - `controle-acte-de-procedure.md`, `controle-correspondance.md`, `controle-pdf-et-metadonnees.md`, `cahier-des-sources.md`, `cahier-des-pieces-et-bordereaux.md`, `cahier-des-procedures.md`, `controle-endos-depot-signification.md`.
-   - Scripts : `scripts/controler_document.py` (vérification + bon de travail Word/PDF), `scripts/verifier_cotes.py` (continuité des cotes et concordance).
-5. **`skills/gestion-du-mandat`** (`5` feuilles, `1` script)
-   - `conformite-ouverture-conflits-mandat.md`, `conformite-radar-deontologique.md`, `conformite-facturation-fideicommis.md`, `conformite-echeanciers-cpc.md`, `conformite-quantum-interets-frais.md`.
-   - Script : `scripts/calcul_delai.py` (repli local déterministe du calendrier C.p.c., zéro réseau).
+1. **`skills/recherche-juridique`** (`6` feuilles) — `grille-prealables.md` et `recherche-*.md` (`legislative`, `jurisprudentielle`, `doctrinale`, `precedents-internes`, `livrables`).
+2. **`skills/analyse-et-strategie`** (`12` feuilles, `1` script) — `piece-reception-et-qualification.md`, `preuve-*.md` (`5`), `produit-*.md` (`6`) ; script `scripts/inspecter_piece.py` (inspection locale `.docx`/`.xlsx`/`.eml`/`.pdf`/images/médias + `--journal` journal de garde, zéro réseau).
+3. **`skills/redaction-juridique`** (`25` feuilles) — Socle (`fondamentaux-actes.md`, `anti-contamination-bilingue.md`), `acte-*.md` (`12`), `arg-*.md` (`4`), `corr-*.md` (`3`), `contrat-*.md` (`4`).
+4. **`skills/production-et-conformite`** (`7` feuilles, `2` scripts) — `controle-*.md` (`4`), `cahier-*.md` (`3`) ; scripts `scripts/controler_document.py` (vérification + bon de travail Word/PDF) et `scripts/verifier_cotes.py` (continuité des cotes et concordance).
+5. **`skills/gestion-du-mandat`** (`5` feuilles, `1` script) — `conformite-*.md` (`ouverture-conflits-mandat`, `radar-deontologique`, `facturation-fideicommis`, `echeanciers-cpc`, `quantum-interets-frais`) ; script `scripts/calcul_delai.py` (repli local déterministe du calendrier C.p.c., zéro réseau).
 
 ---
 
@@ -80,7 +50,7 @@ Conception **Découverte progressive à 3 niveaux** + **Calibration de rigueur �
 
 ### Noyau de sécurité canonique v3 (`SAFETY-KERNEL`)
 
-Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END -->` (5 garde-fous : Confidentialité stricte, Sources primaires obligatoires avec redirection vers `acces.poirierlavoie.ca/moi` sur `401`/`404`/`429`/`[CLEF_ABSENTE]`/`[CLEF_REFUSEE]`/`QUOTA_EPUISE`/hors ligne, Étanchéité bijuridique, Protection et déclencheurs déontologiques, **Perception et précédents**). Ce bloc reste en tête de chaque `SKILL.md` afin de survivre à la compaction de contexte et correspond au préambule Deep Research dans `README.md`. Crochets normalisés : `[À CONFIRMER]`, `[DATE À CONFIRMER]`, `[À COMPLÉTER]`, `[À VÉRIFIER VIA LOIS]`, `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
+Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:START -->...<!-- SAFETY-KERNEL:END -->` (5 garde-fous : Confidentialité stricte, Sources primaires obligatoires avec redirection vers `acces.poirierlavoie.ca/moi` sur `401`/`403`/`404`/`429`/`[CLEF_ABSENTE]`/`[CLEF_REFUSEE]`/`QUOTA_EPUISE`/hors ligne, Étanchéité bijuridique, Protection et déclencheurs déontologiques, **Perception et précédents**). Ce bloc reste en tête de chaque `SKILL.md` afin de survivre à la compaction de contexte et correspond au préambule Deep Research dans `README.md`. Crochets normalisés : `[À CONFIRMER]`, `[DATE À CONFIRMER]`, `[À COMPLÉTER]`, `[À VÉRIFIER VIA LOIS]`, `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
 
 ### Gabarit 1 — Orchestrateur (`phase-*/SKILL.md`)
 
@@ -135,7 +105,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 ### Règles transversales de fond (`v3.1.0`)
 
-- **Auto-connexion OAuth 2.1 par défaut, BYOK CanLII et zéro-log :** les 3 manifestes MCP (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) pointent par défaut vers `/mcp/oauth` sans secret ni variable statique (flux OAuth 2.1 PKCE `S256` + inscription dynamique RFC 7591 sans état `/oauth/register` via `acces.poirierlavoie.ca`), tandis que `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` afin d'éviter le badge *Desktop only* sur ChatGPT Web, et que `/mcp` (`Bearer` / `?key=`, refus uniforme `404`) demeure actif pour les CLI/CI sans navigateur, l'API OpenAI Responses et l'API Gemini Deep Research *(ChatGPT Deep Research exclu)*. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
+- **Auto-connexion OAuth 2.1 par défaut, BYOK CanLII et zéro-log :** les 3 manifestes MCP (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) pointent par défaut vers `/mcp/oauth` sans secret ni variable statique (flux OAuth 2.1 PKCE `S256` + inscription dynamique RFC 7591 sans état `/oauth/register` via `acces.poirierlavoie.ca`), tandis que `.codex-plugin/plugin.json`, `plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` afin d'éviter le badge *Desktop only* sur ChatGPT Web, et que `/mcp` (`Bearer` / `?key=`, refus uniforme `404`) demeure actif pour les CLI/CI sans navigateur, l'API OpenAI Responses et l'API Gemini Deep Research *(ChatGPT Deep Research exclu)*. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
 - **Corpus PDF Vague 1 (`lois`, `110` textes) :** inclut les directives QCCS/QCCQ (`fonction='directive'`, `unit='paragraphe'`, `par.`/`dir.`, `fr`-only ; `QCCA` absent de la Vague 1) et les règlements/orientations AMF (`v-1.1-r.*`, `amf-ig-*`, `fonction='orientation'`), reliés par `rel_type='preseance-sur'|'interprete'` et `articles.links` (`kind='annexe'`, `ps:*`).
 - **Aucune décharge statutaire figée :** privilégier les vecteurs `lois.get_articles`, paires confondables et silences ; ne jamais copier le texte intégral d'articles ni coder de seuils réglementaires en dur dans les scripts.
 - **Production et dégradation nuage (`production-et-conformite` & `analyse-et-strategie`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis. Lorsque les scripts `.py` locaux (`controler_document.py`, `verifier_cotes.py`, `inspecter_piece.py`) ne peuvent pas s'exécuter (`claude.ai`, ChatGPT sans Python local, Gemini App `/mcp/oauth`, Deep Research), **divulguer explicitement** que les contrôles octets/XML/PDF/cotes ont été omis et les inscrire en tête du **bon de travail** manuel.
@@ -151,7 +121,7 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 | # | Axe d'impact | Éléments à inspecter |
 |---|---|---|
 | 1 | **Compétences (`skills/`), scripts et `evals/`** | `skills/*/SKILL.md`, `references/`, `scripts/`, `evals/scenarios.json`, `evals/executer_evals.py`, `evals/test_verifier.py`, `verifier.py`, `verifier_tout.py` |
-| 2 | **`README.md`, sécurité, licence et manifestes** | `README.md`, `SECURITY.md`, `LICENSE` (`Apache-2.0`), `NOTICE`, `CLAUDE.md`, `GEMINI.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `plugin.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
+| 2 | **`README.md`, gouvernance, sécurité, licence et 9 manifestes** | `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `LICENSE` (`Apache-2.0`), `NOTICE`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.antigravity-plugin/plugin.json`, `plugin.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `mcp_config.json`, `gemini-extension.json`, `.mcp.json` |
 | 3 | **Pages publiques HTML (`GET /`) et fiches `/mcp/server-card` des serveurs MCP** | `src/site.ts` / `site.i18n.ts` / `server-card` / `/.well-known/oauth-protected-resource/mcp/oauth` dans `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils` et `MCP-Acces` |
 | 4 | **Impacts inter-dépôts (`Cross-repository`)** | **`MCP-Socle`**, **`MCP-Acces`**, **`MCP-Legislation`**, **`MCP-Jurisprudence`** et **`MCP-Outils`** (identité `mcp-identite`, BYOK, OAuth 2.1 `/mcp/oauth`, 32 outils, synchronisation Antigravity / Gemini CLI) |
 
@@ -161,9 +131,9 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
-1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE` et `NOTICE`.
-2. **Parité exacte des manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `Apache-2.0` (`LICENSE`) accompagnée de `NOTICE` (reconnaissance des sources officielles et non-revendication), semver identique partout (`3.1.0`, dont `.codex-plugin/plugin.json` avec `shortDescription <= 30` car., `defaultPrompt <= 128` car., et `.agents/plugins/marketplace.json`), `"contextFileName": []` et `"settings": []` dans `gemini-extension.json`.
-3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 32 outils inchangés, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity, 55 OpenAI `plugin:skill`) ; `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop.
+1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin (incluant `CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`) ; parité octet pour octet entre `AGENTS.md`, `CLAUDE.md` et `GEMINI.md` (`< 24 000` octets) ; encodage UTF-8 sans BOM et LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE` et `NOTICE`.
+2. **Parité exacte des 9 manifestes et licence (`3.1.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `Apache-2.0` (`LICENSE`) + `NOTICE`, semver identique partout (`3.1.0`) : `.antigravity-plugin/plugin.json` (`$schema` Antigravity v1), `plugin.json` racine (Portable Agent Plugins 1.0 + `extensions.com.openai.interface` identique à `.codex-plugin/plugin.json`), `.claude-plugin/{plugin,marketplace}.json`, `.codex-plugin/plugin.json` (`shortDescription <= 30`, `defaultPrompt <= 128`), `.agents/plugins/marketplace.json`, `gemini-extension.json` (`"contextFileName": []`, `"settings": []`), `mcp_config.json`, `.mcp.json`.
+3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 32 outils inchangés, longueur composée `<= 64` car. (max 62 Claude Code, 52 Antigravity, 55 OpenAI `plugin:skill`) ; `plugin.json`, `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop.
 4. **Budgets et structure des compétences (`skills/`) :**
    - Descriptions YAML : `<= 450` car. (phases), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale du greffon `<= 6 000` car.**, incluant `En anglais` et `Ne pas utiliser pour`, sans `<`/`>`.
    - `SKILL.md` : corps `<= 2 200` mots et `<= 16 384` octets (`16 KB`), ouverture par `# `, parité SHA-256 du `SAFETY-KERNEL` v3 (règle 2 `acces.poirierlavoie.ca/moi` + `403`, règle 5 `Perception et précédents` + `donnée brute`) sur les 10 `SKILL.md`, correspondance 1:1 avec `references/*.md` et `scripts/*.py`.

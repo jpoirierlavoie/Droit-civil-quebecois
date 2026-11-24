@@ -3,7 +3,7 @@
 verifier_tout.py — Suite de vérification E2E multi-paliers pour droit-civil-quebecois.
 
 Valide de bout en bout l'intégration du greffon et de ses serveurs MCP (Législation,
-Jurisprudence, Outils) pour Claude et Gemini, en mode simulation locale (Mock) ou
+Jurisprudence, Outils) pour Claude, ChatGPT/Codex et Gemini/Antigravity, en mode simulation locale (Mock) ou
 réseau en direct (Live).
 
 Paliers de vérification :
@@ -31,8 +31,19 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+def _lire_version_manifeste() -> str:
+    manifest_path = Path(__file__).resolve().parent / "plugin.json"
+    if not manifest_path.is_file():
+        raise RuntimeError(f"Manifeste introuvable pour lire la version : {manifest_path}")
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    ver = data.get("version") if isinstance(data, dict) else None
+    if not isinstance(ver, str) or not re.match(r"^\d+\.\d+\.\d+$", ver):
+        raise RuntimeError(f"Version invalide dans {manifest_path} : {ver!r}")
+    return ver
+
+
 # Constantes de version et d'environnement
-VERSION_ATTENDUE = "3.1.0"
+VERSION_ATTENDUE = _lire_version_manifeste()
 USER_AGENT_VERIFICATEUR = (
     "DroitCivilQuebecois-Verifier/3.1 (DroitCivil; Windows NT 10.0; Win64; x64) "
     "Python-urllib-E2E"
@@ -2156,6 +2167,7 @@ def run_tier_1_tests(
     # --- 1.1 Manifest Structural & Semver Validation ---
     t0 = time.perf_counter()
     manifest_rel_paths = [
+        ".antigravity-plugin/plugin.json",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
         ".codex-plugin/plugin.json",
@@ -2166,12 +2178,12 @@ def run_tier_1_tests(
         "gemini-extension.json",
     ]
 
-    # T1.1.1 : Présence des 8 manifestes
+    # T1.1.1 : Présence des 9 manifestes
     missing = [p for p in manifest_rel_paths if not (repo_root / p).is_file()]
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.1.1",
-        "Présence des 8 fichiers manifestes",
+        "Présence des 9 fichiers manifestes",
         "all",
         len(missing) == 0,
         elapsed,
@@ -2222,10 +2234,11 @@ def run_tier_1_tests(
         "; ".join(json_errs) if json_errs else None,
     )
 
-    # T1.1.4 : Parité semver 3.1.0
+    # T1.1.4 : Parité semver
     t0 = time.perf_counter()
     semver_errs = []
     for rel in (
+        ".antigravity-plugin/plugin.json",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
         ".codex-plugin/plugin.json",
@@ -2268,18 +2281,25 @@ def run_tier_1_tests(
         f"Fuites détectées dans : {leaks}" if leaks else None,
     )
 
-    # T1.1.6 : Structure plugin.json Antigravity
+    # T1.1.6 : Structure .antigravity-plugin/plugin.json Antigravity
     t0 = time.perf_counter()
-    p_json = parsed_manifests.get("plugin.json", {})
+    p_json = parsed_manifests.get(".antigravity-plugin/plugin.json", {})
     p_errs = []
-    if not isinstance(p_json, dict) or p_json.get("name") != "droit-civil-quebecois":
-        p_errs.append("Nom invalide")
-    if not (1 <= len(p_json.get("suggestedPrompts", [])) <= 3):
-        p_errs.append("suggestedPrompts non conforme")
+    if not isinstance(p_json, dict):
+        p_errs.append("Objet JSON attendu")
+    else:
+        if p_json.get("$schema") != "https://antigravity.google/schemas/v1/plugin.json":
+            p_errs.append("$schema Antigravity invalide")
+        if p_json.get("name") != "droit-civil-quebecois":
+            p_errs.append("Nom invalide")
+        if p_json.get("displayName") != "Droit civil québécois":
+            p_errs.append("displayName invalide")
+        if not (1 <= len(p_json.get("suggestedPrompts", [])) <= 3):
+            p_errs.append("suggestedPrompts non conforme")
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.1.6",
-        "Conformité du manifeste plugin.json Antigravity",
+        "Conformité du manifeste .antigravity-plugin/plugin.json",
         "all",
         len(p_errs) == 0,
         elapsed,
@@ -2332,11 +2352,29 @@ def run_tier_1_tests(
         "; ".join(g_errs) if g_errs else None,
     )
 
-    # T1.1.9 : Conformité des manifestes ChatGPT / Codex (.codex-plugin et .agents/plugins)
+    # T1.1.9 : Conformité des manifestes ChatGPT / Codex / Agent Plugins 1.0 (plugin.json, .codex-plugin et .agents/plugins)
     t0 = time.perf_counter()
+    root_p_json = parsed_manifests.get("plugin.json", {})
     cp_json = parsed_manifests.get(".codex-plugin/plugin.json", {})
     cm_json = parsed_manifests.get(".agents/plugins/marketplace.json", {})
     cx_errs = []
+    if not isinstance(root_p_json, dict) or root_p_json.get("name") != "droit-civil-quebecois":
+        cx_errs.append("plugin.json name invalide")
+    else:
+        if root_p_json.get("$schema") != "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json":
+            cx_errs.append("plugin.json $schema Agent Plugins 1.0 invalide")
+        if "mcpServers" in root_p_json or "requires_local_executor" in root_p_json:
+            cx_errs.append("plugin.json ne doit contenir ni mcpServers ni requires_local_executor")
+        exts = root_p_json.get("extensions")
+        if (
+            not isinstance(exts, dict)
+            or not isinstance(exts.get("com.openai"), dict)
+            or not isinstance(exts["com.openai"].get("interface"), dict)
+        ):
+            cx_errs.append("plugin.json extensions.com.openai.interface absent")
+        elif isinstance(cp_json, dict) and isinstance(cp_json.get("interface"), dict):
+            if exts["com.openai"]["interface"] != cp_json["interface"]:
+                cx_errs.append("plugin.json extensions.com.openai.interface diverge de .codex-plugin/plugin.json")
     if not isinstance(cp_json, dict) or cp_json.get("name") != "droit-civil-quebecois":
         cx_errs.append(".codex-plugin/plugin.json name invalide")
     else:
