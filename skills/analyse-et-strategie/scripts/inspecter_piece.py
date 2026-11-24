@@ -33,6 +33,10 @@ _MP3_EXTS = {".mp3"}
 _MP4_EXTS = {".mp4", ".m4a", ".mov"}
 _MAX_ZIP_MEMBER_BYTES = 64 * 1024 * 1024
 _MAX_ZIP_TOTAL_BYTES = 128 * 1024 * 1024
+_MAX_RAW_FILE_BYTES = 128 * 1024 * 1024
+_MAX_ZLIB_STREAM_BYTES = 32 * 1024 * 1024
+_MAX_PDF_OBJSTM_TOTAL_BYTES = 64 * 1024 * 1024
+_MAX_PNG_TEXT_BYTES = 1 * 1024 * 1024
 _VANISH_TAGS = ("vanish", "specVanish", "webHidden")
 _XML_OFF_VALUES = frozenset({"0", "false", "off"})
 
@@ -71,6 +75,22 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: fh.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _decompress_zlib_bounded(
+    data: bytes, max_bytes: int = _MAX_ZLIB_STREAM_BYTES
+) -> bytes | None:
+    try:
+        dobj = zlib.decompressobj()
+        out = dobj.decompress(data, max_bytes + 1)
+        if len(out) > max_bytes or dobj.unconsumed_tail:
+            return None
+        tail = dobj.flush(max_bytes + 1 - len(out))
+        if len(out) + len(tail) > max_bytes:
+            return None
+        return out + tail
+    except zlib.error:
+        return None
 
 
 def _truncate(text: str, limit: int = 120) -> str:
@@ -728,6 +748,7 @@ def _inspect_pdf(path: Path) -> dict[str, object]:
 
     text_stream_hits = 0
     objstm_blobs: list[bytes] = []
+    objstm_total = 0
     if not encrypted:
         for m in _PDF_STREAM_RE.finditer(raw):
             chunk = m.group(1)
@@ -735,17 +756,16 @@ def _inspect_pdf(path: Path) -> dict[str, object]:
                 continue
             pre_dict = raw[max(0, m.start() - 320) : m.start()]
             is_objstm = bool(_PDF_OBJSTM_RE.search(pre_dict))
-            decompressed: bytes | None = None
-            try:
-                decompressed = zlib.decompressobj().decompress(chunk)
-            except zlib.error:
-                decompressed = None
+            decompressed = _decompress_zlib_bounded(chunk, _MAX_ZLIB_STREAM_BYTES)
             if is_objstm and decompressed:
                 first_m = _PDF_FIRST_RE.search(pre_dict)
                 first_off = int(first_m.group(1)) if first_m else 0
-                objstm_blobs.append(
+                slice_bytes = (
                     decompressed[first_off:] if first_off < len(decompressed) else decompressed
                 )
+                if objstm_total + len(slice_bytes) <= _MAX_PDF_OBJSTM_TOTAL_BYTES:
+                    objstm_blobs.append(slice_bytes)
+                    objstm_total += len(slice_bytes)
             else:
                 for cand in (chunk, decompressed) if decompressed else (chunk,):
                     if _PDF_TEXT_OP_RE.search(cand):
@@ -995,12 +1015,9 @@ def _inspect_png(path: Path) -> dict[str, object]:
                 nul = chunk_data.find(b"\x00")
                 if nul > 0 and nul + 2 <= len(chunk_data) and chunk_data[nul + 1] == 0:
                     k = chunk_data[:nul].decode("latin-1", errors="replace")
-                    decompressed: bytes | None = None
-                    try:
-                        decompressed = zlib.decompress(chunk_data[nul + 2 :])
-                    except zlib.error:
-                        # Flux compressé zTXt corrompu : ignorer ce chunk sans interrompre l'inspection PNG.
-                        decompressed = None
+                    decompressed = _decompress_zlib_bounded(
+                        chunk_data[nul + 2 :], _MAX_PNG_TEXT_BYTES
+                    )
                     if decompressed is not None:
                         v = decompressed.decode("latin-1", errors="replace")
                         text_chunks[k] = _truncate(v, 150)
@@ -1018,10 +1035,9 @@ def _inspect_png(path: Path) -> dict[str, object]:
                         if nul3 >= 0:
                             raw_txt = rest2[nul3 + 1 :]
                             if comp_flag == 1 and comp_method == 0:
-                                try:
-                                    raw_txt = zlib.decompress(raw_txt)
-                                except zlib.error:
-                                    raw_txt = b""
+                                raw_txt = (
+                                    _decompress_zlib_bounded(raw_txt, _MAX_PNG_TEXT_BYTES) or b""
+                                )
                             if raw_txt:
                                 text_chunks[k] = _truncate(
                                     raw_txt.decode("utf-8", errors="replace"), 150
@@ -1258,6 +1274,15 @@ def inspecter_fichier(path: Path) -> dict[str, object]:
         spec = _inspect_docx(path)
     elif ext in _XLSX_EXTS:
         spec = _inspect_xlsx(path)
+    elif (
+        ext in (_EML_EXTS | _PDF_EXTS | _JPEG_EXTS | _PNG_EXTS | _WAV_EXTS | _MP3_EXTS | _MP4_EXTS)
+        and stat.st_size > _MAX_RAW_FILE_BYTES
+    ):
+        return {
+            **base,
+            "statut": "erreur",
+            "erreur": f"Fichier trop volumineux pour l'inspection en mémoire ({stat.st_size} octets > {_MAX_RAW_FILE_BYTES}).",
+        }
     elif ext in _EML_EXTS:
         spec = _inspect_eml(path)
     elif ext in _PDF_EXTS:

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 regenerer_cache_mcp.py (script mainteneur uniquement)
 Regénère de façon déterministe les 32 fichiers JSON de schémas d'outils et les 3 instructions.md

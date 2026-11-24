@@ -24,6 +24,9 @@ _DOCX_EXTS = {".docx", ".docm"}
 _PDF_EXTS = {".pdf"}
 _MAX_ZIP_MEMBER_BYTES = 64 * 1024 * 1024
 _MAX_ZIP_TOTAL_BYTES = 128 * 1024 * 1024
+_MAX_RAW_FILE_BYTES = 128 * 1024 * 1024
+_MAX_ZLIB_STREAM_BYTES = 32 * 1024 * 1024
+_MAX_PDF_OBJSTM_TOTAL_BYTES = 64 * 1024 * 1024
 _VANISH_TAGS = ("vanish", "specVanish", "webHidden")
 _XML_OFF_VALUES = frozenset({"0", "false", "off"})
 
@@ -72,6 +75,22 @@ def _configure_stdio() -> None:
         reconf = getattr(stream, "reconfigure", None)
         if callable(reconf):
             reconf(encoding="utf-8", errors="replace")
+
+
+def _decompress_zlib_bounded(
+    data: bytes, max_bytes: int = _MAX_ZLIB_STREAM_BYTES
+) -> bytes | None:
+    try:
+        dobj = zlib.decompressobj()
+        out = dobj.decompress(data, max_bytes + 1)
+        if len(out) > max_bytes or dobj.unconsumed_tail:
+            return None
+        tail = dobj.flush(max_bytes + 1 - len(out))
+        if len(out) + len(tail) > max_bytes:
+            return None
+        return out + tail
+    except zlib.error:
+        return None
 
 
 def _truncate(text: str, limit: int = 120) -> str:
@@ -472,6 +491,12 @@ def _extract_pdf_literal(blob: bytes, key: bytes) -> str | None:
 
 
 def _extract_pdf_data(path: Path) -> dict[str, object]:
+    size = path.stat().st_size
+    if size > _MAX_RAW_FILE_BYTES:
+        return {
+            "statut": "erreur",
+            "erreur": f"Fichier PDF trop volumineux ({size} octets > {_MAX_RAW_FILE_BYTES}).",
+        }
     raw = path.read_bytes()
     header_m = _PDF_HEADER_RE.search(raw[:1024])
     version = header_m.group(1).decode("ascii") if header_m else "inconnue"
@@ -479,6 +504,7 @@ def _extract_pdf_data(path: Path) -> dict[str, object]:
 
     text_stream_hits = 0
     objstm_blobs: list[bytes] = []
+    objstm_total = 0
     if not encrypted:
         for m in _PDF_STREAM_RE.finditer(raw):
             chunk = m.group(1)
@@ -486,17 +512,16 @@ def _extract_pdf_data(path: Path) -> dict[str, object]:
                 continue
             pre_dict = raw[max(0, m.start() - 320) : m.start()]
             is_objstm = bool(_PDF_OBJSTM_RE.search(pre_dict))
-            decompressed: bytes | None = None
-            try:
-                decompressed = zlib.decompressobj().decompress(chunk)
-            except zlib.error:
-                decompressed = None
+            decompressed = _decompress_zlib_bounded(chunk, _MAX_ZLIB_STREAM_BYTES)
             if is_objstm and decompressed:
                 first_m = _PDF_FIRST_RE.search(pre_dict)
                 first_off = int(first_m.group(1)) if first_m else 0
-                objstm_blobs.append(
+                slice_bytes = (
                     decompressed[first_off:] if first_off < len(decompressed) else decompressed
                 )
+                if objstm_total + len(slice_bytes) <= _MAX_PDF_OBJSTM_TOTAL_BYTES:
+                    objstm_blobs.append(slice_bytes)
+                    objstm_total += len(slice_bytes)
             else:
                 if _PDF_NON_TEXT_STREAM_RE.search(pre_dict):
                     continue

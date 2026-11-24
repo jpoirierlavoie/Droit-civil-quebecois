@@ -28,7 +28,7 @@ Certaines fiches de référence et compétences de phase portent encore les marq
 
 ## 3. Contrôles techniques avant PR / Pre-PR Verification
 
-Avant toute soumission, exécuter ces contrôles depuis la racine du dépôt (encodage **UTF-8 sans BOM** et fins de ligne **LF** obligatoires sur tous les fichiers ; aucun fichier hors `ROOT_ALLOWLIST` / `EVALS_ALLOWLIST` dans [`verifier.py`](verifier.py)) :
+Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement). Avant toute soumission, exécuter ces contrôles depuis la racine du dépôt (encodage **UTF-8 sans BOM** et fins de ligne **LF** obligatoires sur tous les fichiers ; aucun fichier hors `ROOT_ALLOWLIST` / `EVALS_ALLOWLIST` dans [`verifier.py`](verifier.py)) :
 
 ```bash
 # Linux / macOS

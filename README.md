@@ -1,5 +1,7 @@
 # Droit civil québécois (`v3.1.0`)
 
+<img src="assets/logo.svg" alt="Symbole du membre du Barreau du Québec — Droit civil québécois" width="68" height="68" align="right" />
+
 [![Vérification](https://github.com/jpoirierlavoie/droit-civil-quebecois/actions/workflows/verify.yml/badge.svg)](https://github.com/jpoirierlavoie/droit-civil-quebecois/actions/workflows/verify.yml)
 [![Licence Apache-2.0](https://img.shields.io/badge/Licence-Apache--2.0-blue.svg)](LICENSE)
 [![Dernière version](https://img.shields.io/github/v/release/jpoirierlavoie/droit-civil-quebecois)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest)
@@ -204,6 +206,8 @@ L'infrastructure centrale `v3.1.0` (10 compétences, noyau `SAFETY-KERNEL`, 32 o
 ---
 
 ## Vérification et qualité
+
+Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement, aucune dépendance externe requise).
 
 ```bash
 # Linux / macOS (sous Windows PowerShell : $env:PYTHONUTF8 = "1" et python ...)

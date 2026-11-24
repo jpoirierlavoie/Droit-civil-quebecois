@@ -32,14 +32,21 @@ de ce dépôt (manifestes, scripts Python locaux, gabarits et fiches de travail)
 Aucun droit d'auteur, aucune exclusivité ni aucun statut officiel n'est
 revendiqué sur les lois, règlements, directives judiciaires, décisions de
 justice, registres publics ou données linguistiques interrogés au moyen des
-connecteurs MCP associés (« lois », « juris », « outils »).
+connecteurs MCP associés (« lois », « juris », « outils »). Le symbole du
+membre du Barreau du Québec (assets/logo.svg) demeure la propriété exclusive du
+Barreau du Québec ; il est arboré par un membre en règle (Me Jason Poirier
+Lavoie) à titre indicatif et est exclu de l'octroi de licence Apache-2.0
+(section 6).
 
 ENGLISH — The Apache-2.0 license applies solely to the original files in this
 repository (manifests, local Python scripts, templates, and workflow sheets). No
 copyright, exclusivity, or official status is claimed over any third-party
 statutes, regulations, court directives, judicial decisions, public registries,
 or linguistic datasets queried through the associated MCP connectors ("lois",
-"juris", "outils").
+"juris", "outils"). The Barreau du Québec member symbol (assets/logo.svg)
+remains the exclusive property of the Barreau du Québec, is displayed solely by
+an active member in good standing (Me Jason Poirier Lavoie), and is excluded
+from the Apache-2.0 license grant (Section 6).
 
 ================================================================================
 3. RECONNAISSANCE DES SOURCES OFFICIELLES ET DONNÉES OUVERTES /
@@ -89,14 +96,16 @@ FRANÇAIS — Ce dépôt ne fournit aucun conseil juridique et ne crée aucune
 relation avocat-client. Conformément aux sections 6, 7 et 8 de la licence
 Apache-2.0, les logiciels et documents sont fournis « TELS QUELS », sans
 garantie ni engagement de niveau de service (zéro SLA), et la licence ne confère
-aucun droit d'utiliser le nom ou la qualité d'avocat de l'auteur à des fins
-d'aval ou de promotion. Chaque utilisateur demeure seul responsable de la
-vérification indépendante des sources officielles et du respect de ses
-obligations déontologiques.
+aucun droit d'utiliser le nom ou la qualité d'avocat de l'auteur ni les marques
+ou emblèmes du Barreau du Québec (assets/logo.svg) à des fins d'aval officiel ou
+de promotion. Chaque utilisateur demeure seul responsable de la vérification
+indépendante des sources officielles et du respect de ses obligations
+déontologiques.
 
 ENGLISH — This repository provides no legal advice and creates no
 lawyer-client relationship. Pursuant to Sections 6, 7, and 8 of Apache-2.0,
 the software and materials are provided "AS IS", with zero warranty or SLA, and
-no right is granted to use the author's name or professional standing for
-endorsement. Each user remains solely responsible for independent primary-source
-verification and professional compliance.
+no right is granted to use the author's name or professional standing, nor the
+trademarks or member emblem of the Barreau du Québec (assets/logo.svg), for
+official endorsement or promotion. Each user remains solely responsible for
+independent primary-source verification and professional compliance.
