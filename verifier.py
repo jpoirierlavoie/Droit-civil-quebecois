@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Contrôle statique du dépôt « Droit civil québécois » (v3.1.0).
 
 Exécuter depuis la racine du dépôt :
@@ -74,6 +75,8 @@ EVALS_ALLOWLIST = frozenset(
 )
 
 ANTIGRAVITY_SCHEMA = "https://antigravity.google/schemas/v1/plugin.json"
+ANTIGRAVITY_MAX_DESC_CHARS = 160
+CLAUDE_MARKETPLACE_SCHEMA = "https://json.schemastore.org/claude-code-marketplace.json"
 ANTIGRAVITY_PLUGIN_KEYS = frozenset(
     {
         "$schema",
@@ -422,6 +425,20 @@ _KERNEL_RE = re.compile(
 _ENCHAINEMENTS_HEADING_RE = re.compile(r"^##\s+Enchaînements\b", re.M)
 _H2_HEADING_RE = re.compile(r"^##\s+(.+?)\s*$")
 _TABLE_SEP_RE = re.compile(r"^[\s|:-]+$")
+_FENCED_CODE_RE = re.compile(r"```.*?```", re.S)
+_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
+_MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)\n]+)\)")
+_HTML_IMG_SRC_RE = re.compile(r"<img\b[^>]*\bsrc=[\"']([^\"']+)[\"']", re.I)
+_URI_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+DOC_FILES_WITH_LINKS = (
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "AGENTS.md",
+    "evals/README.md",
+)
 
 
 def _iter_repo_files(racine: Path) -> list[str]:
@@ -779,8 +796,24 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 erreurs.append(
                     f".claude-plugin/plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'"
                 )
+        c_icon = claude_plugin.get("icon")
+        if (
+            not isinstance(c_icon, str)
+            or not c_icon.startswith("./")
+            or ".." in c_icon
+            or "://" in c_icon
+        ):
+            erreurs.append(
+                ".claude-plugin/plugin.json : 'icon' doit être un chemin relatif valide commençant par './'"
+            )
+        elif not (racine / c_icon[2:]).is_file():
+            erreurs.append(f".claude-plugin/plugin.json : fichier icon introuvable ({c_icon})")
 
     if marketplace is not None:
+        if marketplace.get("$schema") != CLAUDE_MARKETPLACE_SCHEMA:
+            erreurs.append(
+                f".claude-plugin/marketplace.json : '$schema' doit valoir '{CLAUDE_MARKETPLACE_SCHEMA}'"
+            )
         if marketplace.get("name") != EXPECTED_PLUGIN_NAME:
             erreurs.append(
                 f".claude-plugin/marketplace.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
@@ -847,6 +880,16 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         if agy_plugin.get("displayName") != EXPECTED_DISPLAY_NAME:
             erreurs.append(
                 f".antigravity-plugin/plugin.json : 'displayName' doit valoir '{EXPECTED_DISPLAY_NAME}'"
+            )
+        agy_desc = agy_plugin.get("description")
+        if (
+            not isinstance(agy_desc, str)
+            or not agy_desc.strip()
+            or len(agy_desc) > ANTIGRAVITY_MAX_DESC_CHARS
+        ):
+            erreurs.append(
+                f".antigravity-plugin/plugin.json : 'description' doit être une chaîne non vide "
+                f"d'au plus {ANTIGRAVITY_MAX_DESC_CHARS} caractères"
             )
         ver = agy_plugin.get("version")
         if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
@@ -1188,6 +1231,15 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                     erreurs.append(
                         ".agents/plugins/marketplace.json : plugins[0].policy.authentication invalide"
                     )
+
+    eval_json_rel = "evals/scenarios.json"
+    eval_data = _load_json(racine, eval_json_rel, erreurs)
+    if eval_data is not None:
+        eval_ver = eval_data.get("version")
+        if not isinstance(eval_ver, str) or not _SEMVER_RE.match(eval_ver):
+            erreurs.append(f"{eval_json_rel} : 'version' semver invalide")
+        else:
+            versions[eval_json_rel] = eval_ver
 
     if len(set(versions.values())) > 1:
         detail = ", ".join(f"{k}={v}" for k, v in sorted(versions.items()))
@@ -1632,18 +1684,50 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 )
     stats["release_markers_count"] = marker_hits
 
-    # 6. Evals validation (v3 schema & coverage)
-    for eval_py_rel in ("evals/executer_evals.py", "evals/test_verifier.py"):
-        if eval_py_rel in decoded:
+    # 6. Evals & scripts syntax validation (v3 schema & coverage)
+    py_to_parse = sorted(
+        {
+            "evals/executer_evals.py",
+            "evals/test_verifier.py",
+            "verifier.py",
+            "verifier_tout.py",
+            *(rel for rel in ROOT_ALLOWLIST if rel.startswith("scripts/") and rel.endswith(".py")),
+        }
+    )
+    for py_rel in py_to_parse:
+        if py_rel in decoded:
             try:
-                ast.parse(decoded[eval_py_rel], filename=eval_py_rel)
+                ast.parse(decoded[py_rel], filename=py_rel)
             except SyntaxError as exc:
                 erreurs.append(
-                    f"{eval_py_rel} : erreur de syntaxe Python à la ligne {exc.lineno} ({exc.msg})"
+                    f"{py_rel} : erreur de syntaxe Python à la ligne {exc.lineno} ({exc.msg})"
                 )
 
-    eval_json_rel = "evals/scenarios.json"
-    eval_data = _load_json(racine, eval_json_rel, erreurs)
+    for doc_rel in DOC_FILES_WITH_LINKS:
+        doc_txt = decoded.get(doc_rel)
+        if doc_txt is None:
+            continue
+        cleaned_doc = _INLINE_CODE_RE.sub("", _FENCED_CODE_RE.sub("", doc_txt))
+        doc_dir = (racine / doc_rel).parent
+        targets = [m.group(1) for m in _MD_LINK_RE.finditer(cleaned_doc)] + [
+            m.group(1) for m in _HTML_IMG_SRC_RE.finditer(cleaned_doc)
+        ]
+        for raw_target in targets:
+            target = raw_target.strip().strip("<>").split()[0]
+            if not target or target.startswith(("#", "mailto:")) or _URI_SCHEME_RE.match(target):
+                continue
+            rel_path_str = target.split("#", 1)[0]
+            if not rel_path_str:
+                continue
+            resolved = (doc_dir / rel_path_str).resolve()
+            try:
+                resolved.relative_to(racine.resolve())
+            except ValueError:
+                erreurs.append(f"{doc_rel} : lien relatif hors du dépôt ({target})")
+                continue
+            if not resolved.exists():
+                erreurs.append(f"{doc_rel} : cible de lien introuvable ({target})")
+
     if eval_data is not None:
         scenarios = eval_data.get("scenarios")
         if not isinstance(scenarios, list) or not scenarios:

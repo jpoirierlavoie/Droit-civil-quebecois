@@ -21,6 +21,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_MAX_DOCX_XML_BYTES = 64 * 1024 * 1024
+_MAX_TEXT_FILE_BYTES = 32 * 1024 * 1024
 
 # Cotes de pièces civiles québécoises : P-1, D-2, PI-1, DI-3, MP-1, OP-1, GC-1, R-1, I-1, A-1, MC-1
 # ainsi que préfixes à initiales de codéfendeur explicitement introduits (ex. Exhibit DA-1, Pièce DAB-2)
@@ -83,7 +85,17 @@ def _lire_texte_document(path: Path) -> str:
     if ext in (".docx", ".docm"):
         try:
             with zipfile.ZipFile(path, "r") as zf:
-                raw = zf.read("word/document.xml")
+                info = zf.getinfo("word/document.xml")
+                if info.file_size > _MAX_DOCX_XML_BYTES:
+                    raise ValueError(
+                        f"{path} : document.xml trop volumineux ({info.file_size} octets > {_MAX_DOCX_XML_BYTES})"
+                    )
+                with zf.open(info, "r") as fh:
+                    raw = fh.read(_MAX_DOCX_XML_BYTES + 1)
+                if len(raw) > _MAX_DOCX_XML_BYTES:
+                    raise ValueError(
+                        f"{path} : document.xml trop volumineux à la décompression (> {_MAX_DOCX_XML_BYTES} octets)"
+                    )
             root = ET.fromstring(raw)
         except (zipfile.BadZipFile, KeyError, ET.ParseError) as exc:
             raise ValueError(f"{path} : archive .docx invalide ou sans document.xml ({exc})") from exc
@@ -101,6 +113,11 @@ def _lire_texte_document(path: Path) -> str:
             if txt:
                 paras.append(txt)
         return "\n".join(paras)
+    size = path.stat().st_size
+    if size > _MAX_TEXT_FILE_BYTES:
+        raise ValueError(
+            f"{path} : fichier texte trop volumineux ({size} octets > {_MAX_TEXT_FILE_BYTES})"
+        )
     return path.read_text(encoding="utf-8")
 
 

@@ -55,6 +55,18 @@ PORTABLE_METADATA_KEYS = (
 )
 ROOT_DOCS = ("LICENSE", "NOTICE", "SECURITY.md", "README.md")
 MAX_SKILL_IDENTITY_LEN = 64
+_FIXED_ZIP_DT = (2026, 1, 1, 0, 0, 0)
+
+
+def _ecrire_entree_deterministe(
+    zf: zipfile.ZipFile, arcname: str, data: bytes, *, executable: bool = False
+) -> None:
+    info = zipfile.ZipInfo(filename=arcname, date_time=_FIXED_ZIP_DT)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.create_system = 3
+    mode = 0o100755 if executable else 0o100644
+    info.external_attr = (mode & 0xFFFF) << 16
+    zf.writestr(info, data, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 
 def construire_manifeste_portable(codex_manifest: dict[str, object]) -> dict[str, object]:
@@ -191,9 +203,11 @@ def main(argv: list[str] | None = None) -> int:
     tmp_path = dist_dir / f".{UNIVERSAL_ZIP_NAME}.tmp"
     try:
         with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-            zf.writestr("plugin.json", manifest_bytes)
+            _ecrire_entree_deterministe(zf, "plugin.json", manifest_bytes, executable=False)
             for rel, chemin in entrees:
-                zf.write(chemin, arcname=rel)
+                _ecrire_entree_deterministe(
+                    zf, rel, chemin.read_bytes(), executable=rel.endswith(".py")
+                )
 
         with zipfile.ZipFile(tmp_path, "r") as zf:
             bad = zf.testzip()

@@ -7,13 +7,18 @@ Bibliothèque standard Python uniquement. Exécutable directement ou via
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import os
+import struct
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
+import zlib
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -70,6 +75,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "version": "3.1.0",
                         "license": verifier.EXPECTED_LICENSE,
+                        "icon": "./assets/logo.svg",
                         "homepage": verifier.EXPECTED_REPO_URL,
                         "repository": verifier.EXPECTED_REPO_URL,
                     }
@@ -81,6 +87,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 target,
                 json.dumps(
                     {
+                        "$schema": verifier.CLAUDE_MARKETPLACE_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "metadata": {"version": "3.1.0"},
                         "plugins": [
@@ -687,21 +694,26 @@ class VerifierV3Tests(unittest.TestCase):
             root = Path(tmp)
             _build_valid_v3_fixture(root)
             env = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
-            res = subprocess.run(
-                [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"],
-                cwd=RACINE,
-                env=env,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-            )
+            cmd = [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"]
+            res = subprocess.run(cmd, cwd=RACINE, env=env, capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
             zip_path = root / "dist" / "droit-civil-quebecois-chatgpt-universal.zip"
             self.assertTrue(zip_path.is_file())
+            hash1 = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+
+            res2 = subprocess.run(cmd, cwd=RACINE, env=env, capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(res2.returncode, 0, msg=res2.stderr + res2.stdout)
+            hash2 = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+            self.assertEqual(hash1, hash2)
+
             with zipfile.ZipFile(zip_path, "r") as zf:
-                names = set(zf.namelist())
+                infos = {info.filename: info for info in zf.infolist()}
+            names = set(infos)
             for req in ("plugin.json", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "assets/logo.svg"):
                 self.assertIn(req, names)
+            self.assertEqual((infos["plugin.json"].external_attr >> 16) & 0o777, 0o644)
+            for py_name in (n for n in names if n.endswith(".py")):
+                self.assertEqual((infos[py_name].external_attr >> 16) & 0o777, 0o755)
             for forbidden in (
                 ".antigravity-plugin/plugin.json",
                 ".codex-plugin/plugin.json",
@@ -715,6 +727,94 @@ class VerifierV3Tests(unittest.TestCase):
                 "GEMINI.md",
             ):
                 self.assertNotIn(forbidden, names)
+
+    def test_scenarios_version_and_markdown_links_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+
+            sc_path = root / "evals" / "scenarios.json"
+            sc_data = json.loads(sc_path.read_text(encoding="utf-8"))
+            sc_data["version"] = "3.0.9"
+            _write_lf(sc_path, json.dumps(sc_data, ensure_ascii=False, indent=2) + "\n")
+
+            _write_lf(root / "README.md", "# Doc\n\nVoir [Manquant](docs/inexistant.md).\n")
+
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any("evals/scenarios.json=3.0.9" in e for e in errs))
+            self.assertTrue(any("README.md : cible de lien introuvable (docs/inexistant.md)" in e for e in errs))
+
+    def test_decompression_bomb_guards_in_skill_scripts(self) -> None:
+        def _load_mod(rel: str, name: str):
+            spec = importlib.util.spec_from_file_location(name, RACINE / rel)
+            assert spec is not None and spec.loader is not None
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            spec.loader.exec_module(mod)
+            return mod
+
+        insp = _load_mod("skills/analyse-et-strategie/scripts/inspecter_piece.py", "_test_insp")
+        ctrl = _load_mod("skills/production-et-conformite/scripts/controler_document.py", "_test_ctrl")
+        cotes = _load_mod("skills/production-et-conformite/scripts/verifier_cotes.py", "_test_cotes")
+
+        self.assertEqual(insp._decompress_zlib_bounded(zlib.compress(b"ok"), max_bytes=16), b"ok")
+        self.assertIsNone(insp._decompress_zlib_bounded(zlib.compress(b"A" * 1024), max_bytes=128))
+        self.assertIsNone(ctrl._decompress_zlib_bounded(zlib.compress(b"A" * 1024), max_bytes=128))
+
+        def _png_chunk(ctype: bytes, payload: bytes) -> bytes:
+            crc = zlib.crc32(ctype + payload) & 0xFFFFFFFF
+            return struct.pack(">I", len(payload)) + ctype + payload + struct.pack(">I", crc)
+
+        ztxt_payload = b"Author\x00\x00" + zlib.compress(b"B" * 512)
+        png_bytes = (
+            b"\x89PNG\r\n\x1a\n"
+            + _png_chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+            + _png_chunk(b"zTXt", ztxt_payload)
+            + _png_chunk(b"IEND", b"")
+        )
+        pdf_stream = zlib.compress(b"BT /F1 12 Tf (" + b"C" * 512 + b") Tj ET")
+        pdf_bytes = (
+            b"%PDF-1.7\n1 0 obj\n<< /Type /Page /Filter /FlateDecode /Length "
+            + str(len(pdf_stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + pdf_stream
+            + b"\nendstream\nendobj\n%%EOF\n"
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            png_path = root / "bomb.png"
+            png_path.write_bytes(png_bytes)
+            pdf_path = root / "bomb.pdf"
+            pdf_path.write_bytes(pdf_bytes)
+            docx_path = root / "bomb.docx"
+            with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                zf.writestr(
+                    "word/document.xml",
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                    "<w:body><w:p><w:r><w:t>" + ("D" * 512) + "</w:t></w:r></w:p></w:body></w:document>",
+                )
+
+            with mock.patch.object(insp, "_MAX_PNG_TEXT_BYTES", 128), mock.patch.object(
+                insp, "_MAX_ZLIB_STREAM_BYTES", 128
+            ):
+                png_res = insp.inspecter_fichier(png_path)
+                self.assertEqual(png_res["statut"], "ok")
+                self.assertEqual(png_res["details"]["chunks_texte"], {})
+
+                pdf_res = insp.inspecter_fichier(pdf_path)
+                self.assertEqual(pdf_res["statut"], "ok")
+                self.assertEqual(pdf_res["details"]["flux_texte_detectes"], 0)
+
+            with mock.patch.object(ctrl, "_MAX_ZLIB_STREAM_BYTES", 128):
+                ctrl_res = ctrl.controler_fichier(pdf_path)
+                self.assertEqual(ctrl_res["statut"], "ok")
+                self.assertEqual(ctrl_res["details"]["flux_texte_detectes"], 0)
+
+            with mock.patch.object(cotes, "_MAX_DOCX_XML_BYTES", 128):
+                with self.assertRaises(ValueError):
+                    cotes._lire_texte_document(docx_path)
 
     def test_synchroniser_plugin_gemini_promotes_antigravity_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

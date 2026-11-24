@@ -4,25 +4,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [
 
 ## [Non publié]
 
-### Ajouté
-- Manifeste dédié Antigravity `.antigravity-plugin/plugin.json` (`https://antigravity.google/schemas/v1/plugin.json`) et alignement de `plugin.json` racine sur le standard portable **Agent Plugins 1.0** (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`).
-- Fichier d'instructions unifié [`AGENTS.md`](AGENTS.md) synchronisé octet pour octet avec [`CLAUDE.md`](CLAUDE.md) et [`GEMINI.md`](GEMINI.md) (condensés sous `20 Ko` UTF-8 LF).
-- Fichiers communautaires open source : [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md) et [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
-- Validation de l'archive ChatGPT dans `.github/workflows/verify.yml` et publication automatisée de `dist/droit-civil-quebecois-chatgpt-universal.zip` + `.sha256` dans `.github/workflows/release.yml`.
-
-### Modifié
-- Mise à jour de `scripts/synchroniser_plugin_gemini.py` (promotion de `.antigravity-plugin/plugin.json` vers `plugin.json`, `Path.home()` multiplateforme, variable `DCQ_PLUGIN_SRC_DIR`), `scripts/empaqueter_plugin_chatgpt.py` (liste d'exclusion élargie et contrôle de parité avec `plugin.json` racine) et `scripts/regenerer_cache_mcp.py`.
-- Nettoyage des gabarits `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/bug_report.yml`, `.github/workflows/dependabot-auto-merge.yml`, ainsi que de `README.md`, `SECURITY.md`, `verifier.py`, `verifier_tout.py` (lecture dynamique de la version du manifeste) et `evals/test_verifier.py`.
-
 ---
 
-## [3.1.0] — 2026-11-22
+## [3.1.0] — 2026-11-24
 
 ### Ajouté
 - Auto-connexion **OAuth 2.1 PKCE `S256`** sans configuration préalable (`/mcp/oauth` par défaut dans `.mcp.json`, `mcp_config.json` et `gemini-extension.json`, `"settings": []` sur Gemini CLI) avec repli documenté sur `/mcp` (`Bearer` / `?key=`) et `acces.poirierlavoie.ca/moi`.
 - Compatibilité universelle ChatGPT Web & Desktop (`.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `scripts/empaqueter_plugin_chatgpt.py`), OpenAI Codex et API OpenAI Responses.
-- Licence **Apache-2.0** (`LICENSE`) assortie du fichier d'attribution et de non-revendication [`NOTICE`](NOTICE).
-- Migration de `gemini-extension.json` vers `type: "http"` + `url` et dimensionnement intrinsèque `256x256` pour `assets/logo.svg`.
+- Manifeste dédié Antigravity `.antigravity-plugin/plugin.json` (`https://antigravity.google/schemas/v1/plugin.json`) et alignement du manifeste racine `plugin.json` sur le standard portable **Agent Plugins 1.0** (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`).
+- Licence **Apache-2.0** (`LICENSE`) assortie du fichier d'attribution et de non-revendication [`NOTICE`](NOTICE) (incluant la réserve de propriété du Barreau du Québec sur le symbole du membre `assets/logo.svg`).
+- Fichiers de gouvernance et documentation open source : [`AGENTS.md`](AGENTS.md) (synchronisé octet pour octet avec [`CLAUDE.md`](CLAUDE.md) et [`GEMINI.md`](GEMINI.md) sous `20 Ko`), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CHANGELOG.md`](CHANGELOG.md) et [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+- Validation CI de l'archive ChatGPT dans `.github/workflows/verify.yml` et publication automatisée de `dist/droit-civil-quebecois-chatgpt-universal.zip` (reproductible, permissions Unix `0755`/`0644`) et `.sha256` dans `.github/workflows/release.yml`.
+
+### Modifié
+- Mise à jour de `assets/logo.svg` vers le symbole vectoriel du membre du Barreau du Québec (et ajout de `icon` dans `.claude-plugin/plugin.json` et `$schema` dans `.claude-plugin/marketplace.json`), plus migration de `gemini-extension.json` vers `type: "http"` + `url`.
+- Mise à jour de `scripts/synchroniser_plugin_gemini.py` (promotion `.antigravity-plugin/plugin.json` -> `plugin.json`, `Path.home()`, `DCQ_PLUGIN_SRC_DIR`), `scripts/empaqueter_plugin_chatgpt.py` (archive déterministe, liste d'exclusion élargie et parité `plugin.json`), `scripts/regenerer_cache_mcp.py`, `README.md`, `SECURITY.md`, des gabarits `.github/` et des suites `verifier.py` (parité `evals/scenarios.json`, syntaxe de tous les `.py`, liens Markdown), `verifier_tout.py` et `evals/test_verifier.py`.
+
+### Sécurité
+- Durcissement des scripts stdlib locaux (`inspecter_piece.py`, `controler_document.py`, `verifier_cotes.py`) contre les bombes de décompression (`zlib`, flux PDF `/ObjStm`, chunks PNG `zTXt`/`iTXt`, `word/document.xml` et plafond de taille de fichier).
+- Permissions exécutables `100755` appliquées dans Git sur les scripts Python et délais/annulation de concurrence ajoutés aux flux CI (`verify.yml`, `codeql.yml`, `trivy.yml`).
 
 ---
 
