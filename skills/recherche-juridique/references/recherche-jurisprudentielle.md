@@ -10,6 +10,7 @@ Encadre la méthode de la boule de neige sur `juris`, le contrôle des citations
 | **Recherche par sujet** | **Non** (nom de parties `find_case` ou citation uniquement) | Utiliser des ancrages issus du dossier, de l'avocat ou de la doctrine de liste blanche |
 | **Graphe / citateur** | `citator(rel="cited" \| "citing" \| "legislation")` | Ne remonte pas d'un article vers tous les jugements qui le citent |
 | **Sort ultérieur** | `subsequent_history` (indice heuristique) | Ne détecte ni infirmation sans intitulé voisin, ni pourvoi pendant, ni refus de permission d'appeler |
+| **Listes d'autorités dispensées** | `list_exempt_cases` (hors ligne) et `check_exempt_cases` (27 listes, 9 tribunaux) | Dispense procédurale de reproduction au cahier des sources uniquement ; n'établit NI l'autorité actuelle NI le dispositif |
 
 ## Séquence
 
@@ -40,5 +41,5 @@ Au Palier 3, toute décision non lue intégralement en session reste sous le mar
 ## Modes d'échec
 
 * **`401`, `403`, `404`, `429`, `QUOTA_EPUISE`, `INDÉTERMINÉE` ou `INTERROMPU` sur `juris` :** **Arrêt obligatoire sur la vérification jurisprudentielle** (sur un `403` sur requête libre, reformuler d'abord sans opérateurs ni guillemets ; s'il persiste, s'arrêter). Nommer le connecteur `juris` et le code/cause retourné, inviter l'avocat à rétablir l'accès sur `acces.poirierlavoie.ca/moi` ; ne jamais inventer un arrêt ni substituer un aperçu web à une lecture intégrale.
-* **`[CLEF_ABSENTE]` ou `[CLEF_REFUSEE]` sur `juris` :** L'interrogation de `juris` (y compris la lecture de son index local partagé) exige strictement la clé API CanLII personnelle active du praticien (BYOK). S'arrêter sur la vérification jurisprudentielle et inviter l'avocat à déposer ou renouveler sa clé CanLII dans `acces.poirierlavoie.ca/moi` (ou par en-tête `X-Clef-CanLII`).
+* **`[CLEF_ABSENTE]` ou `[CLEF_REFUSEE]` sur `juris` :** L'interrogation de `juris` (y compris la lecture de son index local partagé) exige strictement la clé API CanLII personnelle active du praticien (BYOK). S'arrêter sur la vérification jurisprudentielle et inviter l'avocat à déposer ou renouveler sa clé CanLII dans `acces.poirierlavoie.ca/moi` (ou par en-tête `X-Clef-CanLII`) — seuls `parse_citation`, `list_exempt_cases` et `check_exempt_cases` (`resolve_canlii=false`) demeurent utilisables hors ligne sans clé.
 * **Contradiction web vs `juris` :** La fiche et la citation authentifiée sur `juris` l'emportent sans discussion.

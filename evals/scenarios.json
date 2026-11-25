@@ -2018,6 +2018,33 @@
       "declencheur_negatif": false
     },
     {
+      "id": "PC-09",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Cahier des sources avec contrôle automatique des dispenses de reproduction (list_exempt_cases / check_exempt_cases)",
+      "prompt": "Préparer l'index et le bon de travail d'un cahier des sources déposé en Cour d'appel du Québec (qcca-civil) comprenant 2008 CSC 9 (lue intégralement, par. 47) et 2020 QCCA 495 (lue intégralement, par. 120).",
+      "criteres": [
+        "Authentifier les citations via juris.verify_citations / get_case et contrôler automatiquement les dispenses de reproduction via juris.check_exempt_cases(list_id='qcca-civil') (ou juris.list_exempt_cases).",
+        "Appliquer la règle procédurale pour l'arrêt DISPENSÉE (2008 CSC 9 : extrait pertinent accompagné des pages précédente et suivante et renvoi à la liste commune, art. 60 al. 2 R.C.a.Q.m.civ.) tout en exigeant la reproduction intégrale marquée pour l'arrêt NON LISTÉE (2020 QCCA 495).",
+        "Préciser que la dispense procédurale n'établit ni l'autorité actuelle ni le dispositif."
+      ],
+      "doit_contenir": [
+        "check_exempt_cases|list_exempt_cases",
+        "DISPENSÉE",
+        "NON LISTÉE",
+        "précédente|suivante",
+        "intégrale"
+      ],
+      "ne_doit_pas_contenir": [
+        "DISPENSÉE prouve que l'arrêt fait toujours autorité"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-sources"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
       "id": "RJ-08",
       "competence": "recherche-juridique",
       "palier": 2,

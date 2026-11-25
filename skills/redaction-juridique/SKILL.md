@@ -65,7 +65,7 @@ Pour tout **acte de procédure**, charger obligatoirement `references/fondamenta
 | Ententes judiciaires (expertise commune, consentement à jugement, homologation) | `references/contrat-ententes-judiciaires.md` | `lois` (`cpc`), `outils` (`registre_*`, `interets_1619`) |
 | Transaction et quittance (`2631–2637 C.c.Q.`) | `references/contrat-transaction-quittance.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`) |
 | Contrats civils et commerciaux (style civiliste, ordre public C.c.Q.) | `references/contrat-civil-commercial.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`) |
-| Bordereau de pièces, endos de cour ou cahier des sources à joindre | `../production-et-conformite/references/cahier-des-pieces-et-bordereaux.md` *(ou `cahier-des-sources.md` / `controle-endos-depot-signification.md`)* | `lois`, `outils` (`greffe_parse_number`, `palais_get`) |
+| Bordereau de pièces, endos de cour ou cahier des sources à joindre | `../production-et-conformite/references/cahier-des-pieces-et-bordereaux.md` *(ou `cahier-des-sources.md` / `controle-endos-depot-signification.md`)* | `lois`, `juris` (`check_exempt_cases`), `outils` (`greffe_parse_number`, `palais_get`) |
 | Délai d'avis d'assignation, de présentation (`101, 527`) ou de protocole à confirmer | `../gestion-du-mandat/references/conformite-echeanciers-cpc.md` *(si absent : `lois` + `outils.calendrier_deadlines`)* | `lois`, `outils` |
 | Fondement juridique non encore vérifié, caviardage (`108`) ou déclencheur déontologique | `../recherche-juridique/references/grille-prealables.md` ou `../analyse-et-strategie/references/preuve-privilege-confidentialite-caviardage.md` | `lois` (`get_articles`) |
 

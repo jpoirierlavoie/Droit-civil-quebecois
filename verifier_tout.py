@@ -94,8 +94,8 @@ NOMS_OUTILS_ATTENDUS = {
         "browse_legislation",
         "get_legislation",
         "parse_citation",
-        "list_exempt_authorities",
-        "check_exempt_authority",
+        "list_exempt_cases",
+        "check_exempt_cases",
     ],
     "outils": [
         "calendrier_holidays",
@@ -715,9 +715,9 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["list_exempt_authorities"] = {
-                "name": "list_exempt_authorities",
-                "description": "Consulte et recherche hors ligne les 27 listes compilées d'autorités dispensées de reproduction (9 tribunaux).",
+            tools["list_exempt_cases"] = {
+                "name": "list_exempt_cases",
+                "description": "Consulte et recherche hors ligne les 27 listes compilées d'autorités dispensées de reproduction (9 tribunaux, métadonnées CanLII précompilées).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -731,9 +731,9 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
-            tools["check_exempt_authority"] = {
-                "name": "check_exempt_authority",
-                "description": "Vérifie un lot de citations (<= 50) contre les listes d'autorités dispensées d'un tribunal ou d'une sous-liste.",
+            tools["check_exempt_cases"] = {
+                "name": "check_exempt_cases",
+                "description": "Vérifie un lot de citations (<= 50) contre les listes d'autorités dispensées d'un tribunal ou d'une sous-liste, avec repli CanLII optionnel.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1939,8 +1939,8 @@ class MockMcpServer:
             if not args.get("citation", "").strip():
                 return "La citation ne peut pas être vide."
 
-        # Règle XOR portée pour check_exempt_authority
-        if tool_name == "check_exempt_authority":
+        # Règle XOR portée pour check_exempt_cases
+        if tool_name == "check_exempt_cases":
             has_list = bool(str(args.get("list_id", "")).strip())
             has_trib = bool(str(args.get("tribunal", "")).strip())
             if has_list == has_trib:
@@ -2471,25 +2471,35 @@ class MockMcpServer:
                 ]
             }
 
-        elif tool_name == "list_exempt_authorities":
+        elif tool_name == "list_exempt_cases":
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": "27 listes compilées d'autorités dispensées (9 tribunaux, hors ligne).",
+                        "text": (
+                            "27 listes compilées d'autorités dispensées (9 tribunaux, mode hors ligne — ex. qcca-civil).\n"
+                            "La dispense de reproduction n'établit NI l'autorité actuelle des décisions NI le contenu de leur dispositif."
+                        ),
                     }
                 ]
             }
 
-        elif tool_name == "check_exempt_authority":
+        elif tool_name == "check_exempt_cases":
             cits = args.get("citations") or []
+            lines = []
+            for c in cits:
+                if isinstance(c, dict):
+                    cit = str(c.get("citation", ""))
+                    verdict = "DISPENSÉE" if "2008 CSC 9" in cit else "NON LISTÉE"
+                    lines.append(f"{cit} — {verdict}")
+            lines.append(
+                "La dispense de reproduction n'établit NI l'autorité actuelle des décisions NI le contenu de leur dispositif."
+            )
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": "\n".join(
-                            f"{c.get('citation', '')} — NON LISTÉE" for c in cits if isinstance(c, dict)
-                        ),
+                        "text": "\n".join(lines),
                     }
                 ]
             }
@@ -5658,15 +5668,25 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
         )
         is_err3 = res3.get("result", {}).get("isError") is True
 
-        is_err = is_err1 and is_err2 and is_err3
+        res4 = client.call_rpc(
+            "juris",
+            "tools/call",
+            {
+                "name": "check_exempt_cases",
+                "arguments": {"citations": [{"citation": "2008 CSC 9"}]},
+            },
+        )
+        is_err4 = res4.get("result", {}).get("isError") is True
+
+        is_err = is_err1 and is_err2 and is_err3 and is_err4
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T2.4.7",
-            "Violation contrainte XOR jurisprudence (get_case, citator, subsequent_history)",
+            "Violation contrainte XOR jurisprudence (get_case, citator, subsequent_history, check_exempt_cases)",
             "juris",
             is_err,
             elapsed,
-            None if is_err else f"get_case err={is_err1}, citator err={is_err2}, sub_hist err={is_err3}",
+            None if is_err else f"get_case err={is_err1}, citator err={is_err2}, sub_hist err={is_err3}, exempt err={is_err4}",
         )
     except ConnectionError:
         raise
@@ -6152,7 +6172,16 @@ def run_tier_3_tests(
         t0 = time.perf_counter()
         jur_tools = list(jur_dir.glob("*.json")) if jur_dir.is_dir() else []
         jur_names = {f.stem for f in jur_tools}
-        stale_in_jur = jur_names.intersection({"greffe_parse_number", "palais_list", "palais_get", "check_exempt_authorities"})
+        stale_in_jur = jur_names.intersection(
+            {
+                "greffe_parse_number",
+                "palais_list",
+                "palais_get",
+                "list_exempt_authorities",
+                "check_exempt_authorities",
+                "check_exempt_authority",
+            }
+        )
         c_jur_ok = (len(jur_tools) == 12) and (jur_names == set(NOMS_OUTILS_ATTENDUS["juris"])) and (not stale_in_jur)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
@@ -6873,6 +6902,19 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         # Étape 4 : Fiche CanLII complète
         r4 = client.call_tool("juris", "get_case", {"citation": "2020 QCCA 495"})
         txt4 = r4.get("content", [{}])[0].get("text", "")
+        # Étape 5 : Annuaire hors ligne et contrôle de dispense de reproduction
+        r5 = client.call_tool("juris", "list_exempt_cases", {"tribunal": "qcca"})
+        txt5 = r5.get("content", [{}])[0].get("text", "")
+        r6 = client.call_tool(
+            "juris",
+            "check_exempt_cases",
+            {
+                "list_id": "qcca-civil",
+                "citations": [{"citation": "2008 CSC 9"}],
+                "resolve_canlii": False,
+            },
+        )
+        txt6 = r6.get("content", [{}])[0].get("text", "")
 
         ok = (
             "qcca" in txt1.lower()
@@ -6880,6 +6922,10 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
             and not r3.get("isError")
             and len(txt3) > 0
             and "deguise" in txt4.lower()
+            and not r5.get("isError")
+            and "qcca" in txt5.lower()
+            and not r6.get("isError")
+            and "DISPENSÉE" in txt6
         )
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(

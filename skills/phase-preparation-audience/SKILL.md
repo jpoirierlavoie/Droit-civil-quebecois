@@ -55,7 +55,7 @@ Orchestre la mise en état (`173–175 C.p.c.`), les pourparlers ou la conféren
 * **Porte :** Chaque allégation contestée reliée à une pièce ou un témoin disponible.
 
 ### Étape 4 — Confection des cahiers (sources, pièces, procédures)
-* **Objectif :** Préparer les index et structures 1:1 du cahier des sources, du cahier des pièces et du cahier des procédures.
+* **Objectif :** Préparer les index et structures 1:1 du cahier des sources (incluant la vérification préalable `juris.verify_citations` et le contrôle automatique des dispenses de reproduction via `juris.check_exempt_cases` / `list_exempt_cases` sous `production-et-conformite` / `cahier-des-sources`), du cahier des pièces et du cahier des procédures.
 * **Livrable :** Index et gabarits des trois cahiers de cour.
 * **Porte :** Concordance exacte des cotes et des autorités avec les actes et l'argumentation.
 

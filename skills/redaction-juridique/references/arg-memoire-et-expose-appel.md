@@ -30,6 +30,6 @@ Appliquer strictement `arg-citations.md` : citations neutres vérifiées via `ju
 
 ## Contrôle
 
-1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01` — ou, sans Python local sur `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth` ou Deep Research, divulguer explicitement les vérifications octets/XML/PDF omises et les reporter au bon de travail manuel) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`).
+1. Vérifier les paramètres typographiques et de pagination via `production-et-conformite` (`controler_document.py` avec les seuils lus de `c-25.01-r.0.2.01` — ou, sans Python local sur `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth` ou Deep Research, divulguer explicitement les vérifications octets/XML/PDF omises et les reporter au bon de travail manuel), les dispenses de reproduction du cahier des sources d'appel (`juris.check_exempt_cases(list_id="qcca-civil")` selon l'art. 60 al. 2 `R.C.a.Q.m.civ.`) et le cahier des procédures/annexes (`production-et-conformite` : `cahier-des-procedures.md`, `cahier-des-sources.md`).
 2. Vérifier le délai de dépôt du mémoire (`373` : `3 mois` pour l'appelant, caducité si expiré sans prolongation demandée *avant* échéance) via `gestion-du-mandat`.
 3. Exécuter `outils.terminologie_scan`.
