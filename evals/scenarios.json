@@ -1914,12 +1914,12 @@
       "id": "RJ-06",
       "competence": "recherche-juridique",
       "palier": 2,
-      "titre": "Directives de pratique PDF (QCCS/QCCQ), orientations AMF et préséance Vague 1 (110 textes)",
+      "titre": "Directives de pratique PDF (QCCS/QCCQ), orientations AMF et préséance (134 textes)",
       "prompt": "Vérifier via lois les règles de pratique applicables à Montréal en Cour supérieure (division vs district), le statut d'une Instruction générale 45-106 de l'AMF et la disponibilité des directives de la Cour d'appel en anglais.",
       "criteres": [
         "Relever via lois.related_laws(rel_type='preseance-sur') que qccs-dist-mtl prime qccs-div-mtl (fonction='directive', unit='paragraphe', par./dir.).",
         "Distinguer le Règlement 45-106 (v-1.1-r.21, fonction='reglement') de l'Instruction générale amf-ig-45-106 (fonction='orientation', rel_type='interprete', indicative sans force de loi).",
-        "Signaler que les directives PDF (corpus de 110 textes) sont publiées en français seulement (langs: ['fr']) et qu'aucun recueil unifié de directives de la Cour d'appel (QCCA) n'existe au-delà de c-25.01-r.0.2.01 (avis du greffier à vérifier à la source)."
+        "Signaler que les directives PDF (corpus de 134 textes) sont publiées en français seulement (langs: ['fr']) et qu'aucun recueil unifié de directives de la Cour d'appel (QCCA) n'existe au-delà de c-25.01-r.0.2.01 (avis du greffier à vérifier à la source)."
       ],
       "doit_contenir": [
         "qccs-dist-mtl",
