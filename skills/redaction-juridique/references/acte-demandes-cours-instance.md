@@ -1,5 +1,7 @@
 # Demandes en cours d'instance, modifications (206–208) et ordonnance de sauvegarde
 
+[NON VALIDÉ PAR LA PRATIQUE]
+
 À charger **avec `references/fondamentaux-actes.md`**. Encadre les demandes incidentes en cours d'instance (`101 C.p.c.`), la modification d'acte de procédure (`206–208 C.p.c.`) et les demandes d'ordonnance de sauvegarde (`49, 158 C.p.c.`).
 
 ## Vecteur législatif
@@ -29,7 +31,10 @@ Mentionner sous le titre la disposition habilitante du C.p.c., du règlement du 
 * Marquer visuellement ajouts (soulignement) et suppressions (rature ou `[Retiré]`) selon les exigences réglementaires du tribunal.
 
 ### C. Ordonnance de sauvegarde (`49, 158 C.p.c.`) et incidents spécifiques
-`[FICHE À RÉDIGER]` — Compléter les particularités de rédaction de l'ordonnance de sauvegarde (mesure urgente temporaire de préservation sans audition complète d'injonction), de la mise en cause, du rejet d'objection (`228`) et de la prolongation de mise en état (`173`).
+* **Ordonnance de sauvegarde (`49 al. 2`, `158(5°)(8°) C.p.c.`) :** Mesure conservatoire temporaire urgente destinée à préserver les droits des parties ou le *statu quo* pendant l'instance, sans trancher une demande complète d'injonction interlocutoire (`510 s.`). Lorsqu'elle est prononcée à titre de mesure de gestion (`158(8°)`), sa durée **ne peut excéder `6 mois`** (renouvelable ou modifiable sur demande). Démontrer l'urgence immédiate, l'apparence de droit, un préjudice sérieux ou irréparable et la prépondérance des inconvénients; joindre une **déclaration sous serment circonstanciée (`101 al. 3`, `105`)** et formuler des conclusions précises et directement exécutoires.
+* **Mise en cause / intervention forcée en cours d'instance (`158(4°)`, `184 al. 3`, `188 C.p.c.`) :** Pour joindre un tiers nécessaire à la solution complète du litige, lui opposer le jugement ou l'appeler en garantie, signifier par huissier un acte d'intervention forcée exposant les motifs, accompagné de la demande en justice, proposant les modalités selon le protocole et indiquant le délai de réponse de **`15 jours`** (`188 al. 1`; les autres parties disposent de **`10 jours`** suivant la réponse du tiers pour notifier leur opposition, `188 al. 2`).
+* **Présentation des objections suspensives (`228 al. 2–4 C.p.c.`) :** Lorsqu'un témoin s'abstient de répondre à l'interrogatoire sur un motif d'objection suspensive (non-contraignabilité, droits fondamentaux, faits présumés non pertinents en violence sexuelle/conjugale, ou intérêt légitime important, `228 al. 2`), soumettre la demande au tribunal **dans les `5 jours`** (décision possible sur le vu du dossier selon `228 al. 4`). Les objections de pertinence (`228 al. 3`) ne suspendent pas l'interrogatoire : le témoin répond sous réserve et elles sont tranchées à l'instruction (sauf soumission sur-le-champ).
+* **Prolongation du délai de rigueur de mise en état (`173 al. 2–3 C.p.c.`) :** Présenter **avant l'expiration du délai de `6 mois`** en démontrant soit (1) le degré élevé de complexité ou des circonstances spéciales en conférence de gestion, soit (2) l'impossibilité d'évaluer adéquatement le délai lors de la conférence ou la survenance de faits alors imprévisibles (`173 al. 2`). Attention : si le protocole n'avait pas été déposé dans les `45 jours` / `3 mois`, le tribunal ne peut prolonger le délai calculé depuis la signification que sur preuve d'**impossibilité d'agir** (`173 al. 3`).
 
 ### D. Inscription par défaut (`175–177 C.p.c.`) et relevé du défaut (`84 C.p.c.`)
 * **Inscription pour jugement par défaut (`175`):** Exposer la date de signification, l'expiration du délai de réponse/contestation, l'absence de réponse ou de défense, les pièces justificatives de la créance/préjudice et joindre une **déclaration sous serment** attestant les faits et le montant exact dû (ou demander l'enquête devant le greffier spécial/tribunal selon `175–176`).

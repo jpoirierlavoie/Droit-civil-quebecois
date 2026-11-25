@@ -2071,6 +2071,1020 @@
       ],
       "enchainement_attendu": [],
       "declencheur_negatif": false
+    },
+    {
+      "id": "AS-05",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Admissibilité de preuve testimoniale contre un écrit commercial (2862 C.c.Q.)",
+      "prompt": "Mon client veut témoigner à l'instruction pour prouver qu'une entente verbale parallèle réduisait de moitié le loyer stipulé à un bail commercial écrit de 120 000 $. Évaluez la recevabilité et la force probante de ce témoignage.",
+      "criteres": [
+        "Identifie la règle d'exclusion du témoignage pour contredire ou changer les termes d'un écrit (art. 2863 C.c.Q.) et le seuil général de preuve testimoniale (art. 2862 C.c.Q.).",
+        "Vérifie les exceptions possibles (commencement de preuve par écrit, fraude, vice de consentement, impossibilité ou entreprise commerciale selon le cas).",
+        "Distingue recevabilité et force probante sans conclure que l'admissibilité garantit la crédibilité."
+      ],
+      "doit_contenir": [
+        "(?:2862|2863)\\s*C\\.c\\.Q\\.",
+        "(?:commencement de preuve|contredire|changer les termes)",
+        "(?:recevabilit|admissibilit)"
+      ],
+      "ne_doit_pas_contenir": [
+        "(?:Code de procédure civile|C\\.p\\.c\\.).{0,40}2863",
+        "Common Law|parol evidence rule.{0,30}s'applique directement au Québec"
+      ],
+      "feuilles_attendues": [
+        "preuve-recevabilite-force-probante"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-06",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Recevabilité d'un ouï-dire et force probante d'un rapport d'enquête interne",
+      "prompt": "La partie adverse produit un rapport d'enquête interne rédigé par son directeur RH résumant ce que deux ex-employés lui ont raconté au téléphone sur un bris d'équipement. Analysez la recevabilité et le poids probant de cette pièce.",
+      "criteres": [
+        "Qualifie le document de ouï-dire rapportant des déclarations extrajudiciaires de tiers non entendus.",
+        "Vérifie l'application des critères d'exception de fiabilité et de nécessité en droit civil québécois.",
+        "Distingue la preuve du fait que la déclaration a été tenue de la preuve de la véracité de son contenu."
+      ],
+      "doit_contenir": [
+        "(?:ouï-dire|déclaration extrajudiciaire)",
+        "(?:véracité|nécessité|fiabilité)",
+        "(?:force probante|poids probant)"
+      ],
+      "ne_doit_pas_contenir": [
+        "admissible automatiquement sans réserve",
+        "preuve directe de ce que les ex-employés ont fait"
+      ],
+      "feuilles_attendues": [
+        "preuve-recevabilite-force-probante"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-07",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Chronologie de dossier litigieux à partir de pièces contractuelles et courriels",
+      "prompt": "Voici trois versions d'une offre d'achat, deux mises en demeure et une série de courriels échelonnés sur 18 mois. Dressez une chronologie structurée avec les dates incertaines marquées et la source exacte de chaque entrée.",
+      "criteres": [
+        "Structure les événements par ordre chronologique avec référence précise à chaque pièce ou source.",
+        "Marque explicitement le statut des faits (Établi, Rapporté, Déduit ou [À CONFIRMER] / [DATE À CONFIRMER]).",
+        "Identifie les trous temporels ou contradictions entre versions documentaires."
+      ],
+      "doit_contenir": [
+        "(?:Établi|Rapporté|Déduit|\\[À CONFIRMER\\]|\\[DATE À CONFIRMER\\])",
+        "(?:chronologi|ordre chronologique)",
+        "(?:source|pièce|contradiction|lacune)"
+      ],
+      "ne_doit_pas_contenir": [
+        "date inventée sans pièce",
+        "dossier complet sans aucune vérification requise"
+      ],
+      "feuilles_attendues": [
+        "produit-chronologie"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-08",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Chronologie comparative avant et après la mise en demeure (prescription)",
+      "prompt": "Pour préparer la défense en irrecevabilité pour prescription, bâtissez la chronologie des faits générateurs de responsabilité, de la connaissance du préjudice et des actes susceptibles d'interrompre la prescription.",
+      "criteres": [
+        "Met en évidence le point de départ potentiel (naissance du droit d'action / connaissance) et les événements interruptifs ou suspensifs.",
+        "Sépare nettement les dates certaines établies par écrit des dates alléguées ou à confirmer.",
+        "Signale que la mise en demeure ordinaire n'interrompt pas la prescription (hors exceptions légales strictes)."
+      ],
+      "doit_contenir": [
+        "(?:point de départ|connaissance|prescription)",
+        "(?:Établi|Rapporté|\\[DATE À CONFIRMER\\]|\\[À CONFIRMER\\])",
+        "(?:mise en demeure|interromp)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la mise en demeure interrompt automatiquement la prescription",
+        "prescription acquise sans vérifier la date de connaissance"
+      ],
+      "feuilles_attendues": [
+        "produit-chronologie"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-09",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Matrice de concordance allégations-pièces-témoins pour une demande introductive",
+      "prompt": "J'ai une demande introductive d'instance de 45 paragraphes en vices cachés commerciaux et 14 pièces au dossier. Préparez la matrice de concordance reliant chaque allégation essentielle à sa preuve et relevant les allégations orphelines.",
+      "criteres": [
+        "Relie chaque allégation numérotée aux pièces et témoins qui la soutiennent.",
+        "Met en relief les allégations orphelines dépourvues de preuve au dossier.",
+        "Précise le fardeau de preuve applicable et les vérifications requises avant l'instruction."
+      ],
+      "doit_contenir": [
+        "(?:allégation|paragraphe)",
+        "(?:orpheline|lacune|manquant|non appuyée|à prouver)",
+        "(?:pièce|témoin|fardeau)"
+      ],
+      "ne_doit_pas_contenir": [
+        "toutes les allégations sont prouvées d'office",
+        "aucun témoin requis si la demande est assermentée"
+      ],
+      "feuilles_attendues": [
+        "produit-matrice-allegations"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-10",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Matrice allégations-défense pour détecter les admissions tacites et contestations",
+      "prompt": "Croisez les paragraphes de la demande introductive adverse avec notre projet de défense pour produire une matrice montrant ce qui est admis, nié ou ignoré et la preuve correspondante à préparer.",
+      "criteres": [
+        "Cartographie chaque paragraphe entre position en défense (admis, nié, ignoré) et preuve requise.",
+        "Signale les faits constitutifs nécessitant une preuve positive de notre côté.",
+        "Distingue clairement faits établis, faits rapportés par le client et points [À CONFIRMER]."
+      ],
+      "doit_contenir": [
+        "(?:admis|nié|ignoré)",
+        "(?:preuve|pièce|témoin)",
+        "(?:Établi|Rapporté|\\[À CONFIRMER\\])"
+      ],
+      "ne_doit_pas_contenir": [
+        "le silence vaut toujours dénégation",
+        "matrice sans référence aux paragraphes"
+      ],
+      "feuilles_attendues": [
+        "produit-matrice-allegations"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-11",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Note stratégique interne d'évaluation d'un dossier en bris de contrat",
+      "prompt": "Rédigez une note interne confidentielle pour l'associé responsable résumant nos forces, faiblesses, risques de crédibilité, exposition financière et recommandation sur un règlement à l'amiable avant interrogatoires.",
+      "criteres": [
+        "Rédige une note structurée (objet, faits selon leur statut, analyse juridique/probante, risques, recommandations).",
+        "Respecte la séparation entre faits établis, rapportés et hypothèses, avec mention de protection par le secret professionnel.",
+        "Chiffre ou balise les zones d'incertitude sans inventer de jurisprudence non vérifiée."
+      ],
+      "doit_contenir": [
+        "(?:Établi|Rapporté|Déduit|\\[À CONFIRMER\\])",
+        "(?:risque|faiblesse|force)",
+        "(?:secret professionnel|confidentiel|stratégie)"
+      ],
+      "ne_doit_pas_contenir": [
+        "à déposer au greffe comme pièce",
+        "garantie de succès à 100 %"
+      ],
+      "feuilles_attendues": [
+        "produit-note-et-memo"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-12",
+      "competence": "analyse-et-strategie",
+      "palier": 1,
+      "titre": "Note de service rapide sur l'opportunité d'une demande reconventionnelle",
+      "prompt": "Préparez un mémo interne concis pesant les avantages et risques stratégiques d'ajouter une demande reconventionnelle pour honoraires impayés dans un dossier où on nous poursuit déjà pour négligence professionnelle.",
+      "criteres": [
+        "Pèse l'impact stratégique, le coût procédural et le risque de réplique ou de preuve adverse accrue.",
+        "Distingue ce qui relève de la stratégie interne de ce qui dépend de faits ou pièces [À CONFIRMER].",
+        "Reste strictement au format d'aide à la décision interne (non destiné à la partie adverse)."
+      ],
+      "doit_contenir": [
+        "(?:avantage|risque|opportunit)",
+        "(?:stratégi|mémo|note interne)",
+        "(?:\\[À CONFIRMER\\]|Rapporté|Établi)"
+      ],
+      "ne_doit_pas_contenir": [
+        "signifier cette note à la partie adverse",
+        "aucun risque sur la preuve de négligence"
+      ],
+      "feuilles_attendues": [
+        "produit-note-et-memo"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-13",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Théorie de la cause complète en responsabilité contractuelle commerciale",
+      "prompt": "Structurez la théorie de la cause de la demanderesse pour un recours de 450 000 $ contre un sous-traitant informatique : lien juridique, faute/manquement, préjudice, lien causal, contre-théorie prévisible et points de vulnérabilité.",
+      "criteres": [
+        "Aligne les syllogismes juridiques et factuels (obligation, manquement, préjudice, causalité).",
+        "Articule explicitement la contre-théorie probable de la défense et la façon d'y parer.",
+        "Rattache les affirmations factuelles aux preuves existantes ou à obtenir en interrogatoire."
+      ],
+      "doit_contenir": [
+        "(?:théorie de la cause|syllogisme)",
+        "(?:contre-théorie|défense probable|vulnérabilité)",
+        "(?:causal|manquement|préjudice)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la partie adverse n'a aucun moyen de défense concevable",
+        "fardeau inversé d'office sans texte"
+      ],
+      "feuilles_attendues": [
+        "produit-theorie-de-la-cause"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-14",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Analyse probante d'un enregistrement vidéo et d'une photographie de chantier",
+      "prompt": "Le client m'a remis un fichier MP4 d'une caméra de surveillance et trois photos JPEG montrant l'infiltration d'eau dans le sous-sol. Notez que vous n'avez que sa description textuelle pour le MP4 : analysez la force probante et l'authentification requise.",
+      "criteres": [
+        "Applique l'honnêteté perceptuelle : refuse de décrire un média non perçu et qualifie la description fournie de support secondaire.",
+        "Exige l'authentification (témoin de la captation, absence d'altération, intégrité du document technologique) et le journal de garde (SHA-256).",
+        "Distingue ce que la photo/vidéo montre directement de ce qu'elle ne prouve pas à elle seule (cause technique, coût)."
+      ],
+      "doit_contenir": [
+        "(?:perçu|support secondaire|non visionné|sans accès direct)",
+        "(?:intégrité|authentification|SHA-256|journal de garde)",
+        "(?:ne prouve pas|cause|chiffrage)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la vidéo montre clairement que",
+        "la photo prouve à elle seule la faute et le montant des dommages"
+      ],
+      "feuilles_attendues": [
+        "preuve-directe"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-15",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Évaluation d'une preuve par présomptions de fait (art. 2849 C.c.Q.) en fraude civile",
+      "prompt": "Nous n'avons aucun aveu écrit de la collusion entre l'ancien dirigeant et le fournisseur, seulement des factures séquentielles, des appels téléphoniques tardifs et des virements ronds. Quelle est la solidité d'une preuve par présomptions graves, précises et concordantes ?",
+      "criteres": [
+        "Fonde l'analyse sur les art. 2846 et 2849 C.c.Q. (présomptions de fait : graves, précises et concordantes).",
+        "Évalue si des hypothèses innocentes alternatives plausibles subsistent face au faisceau d'indices.",
+        "Identifie les éléments complémentaires à obtenir pour fermer les brèches inférentielles."
+      ],
+      "doit_contenir": [
+        "2849\\s*C\\.c\\.Q\\.",
+        "(?:graves,\\s*précises\\s*et\\s*concordantes)",
+        "(?:hypothèse alternative|faisceau|indices)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la fraude ne peut jamais être prouvée sans aveu écrit",
+        "présomption légale irréfragable"
+      ],
+      "feuilles_attendues": [
+        "preuve-indirecte"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-16",
+      "competence": "analyse-et-strategie",
+      "palier": 2,
+      "titre": "Contrôle des exigences légales d'un rapport d'expertise (art. 232-241 C.p.c.)",
+      "prompt": "L'ingénieur retenu par la partie adverse vient de communiquer un rapport de 4 pages sans déclaration sur son devoir envers le tribunal ni liste de sa documentation. Comment attaquer sa recevabilité et sa force probante ?",
+      "criteres": [
+        "Rappelle le devoir primordial de l'expert d'éclairer le tribunal avec objectivité et impartialité (art. 22 et 235 C.p.c.).",
+        "Vérifie la qualification du témoin expert, la méthodologie, le fondement factuel et la déclaration de l'expert.",
+        "Distingue ce qui affecte la qualification/recevabilité de ce qui réduit la valeur probante du rapport."
+      ],
+      "doit_contenir": [
+        "(?:235|238|241|22)\\s*C\\.p\\.c\\.",
+        "(?:objectivit|impartialit|devoir envers le tribunal)",
+        "(?:recevabilit|valeur probante|force probante)"
+      ],
+      "ne_doit_pas_contenir": [
+        "un rapport d'expert fait foi de son contenu comme un acte authentique",
+        "l'expert est toujours dispensé de comparaître même si contesté"
+      ],
+      "feuilles_attendues": [
+        "preuve-indirecte"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "AS-17",
+      "competence": "analyse-et-strategie",
+      "palier": 3,
+      "titre": "Fiche de preuve et de témoins avant mise en état (art. 173-174 C.p.c.)",
+      "prompt": "En vue de la déclaration conjointe de mise en état, structurez la fiche de preuve et de témoins pour trois témoins ordinaires et un expert comptable, avec l'objet de chaque déposition et les pièces rattachées.",
+      "criteres": [
+        "Associe chaque témoin à sa qualité (ordinaire/expert), aux faits ciblés, aux pièces à authentifier ou commenter et au temps estimé.",
+        "Signale la distinction entre interrogatoire principal, contre-interrogatoire et protection des déclarations préparatoires (privilège relatif au litige).",
+        "Vérifie l'arrimage avec le bordereau des pièces (art. 250 C.p.c.) et les engagements résiduels."
+      ],
+      "doit_contenir": [
+        "(?:témoin|expert)",
+        "(?:pièce|objet de (?:la )?déposition|temps)",
+        "(?:privilège relatif au litige|secret professionnel|250\\s*C\\.p\\.c\\.)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la liste des témoins peut rester secrète jusqu'au jour de l'audition",
+        "les notes de préparation de témoin doivent être communiquées d'office"
+      ],
+      "feuilles_attendues": [
+        "produit-fiche-preuve-et-temoins"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "DP-03",
+      "competence": "gestion-du-mandat",
+      "palier": 2,
+      "titre": "Détection déontologique face au dépôt d'une pièce caviardée et d'un tiers non représenté",
+      "prompt": "Dans ce dossier commercial, la partie adverse nous a transmis par erreur un courriel confidentiel entre son avocat et son président, et son ancien comptable non représenté me propose de me rencontrer seul pour tout me dire. Que déclenche le radar déontologique ?",
+      "criteres": [
+        "Identifie le devoir face à un document privilégié transmis par mégarde (cesser la lecture, aviser l'avocat expéditeur, détruire ou retourner selon le Code de déontologie).",
+        "Traite des règles d'interaction avec une personne non représentée (ne pas donner de conseil juridique, ne pas induire en erreur, informer du rôle d'avocat de l'autre partie).",
+        "Renvoie vers les vecteurs normatifs (`b-1-r.3.1`) via `lois` sans inventer de numéro d'article non vérifié."
+      ],
+      "doit_contenir": [
+        "(?:privilège|secret professionnel|mégarde|erreur)",
+        "(?:non représenté|sans avocat)",
+        "(?:b-1-r\\.3\\.1|Code de déontologie)"
+      ],
+      "ne_doit_pas_contenir": [
+        "utilisez immédiatement le courriel privilégié au dossier",
+        "conseillez au tiers non représenté de ne pas consulter d'avocat"
+      ],
+      "feuilles_attendues": [
+        "conformite-radar-deontologique"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "PC-10",
+      "competence": "production-et-conformite",
+      "palier": 3,
+      "titre": "Contrôle d'un cahier d'appel / exposé en Cour d'appel du Québec (Annexes I-III)",
+      "prompt": "Nous déposons un mémoire d'appelant devant la Cour d'appel du Québec la semaine prochaine. Quelles exigences formelles vérifiez-vous pour la présentation du mémoire et de ses Annexes I, II et III selon le Règlement de la Cour d'appel ?",
+      "criteres": [
+        "Vise le Règlement de la Cour d'appel du Québec en matière civile (`c-25.01-r.0.2.01`, notamment art. 47, 50-55, 58).",
+        "Distingue le contenu respectif de l'Annexe I (jugement entrepris), Annexe II (actes de procédure et dispositions) et Annexe III (pièces et dépositions pertinentes).",
+        "Divulgue les limites en environnement sans script local ou exécute les scripts de vérification selon disponibilité et produit un bon de travail."
+      ],
+      "doit_contenir": [
+        "(?:c-25\\.01-r\\.0\\.2\\.01|Règlement de la Cour d'appel)",
+        "(?:Annexe I|Annexe II|Annexe III)",
+        "(?:bon de travail|pagination|police)"
+      ],
+      "ne_doit_pas_contenir": [
+        "Annexes facultatives en Cour d'appel",
+        "le mémoire peut dépasser la limite réglementaire sans permission"
+      ],
+      "feuilles_attendues": [
+        "cahier-des-procedures"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-09",
+      "competence": "recherche-juridique",
+      "palier": 3,
+      "titre": "Recherche doctrinale encadrée sur l'enrichissement injustifié en droit commercial",
+      "prompt": "Quels ouvrages de doctrine québécoise reconnus consulter pour appuyer une argumentation sur l'enrichissement injustifié et la subsidiarité du recours, et comment les présenter sans surévaluer leur autorité ?",
+      "criteres": [
+        "Classe la doctrine comme source persuasive/secondaire subordonnée aux textes législatifs et à la jurisprudence.",
+        "Exige la vérification bibliographique exacte (auteur, ouvrage/revue, édition, page) sans inventer de page ou de citation.",
+        "Rappelle de vérifier par `lois` et `juris` comment les tribunaux québécois ont reçu la thèse doctrinale."
+      ],
+      "doit_contenir": [
+        "(?:source secondaire|persuasive|doctrine)",
+        "(?:C\\.c\\.Q\\.|loi|jurisprudence)",
+        "(?:vérifi|édition|page|\\[À CONFIRMER\\])"
+      ],
+      "ne_doit_pas_contenir": [
+        "la doctrine lie la Cour supérieure",
+        "auteur ou numéro de page inventé comme vérifié"
+      ],
+      "feuilles_attendues": [
+        "recherche-doctrinale"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-10",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Usage de la doctrine de common law ou française en droit civil québécois",
+      "prompt": "Un article de revue canadienne de common law propose un test séduisant pour la responsabilité des administrateurs. Puis-je le citer directement devant la Cour supérieure du Québec en vertu du C.c.Q. ?",
+      "criteres": [
+        "Applique l'étanchéité bijuridique : interdit de transposer mécaniquement une doctrine de common law dans un domaine régi par le C.c.Q. sans démonstration préalable.",
+        "Distingue le droit fédéral/statutaire partagé (ex. LCSA) des matières purement civilistes.",
+        "Exige une vérification de réception doctrinale et jurisprudentielle québécoise."
+      ],
+      "doit_contenir": [
+        "(?:bijurid|common law|étanchéité|C\\.c\\.Q\\.)",
+        "(?:transpos|réception|droit fédéral)",
+        "(?:doctrine|jurisprudence)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la common law s'applique directement au Code civil du Québec",
+        "transposition automatique sans analyse"
+      ],
+      "feuilles_attendues": [
+        "recherche-doctrinale"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-11",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Livrable structuré de recherche juridique avec statuts de lecture explicites",
+      "prompt": "Présentez le format attendu d'un mémo de recherche juridique interne sur la réduction d'une clause pénale abusive (art. 1623 C.c.Q.), sachant que vous avez consulté l'article via `lois` mais pas encore lu le texte intégral des deux arrêts trouvés.",
+      "criteres": [
+        "Structure le livrable de recherche (question, sources primaires vérifiées, analyse, limites/statut de lecture).",
+        "Applique fidèlement les statuts de lecture (texte lu vs résumé/métadonnées seulement) avec crochets normalisés pour les arrêts non lus intégralement.",
+        "N'affirme aucun ratio ni paragraphe précis d'un arrêt non lu in extenso."
+      ],
+      "doit_contenir": [
+        "1623\\s*C\\.c\\.Q\\.",
+        "(?:statut de lecture|non lu|métadonnées|\\[RATIO / PAR\\. X)",
+        "(?:lois|source primaire)"
+      ],
+      "ne_doit_pas_contenir": [
+        "au paragraphe 42 de l'arrêt",
+        "lecture intégrale confirmée alors que l'arrêt n'a pas été lu"
+      ],
+      "feuilles_attendues": [
+        "recherche-livrables"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-12",
+      "competence": "recherche-juridique",
+      "palier": 3,
+      "titre": "Réutilisation encadrée d'un précédent interne dé-identifié du cabinet",
+      "prompt": "Voici une ancienne défense rédigée par le cabinet dans un autre dossier ressemblant à celui-ci, mais elle contient encore le nom des anciennes parties. Comment puis-je m'en inspirer comme précédent interne ?",
+      "criteres": [
+        "Exige la dé-identification préalable et refuse d'incorporer des faits, noms ou informations confidentielles de l'ancien dossier.",
+        "Limite la réutilisation au savoir-faire rédactionnel et à la structure, en re-vérifiant toute source juridique (lois/jurisprudence) à jour.",
+        "Signale l'alerte de conflit d'intérêts potentiel et place les actes publics/jugements au-dessus des notes internes."
+      ],
+      "doit_contenir": [
+        "(?:dé-identifi|anonymis|secret professionnel)",
+        "(?:structure|savoir-faire)",
+        "(?:re-vérifi|à jour|conflit d'intérêts)"
+      ],
+      "ne_doit_pas_contenir": [
+        "conservez les faits et noms de l'ancien dossier",
+        "copiez les articles cités sans les revérifier dans lois"
+      ],
+      "feuilles_attendues": [
+        "recherche-precedents-internes"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-25",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Opposition à la saisie en exécution (délai de 15 jours, art. 736 C.p.c.)",
+      "prompt": "L'huissier vient de signifier un procès-verbal de saisie d'équipement informatique de l'entreprise il y a 4 jours, alors que l'équipement appartient en crédit-bail à un tiers. Rédigez la trame de l'opposition du tiers à la saisie.",
+      "criteres": [
+        "Fonde l'opposition sur les art. 735-736 C.p.c. et signale le délai strict de 15 jours suivant la signification du procès-verbal de saisie ou de la connaissance.",
+        "Vise les effets suspensifs et exceptions des art. 737-741 C.p.c.",
+        "Intègre un avis de présentation conforme et les conclusions de mainlevée / distraction."
+      ],
+      "doit_contenir": [
+        "(?:735|736)\\s*C\\.p\\.c\\.",
+        "15\\s*jours",
+        "(?:737|738|739|740|741|sursis|mainlevée)"
+      ],
+      "ne_doit_pas_contenir": [
+        "délai de 30 jours pour former opposition à la saisie",
+        "sursis illimité sans vérification des exceptions"
+      ],
+      "feuilles_attendues": [
+        "acte-execution-et-oppositions"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-26",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Demande d'interrogatoire après jugement et vérification d'insaisissabilité (art. 688 C.p.c.)",
+      "prompt": "Mon jugement de 95 000 $ est exécutoire mais le débiteur refuse de divulguer ses actifs et comptes bancaires. Rédigez les démarches et l'acte visant la convocation à l'interrogatoire après jugement.",
+      "criteres": [
+        "Distingue la demande de déclaration/divulgation des art. 684 C.p.c. et l'interrogatoire du débiteur/tiers après jugement selon l'art. 688 C.p.c.",
+        "Vérifie l'expiration du délai d'exécution volontaire ou l'exécution provisoire avant d'agir.",
+        "Signale les règles de confidentialité et limites d'insaisissabilité applicables."
+      ],
+      "doit_contenir": [
+        "688\\s*C\\.p\\.c\\.",
+        "(?:684\\s*C\\.p\\.c\\.|déclaration|divulgation)",
+        "(?:exécutoire|après jugement)"
+      ],
+      "ne_doit_pas_contenir": [
+        "article 684 est l'interrogatoire formel devant sténographe",
+        "saisie avant même qu'un jugement devienne exécutoire sans autorisation"
+      ],
+      "feuilles_attendues": [
+        "acte-execution-et-oppositions"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-27",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande d'ordonnance de sauvegarde / injonction interlocutoire (non-concurrence)",
+      "prompt": "Un ex-associé vient d'ouvrir une clinique concurrente en violation alléguée d'une clause de non-concurrence et sollicite nos patients depuis hier. Rédigez une demande d'injonction interlocutoire avec volet d'ordonnance de sauvegarde.",
+      "criteres": [
+        "Articule les critères cumulatifs de l'injonction (apparence de droit, préjudice sérieux ou irréparable, prépondérance des inconvénients, urgence) conformément aux art. 509-513 C.p.c.",
+        "Inclut la déclaration sous serment requise et traite du cautionnement potentiel.",
+        "Rédige des conclusions précises, circonscrites et susceptibles d'exécution (qui, quoi, où, durée)."
+      ],
+      "doit_contenir": [
+        "(?:509|510|511|512)\\s*C\\.p\\.c\\.",
+        "(?:apparence de droit|préjudice (?:sérieux|irréparable)|prépondérance des inconvénients)",
+        "(?:déclaration sous serment|serment|ordonnance de sauvegarde)"
+      ],
+      "ne_doit_pas_contenir": [
+        "l'injonction provisoire dure indéfiniment",
+        "aucune déclaration sous serment requise"
+      ],
+      "feuilles_attendues": [
+        "acte-injonction"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-28",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande de séquestre judiciaire d'un immeuble commercial en copropriété indivise",
+      "prompt": "Deux coindivisaires d'un immeuble locatif se paralysent et les loyers ne sont plus déposés pour payer les taxes ni l'hypothèque. Préparez la demande de nomination d'un séquestre judiciaire.",
+      "criteres": [
+        "Fonde la demande sur l'art. 524 C.p.c. et les dispositions du C.c.Q. sur le séquestre (art. 2305-2311 C.c.Q.) et l'exécution en nature (art. 660(9°) C.p.c.).",
+        "Précise le mandat exact du séquestre proposé, ses pouvoirs d'administration et sa reddition de compte.",
+        "Évite de confondre séquestre judiciaire (art. 524 C.p.c.) et saisie avant jugement (art. 516 C.p.c.)."
+      ],
+      "doit_contenir": [
+        "524\\s*C\\.p\\.c\\.",
+        "(?:2305|2308|2309|2310|2311)\\s*C\\.c\\.Q\\.",
+        "(?:séquestre|reddition de compte)"
+      ],
+      "ne_doit_pas_contenir": [
+        "séquestre régi exclusivement par l'article 516 C.p.c.",
+        "le séquestre devient propriétaire du bien"
+      ],
+      "feuilles_attendues": [
+        "acte-mesures-provisionnelles-autres"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-29",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Demande d'accès/inspection d'un lieu ou bien technologique en cours d'instance (art. 517 al. 2)",
+      "prompt": "Avant l'instruction, nous devons faire inspecter par notre expert un équipement industriel scellé chez la défenderesse et obtenir une copie forensique d'un serveur. Rédigez les assises de cette demande provisionnelle.",
+      "criteres": [
+        "Distinguent la saisie avant jugement ordinaire de l'autorisation judiciaire requise pour un support technologique (art. 517 al. 2 C.p.c.) et des mesures de gestion/conservation de preuve (art. 105, 524 C.p.c.).",
+        "Encadre l'inspection par des paramètres proportionnés (date, présence des parties, protocole forensique, secret des affaires).",
+        "Prévoit la déclaration sous serment au soutien des allégations factuelles."
+      ],
+      "doit_contenir": [
+        "(?:517\\s*al\\.\\s*2|105|524)\\s*C\\.p\\.c\\.",
+        "(?:technologique|forensique|conservation)",
+        "(?:protocole|proportionnalit|serment)"
+      ],
+      "ne_doit_pas_contenir": [
+        "l'huissier peut saisir un serveur informatique sans autorisation du tribunal",
+        "copie intégrale sans égard au secret professionnel"
+      ],
+      "feuilles_attendues": [
+        "acte-mesures-provisionnelles-autres"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-30",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Moyen déclinatoire — absence de compétence territoriale au Québec (art. 166-167, 3148 C.c.Q.)",
+      "prompt": "Mon client domicilié en Ontario est poursuivi devant la Cour supérieure à Montréal pour un contrat conclu et exécuté à Toronto, sans clause d'élection de for. Rédigez le moyen déclinatoire d'incompétence.",
+      "criteres": [
+        "Combine la base procédurale (art. 166-167 C.p.c. — moyen déclinatoire) avec la règle de compétence internationale (art. 3148 C.c.Q.) et le forum non conveniens subsidiaire (art. 3135 C.c.Q.).",
+        "Signale l'urgence de dénoncer le moyen préliminaire tôt afin d'éviter la reconnaissance implicite de compétence (art. 3148(5°) C.c.Q.).",
+        "Vérifie l'exception potentielle pour contrat de consommation ou de travail (art. 3149 C.c.Q.)."
+      ],
+      "doit_contenir": [
+        "(?:166|167)\\s*C\\.p\\.c\\.",
+        "3148\\s*C\\.c\\.Q\\.",
+        "(?:déclinatoire|compétence internationale)"
+      ],
+      "ne_doit_pas_contenir": [
+        "moyen d'irrecevabilité de l'article 168 C.p.c. pour l'incompétence territoriale",
+        "vous pouvez attendre après le procès pour soulever l'incompétence personnelle"
+      ],
+      "feuilles_attendues": [
+        "acte-moyens-preliminaires"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-31",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande en irrecevabilité pour chose jugée et absence de fondement en droit (art. 168 C.p.c.)",
+      "prompt": "Le demandeur réintroduit la même réclamation déjà rejetée sur le fond entre les mêmes parties en 2024. Rédigez la demande en irrecevabilité en précisant l'étendue de la preuve permise au stade préliminaire.",
+      "criteres": [
+        "Fonde l'irrecevabilité sur l'art. 168 C.p.c. (chose jugée et non-fondement en droit, sous réserve des faits allégués tenus pour avérés selon le motif).",
+        "Distingue la triple identité de la chose jugée (art. 2848 C.c.Q.) du principe selon lequel pour l'absence de fondement en droit les faits allégués sont tenus pour avérés.",
+        "Respecte le cadre procédural de dénonciation (art. 166 C.p.c.) et les conclusions en rejet de la demande."
+      ],
+      "doit_contenir": [
+        "168\\s*C\\.p\\.c\\.",
+        "2848\\s*C\\.c\\.Q\\.",
+        "(?:tenus pour avérés|chose jugée|triple identité)"
+      ],
+      "ne_doit_pas_contenir": [
+        "on peut plaider des faits contradictoires par témoins sur l'absence de fondement en droit",
+        "l'article 169 C.p.c. est le moyen d'irrecevabilité"
+      ],
+      "feuilles_attendues": [
+        "acte-moyens-preliminaires"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-32",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Pourvoi en contrôle judiciaire d'une décision du Tribunal administratif du logement",
+      "prompt": "Le TAL vient de refuser à tort une résiliation et d'excéder sa compétence selon mon client. Préparez un pourvoi en contrôle judiciaire devant la Cour supérieure dans un délai raisonnable (avec demande de sursis).",
+      "criteres": [
+        "Fonde le pourvoi sur l'art. 529-530 C.p.c. et signale la règle du délai raisonnable (généralement 30 jours en pratique jurisprudentielle, sauf motif exceptionnel).",
+        "Précise que le pourvoi n'opère pas sursis automatique devant la C.S. (art. 530 al. 2 C.p.c. — distinction nette avec l'art. 531 C.p.c. en C.A.).",
+        "Rappelle l'avis préalable au P.G.Q. / P.G.C. (>= 30 jours selon les art. 76-77 C.p.c.) si la validité ou l'applicabilité d'une loi est contestée."
+      ],
+      "doit_contenir": [
+        "(?:529|530)\\s*C\\.p\\.c\\.",
+        "(?:530\\s*al\\.\\s*2|sursis)",
+        "(?:délai raisonnable|30\\s*jours|76|77)"
+      ],
+      "ne_doit_pas_contenir": [
+        "le pourvoi en contrôle judiciaire suspend automatiquement l'exécution devant la Cour supérieure",
+        "à déposer devant la Cour du Québec"
+      ],
+      "feuilles_attendues": [
+        "acte-pourvoi-controle-judiciaire"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-33",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Vérification d'épuisement des recours administratifs et avis au P.G.Q. (art. 76-77 C.p.c.)",
+      "prompt": "Avant de déposer un pourvoi en contrôle judiciaire contre un comité de discipline qui n'a rendu qu'une décision interlocutoire sur objection à la preuve, et en attaquant l'art. 12 d'un règlement, que vérifier ?",
+      "criteres": [
+        "Met en garde contre le pourvoi prématuré contre une décision interlocutoire administrative (règle de l'épuisement des recours / circonstances exceptionnelles).",
+        "Applique l'art. 76-77 C.p.c. pour l'avis d'au moins 30 jours au Procureur général du Québec lors de l'attaque de validité d'un texte législatif/réglementaire.",
+        "Renvoie vers les normes applicables de contrôle judiciaire (Vavilov / caractère raisonnable vs décision correcte sans inventer de citation non vérifiée)."
+      ],
+      "doit_contenir": [
+        "(?:épuisement des recours|interlocutoire|exceptionnel)",
+        "(?:76|77)\\s*C\\.p\\.c\\.",
+        "(?:30\\s*jours|Procureur général)"
+      ],
+      "ne_doit_pas_contenir": [
+        "aucun avis au Procureur général requis pour invalider un règlement",
+        "contrôle judiciaire de plein droit sur toute objection à la preuve en cours d'audition"
+      ],
+      "feuilles_attendues": [
+        "acte-pourvoi-controle-judiciaire"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-34",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Appel en garantie simple vs garantie formelle contre un sous-traitant (art. 188-190 C.p.c.)",
+      "prompt": "L'entrepreneur général est poursuivi pour vice de toiture et veut mettre en cause son couvreur. Quelle procédure utiliser, quel délai d'action s'applique au tiers appelé et le couvreur peut-il prendre fait et cause ?",
+      "criteres": [
+        "Distingue la mise en cause forcée / appel en garantie (art. 188-190 C.p.c.) de l'intervention volontaire (art. 185-187 C.p.c.).",
+        "Précise les délais : le tiers appelé dispose de 15 jours suivant la signification pour répondre et les autres parties de 10 jours pour s'opposer (art. 188 C.p.c.).",
+        "Distingue garantie simple (art. 189 al. 2 : le garant ne peut prendre fait et cause) et garantie formelle (art. 189 al. 3)."
+      ],
+      "doit_contenir": [
+        "(?:188|189|190)\\s*C\\.p\\.c\\.",
+        "(?:garantie simple|garantie formelle|prendre fait et cause)",
+        "(?:15\\s*jours|10\\s*jours)"
+      ],
+      "ne_doit_pas_contenir": [
+        "en garantie simple, le garant peut prendre fait et cause et remplacer le défendeur",
+        "aucun avis d'assignation au tiers appelé en garantie"
+      ],
+      "feuilles_attendues": [
+        "acte-reconvention-intervention-garantie"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-35",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande reconventionnelle vs compensation et intervention volontaire (art. 172, 185-187 C.p.c.)",
+      "prompt": "Un créancier réclame 80 000 $ en remboursement de prêt ; notre client veut réclamer 110 000 $ pour bris de contrat connexe, et sa filiale souhaite intervenir volontairement. Rédigez le volet procédural des deux actes.",
+      "criteres": [
+        "Distingue la demande reconventionnelle (pour l'excédent ou une condamnation autonome) de la défense en compensation.",
+        "Encadre l'intervention volontaire (art. 185-187 C.p.c. — conservatoire ou agressive) et le délai d'opposition de 10 jours / avis préalable d'au moins 5 jours.",
+        "Signale l'impact potentiel sur le seuil de compétence (art. 35, 535.5 C.p.c.) et la jonction."
+      ],
+      "doit_contenir": [
+        "(?:185|186|187)\\s*C\\.p\\.c\\.",
+        "(?:reconvention|compensation)",
+        "(?:intervention volontaire|conservatoire|agressive)"
+      ],
+      "ne_doit_pas_contenir": [
+        "l'intervention volontaire se fait sans signification ni déclaration",
+        "la défense en compensation suffit pour obtenir condamnation pour l'excédent"
+      ],
+      "feuilles_attendues": [
+        "acte-reconvention-intervention-garantie"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-36",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Demande en rétractation de jugement par défaut pour empêchement (art. 345-347 C.p.c.)",
+      "prompt": "Un jugement par défaut a été rendu contre mon client qui était hospitalisé aux soins intensifs le jour de la notification et vient de le découvrir hier. Rédigez la demande en rétractation en précisant le double délai et le sort de l'exécution.",
+      "criteres": [
+        "Fonde la rétractation de la partie défaillante sur les art. 345-347 C.p.c. (motif suffisant d'empêchement ET moyens sérieux en défense).",
+        "Mentionne le double délai de l'art. 347 al. 1-2 C.p.c. (30 jours de la connaissance du jugement, sans excéder 6 mois de son prononcé selon les règles vérifiées).",
+        "Alerte que devant la C.S. ou la C.Q., le dépôt de la demande de rétractation ne suspend PAS automatiquement l'exécution (art. 350 C.p.c., à la différence du TAL art. 89 al. 4 LTAL)."
+      ],
+      "doit_contenir": [
+        "(?:345|346|347)\\s*C\\.p\\.c\\.",
+        "350\\s*C\\.p\\.c\\.",
+        "(?:30\\s*jours|6\\s*mois|pas\\s+(?:de\\s+)?sursis\\s+automatique|ne suspend pas)"
+      ],
+      "ne_doit_pas_contenir": [
+        "le dépôt d'une demande de rétractation en Cour du Québec suspend automatiquement la saisie",
+        "inutile d'alléguer une défense sérieuse au fond"
+      ],
+      "feuilles_attendues": [
+        "acte-retractation-jugement"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-37",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Tierce opposition contre un jugement affectant les droits d'un créancier tiers (art. 349 C.p.c.)",
+      "prompt": "Un jugement rendu entre deux anciens partenaires annule une hypothèque conventionnelle sur laquelle notre client tiers s'appuyait, sans qu'il ait été mis en cause. Quelle est la voie de rétractation appropriée ?",
+      "criteres": [
+        "Identifie la rétractation à la demande d'un tiers (tierce opposition) sous l'art. 349 C.p.c.",
+        "Vérifie l'intérêt juridique du tiers dont les droits sont affectés et qui n'a pas été appelé à l'instance.",
+        "Signale le délai applicable (art. 349 C.p.c.) et la nécessité de demander un sursis d'exécution exprès sous l'art. 350 C.p.c. le cas échéant."
+      ],
+      "doit_contenir": [
+        "349\\s*C\\.p\\.c\\.",
+        "(?:tierce opposition|tiers)",
+        "(?:350\\s*C\\.p\\.c\\.|6\\s*mois|droits\\s+affectés)"
+      ],
+      "ne_doit_pas_contenir": [
+        "un tiers doit former appel plutôt que demander rétractation",
+        "le délai est de 10 jours seulement"
+      ],
+      "feuilles_attendues": [
+        "acte-retractation-jugement"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-38",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Saisie avant jugement avec autorisation pour dissipation imminente d'actifs (art. 516-520 C.p.c.)",
+      "prompt": "Un ex-distributeur liquide à rabais son inventaire financé et ferme son entrepôt demain alors qu'il nous doit 240 000 $. Rédigez la demande de saisie avant jugement en insistant sur l'affidavit.",
+      "criteres": [
+        "Distingue la saisie avant jugement avec autorisation judiciaire (art. 518 C.p.c. — crainte objective que le recouvrement soit mis en péril) des cas sans autorisation (art. 517).",
+        "Exige une déclaration sous serment exposant avec précision les faits et les sources d'information/croyance conformément à l'art. 520 C.p.c.",
+        "Précise l'avis et les recours en contestation/mainlevée (art. 522-523 C.p.c.) ainsi que la compétence (C.Q. vs C.S.)."
+      ],
+      "doit_contenir": [
+        "(?:516|518|520)\\s*C\\.p\\.c\\.",
+        "(?:péril|crainte|sources d'information)",
+        "(?:déclaration sous serment|serment|522|523)"
+      ],
+      "ne_doit_pas_contenir": [
+        "519 C.p.c. pour un litige commercial",
+        "aucune déclaration sous serment requise si la facture est annexée"
+      ],
+      "feuilles_attendues": [
+        "acte-saisie-avant-jugement"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-39",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Saisie avant jugement sans autorisation vs biens technologiques (art. 517 al. 1-2 C.p.c.)",
+      "prompt": "Le vendeur a résilié un contrat de vente à tempérament d'un camion et souhaite saisir avant jugement le véhicule ET le serveur informatique contenant les dossiers clients sans autorisation du juge. Est-ce possible ?",
+      "criteres": [
+        "Vérifie les cas limitatifs sans autorisation préalable à l'art. 517 al. 1 C.p.c. (ex. revendication de bien meuble par le propriétaire/vendeur à tempérament).",
+        "Signale l'interdiction absolue posée à l'art. 517 al. 2 C.p.c. : la saisie de documents ou supports technologiques exige toujours l'autorisation du tribunal.",
+        "Rappelle les formalités de déclaration sous serment (art. 520 C.p.c.) et la proportionnalité."
+      ],
+      "doit_contenir": [
+        "517\\s*al\\.\\s*2\\s*C\\.p\\.c\\.",
+        "(?:technologique|autorisation du tribunal)",
+        "(?:517|520)\\s*C\\.p\\.c\\."
+      ],
+      "ne_doit_pas_contenir": [
+        "tous les biens technologiques peuvent être saisis sans autorisation en vertu de 517 al. 1",
+        "le locateur résidentiel est traité au même titre sans exception"
+      ],
+      "feuilles_attendues": [
+        "acte-saisie-avant-jugement"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-40",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Plan d'argumentation structuré pour audition au fond (Cour supérieure)",
+      "prompt": "Préparez un plan d'argumentation écrit de 10 pages maximum pour notre défense au fond en responsabilité du fabricant, où deux arrêts clés ont déjà été lus et un troisième est seulement mentionné dans nos notes sans lecture intégrale.",
+      "criteres": [
+        "Structure le plan d'argumentation par questions en litige, thèses succinctes, renvois précis aux pièces/transcriptions et conclusions.",
+        "Applique une discipline de citation stricte : ne tire aucun ratio de l'arrêt non lu et insère le crochet normalisé requis.",
+        "Contrôle l'absence de faits nouveaux non prouvés à l'instruction dans l'argumentation écrite."
+      ],
+      "doit_contenir": [
+        "(?:question(?:s)? en litige|syllogisme)",
+        "(?:\\[RATIO / PAR\\. X|non lu|pièce|transcription)",
+        "(?:contrôle|preuve au dossier)"
+      ],
+      "ne_doit_pas_contenir": [
+        "introduire des faits nouveaux absents de la preuve",
+        "citer le paragraphe exact d'un arrêt non consulté intégralement"
+      ],
+      "feuilles_attendues": [
+        "arg-argumentation-ecrite"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-41",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Exposé des arguments de l'appelant dans un mémoire d'appel",
+      "prompt": "Rédigez le canevas argumentatif de la Partie IV (Arguments) d'un mémoire devant la Cour d'appel attaquant une erreur mixte de fait et de droit sur l'interprétation d'une clause de limitation de responsabilité.",
+      "criteres": [
+        "Identifie d'emblée la norme de contrôle applicable (erreur déterminante vs erreur manifeste et déterminante selon Housen / Sattva / C.c.Q.).",
+        "Structure chaque moyen d'appel avec renvoi exact aux paragraphes du jugement entrepris et aux pièces de l'Annexe III.",
+        "Respecte la rigueur de citation sans jamais inventer de citation jurisprudentielle."
+      ],
+      "doit_contenir": [
+        "(?:norme de contrôle|manifeste et déterminante|erreur de droit)",
+        "(?:Annexe|jugement entrepris|moyen)",
+        "(?:limitation de responsabilité|C\\.c\\.Q\\.)"
+      ],
+      "ne_doit_pas_contenir": [
+        "la Cour d'appel rejuge tous les faits de novo sans égard à la norme de contrôle",
+        "références absentes aux passages précis du jugement"
+      ],
+      "feuilles_attendues": [
+        "arg-argumentation-ecrite"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-42",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Clause attributive de juridiction et clause de limitation dans un contrat d'adhésion",
+      "prompt": "Mon client logiciel B2B veut inclure dans ses conditions d'adhésion en ligne une clause désignant les tribunaux de l'Ontario et excluant toute responsabilité même en cas de faute lourde. Rédigez une version conforme au droit civil québécois.",
+      "criteres": [
+        "Signale la nullité d'une clause d'élection de for défavorable ou surprenante dans un contrat d'adhésion / de consommation selon l'art. 41 al. 3 C.p.c. (et 3149 C.c.Q. / 1435-1437 C.c.Q.).",
+        "Relève l'interdiction absolue d'exclure ou limiter la responsabilité pour préjudice causé par faute intentionnelle ou faute lourde (art. 1474 C.c.Q.).",
+        "Propose des formulations conformes et avertit contre la transposition de jargon de common law."
+      ],
+      "doit_contenir": [
+        "41\\s*al\\.\\s*3\\s*C\\.p\\.c\\.",
+        "1474\\s*C\\.c\\.Q\\.",
+        "(?:contrat d'adhésion|1435|1437|faute lourde)"
+      ],
+      "ne_doit_pas_contenir": [
+        "vous pouvez valablement exclure la faute lourde par contrat d'adhésion au Québec",
+        "41 al. 2 C.p.c. régit la nullité des clauses d'adhésion"
+      ],
+      "feuilles_attendues": [
+        "contrat-civil-commercial"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-43",
+      "competence": "redaction-juridique",
+      "palier": 2,
+      "titre": "Contrat de prestation de services B2B (clause externe, résiliation et confidentialité)",
+      "prompt": "Rédigez les clauses essentielles d'un contrat de services de consultation informatique entre PME québécoises (objet, propriété intellectuelle, confidentialité, résiliation unilatérale 2125 C.c.Q. et clause pénale).",
+      "criteres": [
+        "Adresse explicitement la faculté de résiliation unilatérale du client prévue à l'art. 2125 C.c.Q. (et sa renonciation/modulation éventuelle) ainsi que les effets de l'art. 2129 C.c.Q.",
+        "Vérifie la validité de la clause externe (art. 1435 C.c.Q.) et le risque de réduction d'une clause pénale abusive (art. 1623 C.c.Q.).",
+        "Utilise la terminologie civiliste québécoise exacte (sans considération, estoppel ou indemnity imports aveugles)."
+      ],
+      "doit_contenir": [
+        "(?:2125|2129)\\s*C\\.c\\.Q\\.",
+        "(?:contrat de service|client|résiliation)",
+        "(?:1435|1623|terminologie|common law)"
+      ],
+      "ne_doit_pas_contenir": [
+        "consideration en common law requise pour former le contrat",
+        "le prestataire peut résilier sans motif à tout moment sous 2125 C.c.Q."
+      ],
+      "feuilles_attendues": [
+        "contrat-civil-commercial"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RD-44",
+      "competence": "redaction-juridique",
+      "palier": 3,
+      "titre": "Acte d'acquiescement partiel et avis de règlement hors cour (art. 217-220 C.p.c.)",
+      "prompt": "Les parties viennent de régler le dossier après la mise en état, mais le défendeur paiera en trois versements et accepte un jugement par défaut si un versement échoue. Rédigez la trame d'entente judiciaire et d'avis de règlement.",
+      "criteres": [
+        "Distinguent la transaction (art. 2631 C.c.Q.) et l'acquiescement à la demande / avis de règlement hors cour (art. 217-220 C.p.c.), sans confondre avec le désistement d'action conjointe.",
+        "Traite de la suspension ou terminaison de l'instance, des frais de justice, du maintien de confidentialité vs homologation du tribunal (art. 220 C.p.c.) et des honoraires d'un expert commun (art. 233 al. 2 C.p.c.).",
+        "Signale l'avis immédiat au greffe (art. 12 / 220 C.p.c.) pour éviter une audition inutile."
+      ],
+      "doit_contenir": [
+        "(?:217|218|219|220)\\s*C\\.p\\.c\\.",
+        "2631\\s*C\\.c\\.Q\\.",
+        "(?:avis de règlement|homolog|acquiescement)"
+      ],
+      "ne_doit_pas_contenir": [
+        "article 214 C.p.c. régit l'acquiescement à la demande",
+        "ne pas aviser le greffe avant la date d'audition"
+      ],
+      "feuilles_attendues": [
+        "contrat-ententes-judiciaires"
+      ],
+      "enchainement_attendu": [],
+      "declencheur_negatif": false
     }
   ]
 }

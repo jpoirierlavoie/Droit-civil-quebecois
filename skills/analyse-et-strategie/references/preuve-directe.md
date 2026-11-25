@@ -1,6 +1,6 @@
 # Analyse de la preuve directe (écrits, courriels, photos, vidéos, enregistrements)
 
-[NON VALIDÉ PAR LA PRATIQUE] · [FICHE À RÉDIGER] *(compléter les cas particuliers de pratique lors du contrôle des sources via `lois`)*
+[NON VALIDÉ PAR LA PRATIQUE]
 
 Encadre l'évaluation des éléments probatoires directs (contrats, lettres, courriels, photographies, vidéos, enregistrements audio) avec **honnêteté perceptuelle stricte** et **journal de garde**.
 
@@ -33,7 +33,13 @@ Exécuter obligatoirement `python scripts/inspecter_piece.py <fichier> --journal
 
 ## Force probante
 
-`[FICHE À RÉDIGER]` — Préciser l'appréciation de la force probante par type de support (contrat signé, échange de courriels complets, métadonnées photo/vidéo, enregistrement de conversation entre parties).
+Évaluer le poids probatoire selon la nature du support et le fardeau (`2803–2804 C.c.Q.`) :
+
+* **Contrat ou acte sous seing privé signé (`2826–2829 C.c.Q.`, `262 C.p.c.`) :** Opposé à celui qui paraît l'avoir signé, il est **tenu pour reconnu** s'il n'est pas contesté par déclaration sous serment dans les conditions prévues avant l'inscription (`Établi`). Entre les parties, l'écrit valablement fait ne peut être contredit par témoignage (`2863`), sauf pour l'interpréter (`2864`) ou avec un commencement de preuve (`2865`).
+* **Écrit d'entreprise non signé (`2831 C.c.Q.`) :** Fait preuve contre l'entreprise ou entre commerçants s'il a été **habituellement utilisé dans le cours des activités** (factures séquentielles, bons de livraison, grand livre contemporain); distinguer nettement d'un chiffrier ou sommaire reconstitué pour les besoins du litige (`Rapporté` / à établir par le préparateur).
+* **Échanges de courriels et messages texte (`2832, 2835, 2837–2840 C.c.Q.`, `c-1.1 art. 5, 7`) :** Exigent d'établir l'attribution à l'auteur (`2835` : fichier `.eml` complet avec en-têtes `Message-ID`/`DKIM`, adresse ou numéro habituel, réponse ultérieure reconnaissant l'échange). Un fil chronologique complet et natif possède une force probante nettement supérieure à une capture d'écran isolée ou recadrée.
+* **Photographies et vidéos (`2854–2855 C.c.Q.`, `c-1.1 art. 5 al. 3`) :** Permettent au tribunal de faire ses constatations directes (`2854`) sous réserve d'une **preuve distincte d'authenticité** (`2855` : témoignage du photographe ou d'une personne présente attestant la date, le lieu et l'absence d'altération, sauf garanties d'intégrité technologique sous `c-1.1 art. 5 al. 3`). Les métadonnées EXIF/`mvhd` corroborent la chronologie sans suppléer à elles seules au témoin si l'intégrité est contestée.
+* **Enregistrement sonore entre parties (`2855, 2857, 2858, 35–36 C.c.Q.`) :** Exige l'identification fiable de chaque voix, la remise du fichier intégral non édité et le contrôle de licéité sous `2858 C.c.Q.` (atteinte à la vie privée ou au secret professionnel); toute transcription reste une simple aide de travail subordonnée à l'audition de l'original.
 
 ## Protection
 
