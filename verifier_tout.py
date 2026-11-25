@@ -7,7 +7,7 @@ Jurisprudence, Outils) pour Claude, ChatGPT/Codex et Gemini/Antigravity, en mode
 réseau en direct (Live).
 
 Paliers de vérification :
-- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 35 outils)
+- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 37 outils)
 - Palier 2 : Conditions aux limites & cas négatifs (auth 401/404, schémas, JSON-RPC)
 - Palier 3 : Compatibilité inter-plateformes (parité Claude/Gemini, cache Antigravity)
 - Palier 4 : Scénarios réels de pratique juridique québécoise (4 workflows complets)
@@ -94,6 +94,8 @@ NOMS_OUTILS_ATTENDUS = {
         "browse_legislation",
         "get_legislation",
         "parse_citation",
+        "list_exempt_authorities",
+        "check_exempt_authority",
     ],
     "outils": [
         "calendrier_holidays",
@@ -139,7 +141,7 @@ class TestResult:
 
 
 class MockMcpServer:
-    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 35 outils."""
+    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 37 outils."""
 
     _OUTILS_TRIMMED_PATHS: Dict[str, Set[str]] = {
         "greffe_parse_number": {"court_file_number"},
@@ -707,9 +709,56 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "citation": {"type": "string"},
+                        "citation": {"type": "string", "description": "Citation à analyser hors ligne."},
                     },
                     "required": ["citation"],
+                    "additionalProperties": False,
+                },
+            }
+            tools["list_exempt_authorities"] = {
+                "name": "list_exempt_authorities",
+                "description": "Consulte et recherche hors ligne les 27 listes compilées d'autorités dispensées de reproduction (9 tribunaux).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "tribunal": {"type": "string", "description": "Code du tribunal (qcca, qccs, qccq, tat, tdp, tp, tmf, cf, comc)."},
+                        "list_id": {"type": "string", "description": "Identifiant d'une sous-liste précise."},
+                        "query": {"type": "string", "description": "Recherche plein texte dans les listes compilées."},
+                        "lang": {"type": "string", "enum": ["fr", "en"], "description": "Langue de sortie."},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 150, "description": "Nombre maximal d'entrées rendues."},
+                        "offset": {"type": "integer", "minimum": 0, "description": "Décalage initial."},
+                    },
+                    "additionalProperties": False,
+                },
+            }
+            tools["check_exempt_authority"] = {
+                "name": "check_exempt_authority",
+                "description": "Vérifie un lot de citations (<= 50) contre les listes d'autorités dispensées d'un tribunal ou d'une sous-liste.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "list_id": {"type": "string", "description": "Sous-liste ciblée (exclusif avec tribunal)."},
+                        "tribunal": {"type": "string", "description": "Code du tribunal ciblé (exclusif avec list_id)."},
+                        "citations": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "description": "Citations à contrôler contre les listes compilées.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "citation": {"type": "string", "description": "Citation à vérifier."},
+                                    "expected_title": {"type": "string", "description": "Intitulé attendu."},
+                                    "expected_year": {"type": "integer", "description": "Année attendue."},
+                                },
+                                "required": ["citation"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "lang": {"type": "string", "enum": ["fr", "en"], "description": "Langue de sortie."},
+                        "resolve_canlii": {"type": "boolean", "description": "Autoriser le repli CanLII."},
+                    },
+                    "required": ["citations"],
                     "additionalProperties": False,
                 },
             }
@@ -1890,6 +1939,15 @@ class MockMcpServer:
             if not args.get("citation", "").strip():
                 return "La citation ne peut pas être vide."
 
+        # Règle XOR portée pour check_exempt_authority
+        if tool_name == "check_exempt_authority":
+            has_list = bool(str(args.get("list_id", "")).strip())
+            has_trib = bool(str(args.get("tribunal", "")).strip())
+            if has_list == has_trib:
+                return "Fournir EXACTEMENT l'un des deux paramètres : 'list_id' ou 'tribunal'."
+            if not args.get("citations"):
+                return "La liste 'citations' ne peut pas être vide."
+
         # Contrôle de date et cohérence pour calendrier
         if tool_name == "calendrier_deadlines":
             ev_date = args.get("event_date", "")
@@ -2409,6 +2467,29 @@ class MockMcpServer:
                             "style": "unknown",
                             "constructible": False,
                         }, ensure_ascii=False),
+                    }
+                ]
+            }
+
+        elif tool_name == "list_exempt_authorities":
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "27 listes compilées d'autorités dispensées (9 tribunaux, hors ligne).",
+                    }
+                ]
+            }
+
+        elif tool_name == "check_exempt_authority":
+            cits = args.get("citations") or []
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "\n".join(
+                            f"{c.get('citation', '')} — NON LISTÉE" for c in cits if isinstance(c, dict)
+                        ),
                     }
                 ]
             }
@@ -4280,7 +4361,7 @@ class UnifiedMcpClient:
 def run_tier_1_tests(
     client: UnifiedMcpClient, repo_root: Path, target_server: str
 ) -> List[TestResult]:
-    """Exécute les vérifications du Palier 1 (manifestes, endpoints, 35 outils)."""
+    """Exécute les vérifications du Palier 1 (manifestes, endpoints, 37 outils)."""
     results: List[TestResult] = []
 
     def add_result(
@@ -4679,7 +4760,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # --- 1.3 35-Tool Enumeration & Schema Inspection ---
+    # --- 1.3 37-Tool Enumeration & Schema Inspection ---
     discovered_tools: Dict[str, List[Dict[str, Any]]] = {}
     for srv_key in ("lois", "juris", "outils"):
         if target_server not in ("all", srv_key):
@@ -4689,7 +4770,7 @@ def run_tier_1_tests(
             res = client.call_rpc(srv_key, "tools/list")
             tools = res.get("result", {}).get("tools", [])
             discovered_tools[srv_key] = tools
-            exp_count = 10 if srv_key in ("lois", "juris") else 15
+            exp_count = {"lois": 10, "juris": 12, "outils": 15}[srv_key]
             cnt_ok = len(tools) == exp_count
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -4713,7 +4794,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # T1.3.total_tools_35 : Total de 35 outils sans doublons
+    # T1.3.total_tools_37 : Total de 37 outils sans doublons
     if target_server == "all":
         t0 = time.perf_counter()
         all_tools_set: Set[str] = set()
@@ -4724,15 +4805,15 @@ def run_tier_1_tests(
                 if t_name in all_tools_set:
                     duplicates.append(t_name)
                 all_tools_set.add(t_name)
-        total_ok = len(all_tools_set) == 35 and len(duplicates) == 0
+        total_ok = len(all_tools_set) == 37 and len(duplicates) == 0
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
-            "T1.3.total_35_tools",
-            "Catalogue total de exactement 35 outils distincts",
+            "T1.3.total_37_tools",
+            "Catalogue total de exactement 37 outils distincts",
             "all",
             total_ok,
             elapsed,
-            f"Total {len(all_tools_set)}/35, doublons : {duplicates}" if not total_ok else None,
+            f"Total {len(all_tools_set)}/37, doublons : {duplicates}" if not total_ok else None,
         )
 
     # T1.3.schema_completeness : Présence description et inputSchema type object
@@ -4780,7 +4861,7 @@ def run_tier_1_tests(
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.3.juris_compact_names",
-        "Noms v2.0 compacts exacts sur les 10 outils juris",
+        "Noms v2.0 compacts exacts sur les 12 outils juris",
         "juris",
         len(juris_bad) == 0 and (set(juris_names) == set(NOMS_OUTILS_ATTENDUS["juris"]) if "juris" in discovered_tools else True),
         elapsed,
@@ -4836,7 +4917,7 @@ def run_tier_1_tests(
         f"Dépassements > 64 car. : {over_64}" if over_64 else None,
     )
 
-    # T1.3.additional_properties_hardened : additionalProperties: false sur tous les 35 outils
+    # T1.3.additional_properties_hardened : additionalProperties: false sur tous les 37 outils
     t0 = time.perf_counter()
     not_hardened = []
     for srv_k, srv_tools in discovered_tools.items():
@@ -6036,9 +6117,9 @@ def run_tier_3_tests(
         if require_antigravity_cache:
             for tid, name, srv in [
                 ("T3.2.1", "Partition du cache Législation sur disque (10 outils)", "lois"),
-                ("T3.2.2", "Partition du cache Jurisprudence sur disque (10 outils)", "juris"),
+                ("T3.2.2", "Partition du cache Jurisprudence sur disque (12 outils)", "juris"),
                 ("T3.2.3", "Partition du cache Outils sur disque (15 outils)", "outils"),
-                ("T3.2.4", "Intégrité approfondie des 35 schémas d'outils sur disque", "all"),
+                ("T3.2.4", "Intégrité approfondie des 37 schémas d'outils sur disque", "all"),
                 ("T3.2.5", "Présence et conformité de instructions.md sur disque", "all"),
             ]:
                 add_result(tid, name, srv, False, 0.0, f"Cache absent dans {antigravity_mcp_base}")
@@ -6047,7 +6128,7 @@ def run_tier_3_tests(
                 ("T3.2.1", "Partition du cache Législation sur disque (ignoré : cache Antigravity absent hors local)", "lois"),
                 ("T3.2.2", "Partition du cache Jurisprudence sur disque (ignoré : cache Antigravity absent hors local)", "juris"),
                 ("T3.2.3", "Partition du cache Outils sur disque (ignoré : cache Antigravity absent hors local)", "outils"),
-                ("T3.2.4", "Intégrité approfondie des 35 schémas (ignoré : cache Antigravity absent hors local)", "all"),
+                ("T3.2.4", "Intégrité approfondie des 37 schémas (ignoré : cache Antigravity absent hors local)", "all"),
                 ("T3.2.5", "Présence instructions.md (ignoré : cache Antigravity absent hors local)", "all"),
             ]:
                 add_result(tid, name, srv, True, 0.0, None, skipped=True)
@@ -6067,20 +6148,20 @@ def run_tier_3_tests(
             f"Trouvé {len(leg_tools)} fichiers .json au lieu de 10 dans {leg_dir}" if not c_leg_ok else None,
         )
 
-        # T3.2.2 : Partition Jurisprudence sur disque (10 outils, sans greffe/palais)
+        # T3.2.2 : Partition Jurisprudence sur disque (12 outils, sans greffe/palais)
         t0 = time.perf_counter()
         jur_tools = list(jur_dir.glob("*.json")) if jur_dir.is_dir() else []
         jur_names = {f.stem for f in jur_tools}
-        stale_in_jur = jur_names.intersection({"greffe_parse_number", "palais_list", "palais_get"})
-        c_jur_ok = (len(jur_tools) == 10) and (jur_names == set(NOMS_OUTILS_ATTENDUS["juris"])) and (not stale_in_jur)
+        stale_in_jur = jur_names.intersection({"greffe_parse_number", "palais_list", "palais_get", "check_exempt_authorities"})
+        c_jur_ok = (len(jur_tools) == 12) and (jur_names == set(NOMS_OUTILS_ATTENDUS["juris"])) and (not stale_in_jur)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.2",
-            "Partition du cache Jurisprudence sur disque (exactement 10 outils, sans greffe/palais)",
+            "Partition du cache Jurisprudence sur disque (exactement 12 outils, sans greffe/palais)",
             "juris",
             c_jur_ok,
             elapsed,
-            f"Trouvé {len(jur_tools)} fichiers (stale: {stale_in_jur}) au lieu de 10 dans {jur_dir}" if not c_jur_ok else None,
+            f"Trouvé {len(jur_tools)} fichiers (stale: {stale_in_jur}) au lieu de 12 dans {jur_dir}" if not c_jur_ok else None,
         )
 
         # T3.2.3 : Partition Outils sur disque (15 outils sur 6 familles)
@@ -6098,7 +6179,7 @@ def run_tier_3_tests(
             f"Trouvé {len(out_tools)} fichiers au lieu de 15 dans {out_dir}" if not c_out_ok else None,
         )
 
-        # T3.2.4 : Intégrité approfondie des 35 schémas d'outils sur disque (descriptions et items)
+        # T3.2.4 : Intégrité approfondie des 37 schémas d'outils sur disque (descriptions et items)
         t0 = time.perf_counter()
         schema_errs = []
         total_inspected = 0
@@ -6143,15 +6224,15 @@ def run_tier_3_tests(
                 except Exception as ex:
                     schema_errs.append(f"{srv_name}/{json_file.name} erreur JSON: {ex}")
 
-        t324_ok = (total_inspected == 35) and (len(schema_errs) == 0)
+        t324_ok = (total_inspected == 37) and (len(schema_errs) == 0)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.4",
-            "Intégrité approfondie des 35 schémas d'outils sur disque (descriptions et items)",
+            "Intégrité approfondie des 37 schémas d'outils sur disque (descriptions et items)",
             "all",
             t324_ok,
             elapsed,
-            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 35 else f"Inspecté {total_inspected}/35 schémas"),
+            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 37 else f"Inspecté {total_inspected}/37 schémas"),
         )
 
         # T3.2.5 : Présence et conformité de instructions.md dans les 3 serveurs sur disque
@@ -7166,7 +7247,7 @@ def format_report_terminal(
         by_tier.setdefault(r.tier, []).append(r)
 
     tier_names = {
-        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 35 outils)",
+        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 37 outils)",
         2: "Palier 2 : Limites & Négatifs (Auth 401/404, Headers, JSON-RPC, Schémas)",
         3: "Palier 3 : Compatibilité inter-plateformes (Claude, Gemini, Antigravity)",
         4: "Palier 4 : Scénarios réels de litige civil québécois (Workflows)",

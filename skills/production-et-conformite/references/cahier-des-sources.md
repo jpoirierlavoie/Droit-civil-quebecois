@@ -7,12 +7,12 @@ Prépare l'index et la structure du cahier des sources accompagnant un plan d'ar
 Vérifier les exigences particulières du tribunal et du district via `lois` (`c-25.01-r.0.2.1` C.S., `c-25.01-r.9` `art. 38, 78` C.Q., `c-25.01-r.0.2.01` `art. 60` C.A.Q., plus les directives C.S./C.Q. Vague 1 `fonction='directive'` en `par.`/`unit='paragraphe'`, `fr`-only : `qccs-dist-mtl` `preseance-sur` `qccs-div-mtl`, `qccs-div-qc`, `qccq-daa-jurisprudence`, `qccq-mtl-prat-civile`, `qccq-mtl-prat-admin`, incluant les annexes `ps:*` et leurs hyperliens `articles.links` ; les directives C.A.Q. demeurent externes à la Vague 1) — notamment page couverture, extraits accompagnés des pages précédente et suivante si requis en appel (`art. 60 R.C.A.Q.`), repérage visuel des passages cités (surlignement jaune, soulignement ou trait vertical en marge) et dépôt électronique avec hyperliens CanLII/LégisQuébec (`lang='fr'` requis pour les PDF `fr`-only, sous peine d'erreur explicite sous `lang='en'`).
 
 * **Correspondance 1:1 :** Chaque autorité citée au plan d'argumentation ou au mémoire — et rien d'autre — figure au cahier, classée en trois onglets : **1. Législation**, **2. Jurisprudence**, **3. Doctrine**.
-* **Authentification préalable (`juris`) :** Chaque arrêt passe obligatoirement par `juris.verify_citations` — en fournissant systématiquement `expected_title` et `expected_year` lorsqu'ils figurent au projet — et `juris.get_case` (récupérant l'hyperlien officiel CanLII et la citation neutre exacte).
+* **Authentification préalable (`juris`) et dispenses de reproduction :** Chaque arrêt passe obligatoirement par `juris.verify_citations` — en fournissant systématiquement `expected_title` et `expected_year` lorsqu'ils figurent au projet — et `juris.get_case` (récupérant l'hyperlien officiel CanLII et la citation neutre exacte). Vérifier les dispenses de reproduction dans les 27 listes compilées via `juris.list_exempt_authorities` (hors ligne) et `juris.check_exempt_authority` (sous réserve des règles procédurales du tribunal et sans jamais inférer l'autorité actuelle d'une décision).
 
 ## Contrôles automatisés
 
 1. Exécuter `python scripts/controler_document.py <cahier.pdf> --exiger-couche-texte --exiger-signets --json` une fois le PDF assemblé dans les outils du cabinet pour vérifier OCR, présence de signets par onglet et validité des URI extraits. *(Si Python local indisponible — `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que le contrôle scripté PDF/OCR/signets/URI a été omis et l'inscrire au bon de travail.)*
-2. Vérifier la liste de citations par `juris.verify_citations` (avec `expected_title` et `expected_year`) avant l'assemblage.
+2. Vérifier la liste de citations par `juris.verify_citations` (avec `expected_title` et `expected_year`) et les dispenses de reproduction (`juris.check_exempt_authority`, `juris.list_exempt_authorities`) avant l'assemblage.
 
 ## Contrôles humains
 
