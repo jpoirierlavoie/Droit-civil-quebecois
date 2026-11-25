@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.1.1`)
+# Droit civil québécois (`v3.2.0`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -30,7 +30,7 @@ Le greffon réunit trois couches complémentaires :
 
 ---
 
-## Fonctionnement et garanties (`v3.1.1`)
+## Fonctionnement et garanties (`v3.2.0`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -79,7 +79,7 @@ Le greffon réunit trois couches complémentaires :
 
 > Depuis `v3.1.0`, la configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut `lois` et `juris` à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.1.1`)
+### Catalogue exact des 37 outils (`v3.2.0`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -218,7 +218,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ## État de maturité et contribution ouverte
 
-L'infrastructure centrale `v3.1.1` (10 compétences, noyau `SAFETY-KERNEL`, 37 outils MCP OAuth 2.1/BYOK et 4 scripts Python stdlib) est fonctionnelle et testée en continu. Toutefois, plusieurs fiches de référence et compétences de phase conservent encore des marqueurs `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]` en attente de rédaction ou de validation par la pratique (suivis automatiquement par `python verifier.py --release`).
+L'infrastructure centrale `v3.2.0` (10 compétences, noyau `SAFETY-KERNEL`, 37 outils MCP OAuth 2.1/BYOK et 4 scripts Python stdlib) est fonctionnelle et testée en continu. Toutefois, plusieurs fiches de référence et compétences de phase conservent encore des marqueurs `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]` en attente de rédaction ou de validation par la pratique (suivis automatiquement par `python verifier.py --release`).
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).
@@ -234,7 +234,7 @@ Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement, aucune dé
 PYTHONUTF8=1 python3 verifier.py                                  # Contrôle statique strict (muet, code 0)
 PYTHONUTF8=1 python3 verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
 PYTHONUTF8=1 python3 verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
-PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 79 scénarios, 4 scripts locaux et test_verifier.py
+PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 118 scénarios, 4 scripts locaux et test_verifier.py
 PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT
