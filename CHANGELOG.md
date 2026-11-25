@@ -2,6 +2,17 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.2.0] — 2026-11-25
+
+### Ajouté
+- **Première passe complète des 16 fiches `[FICHE À RÉDIGER]`** dans `analyse-et-strategie` (`preuve-directe.md`, `preuve-indirecte.md`, `preuve-documents-judiciaires.md`, `produit-fiche-preuve-et-temoins.md`), `production-et-conformite` (`cahier-des-procedures.md`) et `redaction-juridique` (`acte-demandes-cours-instance.md`, `acte-execution-et-oppositions.md`, `acte-injonction.md`, `acte-mesures-provisionnelles-autres.md`, `acte-moyens-preliminaires.md`, `acte-pourvoi-controle-judiciaire.md`, `acte-reconvention-intervention-garantie.md`, `acte-retractation-jugement.md`, `acte-saisie-avant-jugement.md`, `arg-argumentation-ecrite.md`, `contrat-ententes-judiciaires.md`), passées à `[NON VALIDÉ PAR LA PRATIQUE]` avec vecteurs législatifs et renvois `outils` actualisés.
+- **Couverture complète de la suite `evals/scenarios.json` (`79` → `118` scénarios) :** ajout de `39` scénarios (`AS-05` à `AS-17`, `DP-03`, `PC-10`, `RJ-09` à `RJ-12`, `RD-25` à `RD-44`) couvrant l'ensemble des feuilles de référence restantes sans collision d'identifiants avec `PC-09` et `RJ-08`.
+
+### Corrigé
+- Renvoi exact à l'`art. 41 al. 3 C.p.c.` dans `skills/redaction-juridique/references/contrat-civil-commercial.md` (clause d'élection de for dans un contrat d'adhésion ou de consommation).
+
+---
+
 ## [3.1.1] — 2026-11-25
 
 ### Ajouté

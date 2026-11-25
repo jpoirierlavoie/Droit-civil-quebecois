@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.1.1).
+"""Contrôle statique du dépôt « Droit civil québécois » (v3.2.0).
 
 Exécuter depuis la racine du dépôt :
 

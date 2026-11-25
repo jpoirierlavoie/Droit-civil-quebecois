@@ -35,7 +35,7 @@ Encadre la rédaction et la révision de contrats civils et commerciaux soumis a
 
 * **Clause de *consideration* (« moyennant 1,00 $ »)** : le contrat se forme par le seul échange de consentement (`1385 C.c.Q.`).
 * **Dommages punitifs contractuels (`1621 C.c.Q.`) :** Impossibles à créer par contrat sans loi habilitante expresse.
-* **Doublets de common law et anglicismes :** *null and void*, *terms and conditions*, *indemnify and hold harmless* (→ garantir et prendre fait et cause), *best efforts*, *shall*, *time is of the essence* sans précision des conditions d'exigibilité/demeure (`1594 s.`), clause d'élection de for dans un contrat d'adhésion ou de consommation (`3149 C.c.Q.`, `41 al. 2 C.p.c.`).
+* **Doublets de common law et anglicismes :** *null and void*, *terms and conditions*, *indemnify and hold harmless* (→ garantir et prendre fait et cause), *best efforts*, *shall*, *time is of the essence* sans précision des conditions d'exigibilité/demeure (`1594 s.`), clause d'élection de for dans un contrat d'adhésion ou de consommation (`3149 C.c.Q.`, `41 al. 3 C.p.c.`).
 
 ## Contrôle
 
