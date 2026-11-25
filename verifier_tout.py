@@ -7,7 +7,7 @@ Jurisprudence, Outils) pour Claude, ChatGPT/Codex et Gemini/Antigravity, en mode
 réseau en direct (Live).
 
 Paliers de vérification :
-- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 32 outils)
+- Palier 1 : Couverture fonctionnelle (manifestes, poignées de main, 35 outils)
 - Palier 2 : Conditions aux limites & cas négatifs (auth 401/404, schémas, JSON-RPC)
 - Palier 3 : Compatibilité inter-plateformes (parité Claude/Gemini, cache Antigravity)
 - Palier 4 : Scénarios réels de pratique juridique québécoise (4 workflows complets)
@@ -27,6 +27,7 @@ import socket
 import sys
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -107,6 +108,9 @@ NOMS_OUTILS_ATTENDUS = {
         "terminologie_lookup",
         "termino_attestations",
         "terminologie_scan",
+        "taux_boc_rates",
+        "indice_ipc",
+        "loyer_tal",
     ],
 }
 
@@ -135,7 +139,195 @@ class TestResult:
 
 
 class MockMcpServer:
-    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 32 outils."""
+    """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 35 outils."""
+
+    _OUTILS_TRIMMED_PATHS: Dict[str, Set[str]] = {
+        "greffe_parse_number": {"court_file_number"},
+        "palais_get": {"greffe_number", "palais"},
+        "registre_search": {"query"},
+        "registre_get_entity": {"neq", "corporation_number", "bn_ne", "lei"},
+        "adresse_verify": {
+            "address",
+            "civic_number",
+            "street",
+            "unit",
+            "municipality",
+            "postal_code",
+            "lot_number",
+            "matricule",
+        },
+        "terminologie_lookup": {"query", "domain_filter"},
+        "termino_attestations": {"term", "law_filter"},
+        "taux_boc_rates": {"currency", "amount"},
+        "indice_ipc": {"amount"},
+        "loyer_tal": {
+            "cmhc_geo",
+            "capital_works[].label",
+            "new_expenses[].label",
+            "aid_variations[].label",
+        },
+    }
+
+    _BOC_SERIES_BOUNDS: Dict[str, Tuple[str, str, int]] = {
+        "V39079": ("2009-04-21", "2026-11-23", 4),
+        "V122530": ("2001-01-01", "2026-10-01", 35),
+        "V80691311": ("2000-12-27", "2026-11-18", 10),
+    }
+
+    _MOCK_CMHC_CENTRES: Tuple[Tuple[int, str, str, str, str, str, int, int, int], ...] = (
+        (6, "st-john-s-nl", "St. John's, Terre-Neuve-et-Labrador", "St. John's, Newfoundland and Labrador", "st john s", "NL", 0, 1987, 2025),
+        (10, "halifax-ns", "Halifax, Nouvelle-Écosse", "Halifax, Nova Scotia", "halifax", "NS", 0, 1987, 2025),
+        (20, "moncton-nb", "Moncton, Nouveau-Brunswick", "Moncton, New Brunswick", "moncton", "NB", 0, 1987, 2025),
+        (23, "alma-qc", "Alma, Québec", "Alma, Quebec", "alma", "QC", 1, 1987, 2025),
+        (24, "amos-qc", "Amos, Québec", "Amos, Quebec", "amos", "QC", 1, 1992, 2025),
+        (25, "asbestos-qc", "Asbestos, Québec", "Asbestos, Quebec", "asbestos", "QC", 1, 1987, 1987),
+        (26, "baie-comeau-qc", "Baie-Comeau, Québec", "Baie-Comeau, Quebec", "baie comeau", "QC", 1, 1987, 2025),
+        (27, "becancour-qc", "Bécancour, Québec", "Bécancour, Quebec", "becancour", "QC", 1, 1987, 1987),
+        (29, "chibougamau-qc", "Chibougamau, Québec", "Chibougamau, Quebec", "chibougamau", "QC", 1, 1987, 1987),
+        (30, "saguenay-qc", "Saguenay, Québec", "Saguenay, Quebec", "saguenay", "QC", 1, 1987, 2025),
+        (31, "cowansville-qc", "Cowansville, Québec", "Cowansville, Quebec", "cowansville", "QC", 1, 1987, 2025),
+        (32, "dolbeau-mistassini-qc", "Dolbeau-Mistassini, Québec", "Dolbeau-Mistassini, Quebec", "dolbeau mistassini", "QC", 1, 1987, 2025),
+        (33, "drummondville-qc", "Drummondville, Québec", "Drummondville, Quebec", "drummondville", "QC", 1, 1987, 2025),
+        (34, "gaspe-qc", "Gaspé, Québec", "Gaspé, Quebec", "gaspe", "QC", 1, 1987, 2025),
+        (35, "granby-qc", "Granby, Québec", "Granby, Quebec", "granby", "QC", 1, 1987, 2025),
+        (36, "hawkesbury-partie-quebecoise-qc", "Hawkesbury, partie québécoise, Ontario/Québec", "Hawkesbury, Quebec part, Ontario/Quebec", "hawkesbury partie quebecoise", "QC", 1, 2003, 2025),
+        (37, "ottawa-gatineau-partie-quebecoise-qc", "Ottawa-Gatineau, partie québécoise, Ontario/Québec", "Ottawa-Gatineau, Quebec part, Ontario/Quebec", "ottawa gatineau partie quebecoise", "QC", 1, 1987, 2025),
+        (38, "joliette-qc", "Joliette, Québec", "Joliette, Quebec", "joliette", "QC", 1, 1987, 2025),
+        (39, "la-baie-qc", "La Baie, Québec", "La Baie, Quebec", "la baie", "QC", 1, 1987, 1987),
+        (40, "la-tuque-qc", "La Tuque, Québec", "La Tuque, Quebec", "la tuque", "QC", 1, 1987, 2025),
+        (41, "lachute-qc", "Lachute, Québec", "Lachute, Quebec", "lachute", "QC", 1, 1987, 2025),
+        (42, "magog-qc", "Magog, Québec", "Magog, Quebec", "magog", "QC", 1, 1987, 2006),
+        (43, "matane-qc", "Matane, Québec", "Matane, Quebec", "matane", "QC", 1, 1987, 2025),
+        (45, "montmagny-qc", "Montmagny, Québec", "Montmagny, Quebec", "montmagny", "QC", 1, 1987, 2025),
+        (46, "montreal-qc", "Montréal, Québec", "Montréal, Quebec", "montreal", "QC", 1, 1987, 2025),
+        (48, "quebec-qc", "Québec, Québec", "Québec, Quebec", "quebec", "QC", 1, 1987, 2025),
+        (49, "rimouski-qc", "Rimouski, Québec", "Rimouski, Quebec", "rimouski", "QC", 1, 1987, 2025),
+        (50, "riviere-du-loup-qc", "Rivière-du-Loup, Québec", "Rivière-du-Loup, Quebec", "riviere du loup", "QC", 1, 1987, 2025),
+        (51, "roberval-qc", "Roberval, Québec", "Roberval, Quebec", "roberval", "QC", 1, 1987, 2022),
+        (52, "rouyn-noranda-qc", "Rouyn-Noranda, Québec", "Rouyn-Noranda, Quebec", "rouyn noranda", "QC", 1, 1987, 2025),
+        (53, "salaberry-de-valleyfield-qc", "Salaberry-de-Valleyfield, Québec", "Salaberry-de-Valleyfield, Quebec", "salaberry de valleyfield", "QC", 1, 1987, 2025),
+        (54, "sept-iles-qc", "Sept-Îles, Québec", "Sept-Îles, Quebec", "sept iles", "QC", 1, 1987, 2025),
+        (55, "shawinigan-qc", "Shawinigan, Québec", "Shawinigan, Quebec", "shawinigan", "QC", 1, 1987, 2025),
+        (56, "sherbrooke-qc", "Sherbrooke, Québec", "Sherbrooke, Quebec", "sherbrooke", "QC", 1, 1987, 2025),
+        (57, "sorel-tracy-qc", "Sorel-Tracy, Québec", "Sorel-Tracy, Quebec", "sorel tracy", "QC", 1, 1987, 2025),
+        (58, "sainte-marie-qc", "Sainte-Marie, Québec", "Sainte-Marie, Quebec", "sainte marie", "QC", 1, 1992, 2025),
+        (59, "saint-georges-qc", "Saint-Georges, Québec", "Saint-Georges, Quebec", "saint georges", "QC", 1, 1987, 2025),
+        (60, "saint-hyacinthe-qc", "Saint-Hyacinthe, Québec", "Saint-Hyacinthe, Quebec", "saint hyacinthe", "QC", 1, 1987, 2025),
+        (61, "saint-jean-sur-richelieu-qc", "Saint-Jean-sur-Richelieu, Québec", "Saint-Jean-sur-Richelieu, Quebec", "saint jean sur richelieu", "QC", 1, 1987, 2016),
+        (62, "saint-jerome-qc", "Saint-Jérôme, Québec", "Saint-Jérôme, Quebec", "saint jerome", "QC", 1, 1987, 1997),
+        (63, "thetford-mines-qc", "Thetford Mines, Québec", "Thetford Mines, Quebec", "thetford mines", "QC", 1, 1987, 2025),
+        (64, "trois-rivieres-qc", "Trois-Rivières, Québec", "Trois-Rivières, Quebec", "trois rivieres", "QC", 1, 1987, 2025),
+        (65, "val-d-or-qc", "Val-d'Or, Québec", "Val-d'Or, Quebec", "val d or", "QC", 1, 1987, 2025),
+        (66, "victoriaville-qc", "Victoriaville, Québec", "Victoriaville, Quebec", "victoriaville", "QC", 1, 1987, 2025),
+        (105, "ottawa-gatineau-on-qc", "Ottawa-Gatineau, Ontario/Québec", "Ottawa-Gatineau, Ontario/Quebec", "ottawa gatineau", "ON/QC", 0, 1987, 2025),
+        (106, "ottawa-gatineau-partie-ontarienne-on", "Ottawa-Gatineau, partie ontarienne, Ontario/Québec", "Ottawa-Gatineau, Ontario part, Ontario/Quebec", "ottawa gatineau partie ontarienne", "ON", 0, 1987, 2025),
+        (125, "toronto-on", "Toronto, Ontario", "Toronto, Ontario", "toronto", "ON", 0, 1987, 2025),
+        (134, "winnipeg-mb", "Winnipeg, Manitoba", "Winnipeg, Manitoba", "winnipeg", "MB", 0, 1987, 2025),
+        (140, "regina-sk", "Regina, Saskatchewan", "Regina, Saskatchewan", "regina", "SK", 0, 1987, 2025),
+        (141, "saskatoon-sk", "Saskatoon, Saskatchewan", "Saskatoon, Saskatchewan", "saskatoon", "SK", 0, 1987, 2025),
+        (146, "calgary-ab", "Calgary, Alberta", "Calgary, Alberta", "calgary", "AB", 0, 1987, 2025),
+        (148, "edmonton-ab", "Edmonton, Alberta", "Edmonton, Alberta", "edmonton", "AB", 0, 1987, 2025),
+        (184, "vancouver-bc", "Vancouver, Colombie-Britannique", "Vancouver, British Columbia", "vancouver", "BC", 0, 1987, 2025),
+        (186, "victoria-bc", "Victoria, Colombie-Britannique", "Victoria, British Columbia", "victoria", "BC", 0, 1987, 2025),
+        (190, "saint-felicien-qc", "Saint-Félicien, Québec", "Saint-Félicien, Quebec", "saint felicien", "QC", 1, 2002, 2025),
+        (203, "saint-lin-laurentides-qc", "Saint-Lin--Laurentides, Québec", "Saint-Lin--Laurentides, Quebec", "saint lin laurentides", "QC", 1, 2007, 2016),
+        (214, "les-iles-de-la-madeleine-qc", "Les Îles-de-la-Madeleine, Québec", "Les Îles-de-la-Madeleine, Quebec", "les iles de la madeleine", "QC", 1, 2008, 2025),
+        (215, "mont-laurier-qc", "Mont-Laurier, Québec", "Mont-Laurier, Quebec", "mont laurier", "QC", 1, 2008, 2025),
+        (216, "prevost-qc", "Prévost, Québec", "Prévost, Quebec", "prevost", "QC", 1, 2008, 2025),
+        (217, "rawdon-qc", "Rawdon, Québec", "Rawdon, Quebec", "rawdon", "QC", 1, 2008, 2025),
+        (218, "sainte-adele-qc", "Sainte-Adèle, Québec", "Sainte-Adèle, Quebec", "sainte adele", "QC", 1, 2008, 2025),
+        (219, "sainte-sophie-qc", "Sainte- Sophie, Québec", "Sainte- Sophie, Quebec", "sainte sophie", "QC", 1, 2008, 2025),
+    )
+
+    @staticmethod
+    def _normalize_cmhc_search(raw: str) -> str:
+        folded = "".join(
+            ch for ch in unicodedata.normalize("NFD", raw)
+            if unicodedata.category(ch) != "Mn"
+        ).lower()
+        return re.sub(r"[^a-z0-9]+", " ", folded).strip()
+
+    @classmethod
+    def _resolve_mock_cmhc(
+        cls, raw_geo: Optional[str]
+    ) -> Tuple[Optional[List[Tuple[int, str, str, str, str, str, int, int, int]]], Optional[str]]:
+        if not raw_geo or not raw_geo.strip():
+            majors = [c for c in cls._MOCK_CMHC_CENTRES if c[0] in (46, 48, 37, 56, 64, 30)]
+            majors.sort(key=lambda c: (-c[6], c[0]))
+            return majors, None
+        cleaned = raw_geo.strip()
+        if cleaned.isdigit():
+            cid = int(cleaned)
+            found = [c for c in cls._MOCK_CMHC_CENTRES if c[0] == cid]
+            if found:
+                return found, None
+            return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+        q_norm = cls._normalize_cmhc_search(cleaned)
+        if not q_norm:
+            return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+        terms: List[str] = [q_norm]
+        stripped_prov = re.sub(
+            r"\s+(?:(?:ontario|new brunswick|nouveau brunswick)\s+quebec|saskatchewan\s+alberta|saskachewan\s+alberta|quebec|qc|ontario|on|new brunswick|nouveau brunswick|nb|alberta|ab|british columbia|colombie britannique|bc|manitoba|mb|nova scotia|nouvelle ecosse|ns|newfoundland and labrador|terre neuve et labrador|nl|prince edward island|ile du prince edouard|pe|pei|yukon|yt|northwest territories|territoires du nord ouest|nt|nunavut|nu)$",
+            "",
+            q_norm,
+        ).strip()
+        mapped_parts = (
+            stripped_prov.replace("quebec part", "partie quebecoise")
+            .replace("ontario part", "partie ontarienne")
+            .replace("new brunswick part", "partie nouveau brunswick")
+            .strip()
+        )
+        for t in (mapped_parts, stripped_prov):
+            if t and t not in terms:
+                terms.append(t)
+        ordered = sorted(cls._MOCK_CMHC_CENTRES, key=lambda c: (-c[6], c[0]))
+        for term in terms:
+            exact = [c for c in ordered if c[4] == term]
+            if exact:
+                return [exact[0]], None
+        term_set = set(terms)
+        name_matched = [
+            c for c in ordered
+            if cls._normalize_cmhc_search(c[2]) in term_set
+            or cls._normalize_cmhc_search(c[3]) in term_set
+            or c[4] in term_set
+        ]
+        if name_matched:
+            return [name_matched[0]], None
+        like_term = terms[1] if len(terms) > 1 else terms[0]
+        candidates = sorted(
+            [c for c in cls._MOCK_CMHC_CENTRES if like_term in c[4]],
+            key=lambda c: (-c[6], len(c[4]), c[0]),
+        )[:10]
+        if len(candidates) == 1:
+            return candidates, None
+        if len(candidates) > 1:
+            qc_cands = [c for c in candidates if c[6] == 1]
+            if len(qc_cands) == 1:
+                return qc_cands, None
+            list_label = ", ".join(f"{c[2]} (id={c[0]})" for c in candidates[:8])
+            return None, f"Plusieurs centres SCHL correspondent à « {cleaned} » : {list_label}. Préciser le nom exact ou l'identifiant numérique."
+        return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+
+    @staticmethod
+    def _cpi_series_bounds(freq: str, geo: str, product: str, uom: str) -> Optional[Tuple[int, int]]:
+        if uom == "1992=100":
+            if product != "all_items":
+                return None
+            last_p = 201812 if freq == "monthly" else 2018
+        else:
+            last_p = 202610 if freq == "monthly" else 2025
+        if geo == "canada" and product == "all_items":
+            first_p = 191401 if freq == "monthly" else 1914
+        elif geo == "canada" and product in ("rent", "rented_accommodation"):
+            first_p = 194901 if freq == "monthly" else 1949
+        elif geo in ("montreal_rmr", "quebec_rmr") and product in ("all_items", "rented_accommodation"):
+            first_p = 197101 if freq == "monthly" else 1971
+        elif product == "health_care_services":
+            first_p = 198501 if freq == "monthly" else 1985
+        else:
+            first_p = 197809 if freq == "monthly" else 1979
+        return first_p, last_p
 
     def __init__(self, server_name: str, secret_token: Optional[str] = None):
         self.server_name = server_name
@@ -474,15 +666,16 @@ class MockMcpServer:
             }
 
         elif self.server_name == "outils":
+            provinces_enum = ["QC", "ON", "BC", "AB", "SK", "MB", "NB", "NS", "PE", "NL", "YT", "NT", "NU"]
             tools["calendrier_holidays"] = {
                 "name": "calendrier_holidays",
                 "description": "Calendrier des jours fériés et non juridiques (QC / CA).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "year": {"type": "integer"},
+                        "year": {"type": "integer", "minimum": 1900, "maximum": 2300},
                         "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
-                        "province": {"type": "string"},
+                        "province": {"type": "string", "enum": provinces_enum},
                     },
                     "required": ["year"],
                     "additionalProperties": False,
@@ -494,14 +687,37 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "event_date": {"type": "string"},
-                        "deadlines": {"type": "array"},
-                        "event_time": {"type": "string"},
+                        "event_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "deadlines": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 25,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "amount": {"type": "integer", "minimum": 1, "maximum": 36500},
+                                    "unit": {"type": "string", "enum": ["days", "months", "years"]},
+                                    "direction": {"type": "string", "enum": ["forward", "backward"]},
+                                    "anchor_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "anchor_time": {"type": "string", "pattern": r"^\d{2}:\d{2}(?::\d{2})?$"},
+                                    "notification_mode": {"type": "string", "enum": ["none", "technological", "physical"]},
+                                    "depends_on_index": {"type": "integer", "minimum": 0, "maximum": 24},
+                                },
+                                "required": ["amount"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "event_time": {"type": "string", "pattern": r"^\d{2}:\d{2}(?::\d{2})?$"},
                         "notification_mode": {"type": "string", "enum": ["none", "technological", "physical"]},
                         "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
-                        "province": {"type": "string"},
+                        "province": {"type": "string", "enum": provinces_enum},
                         "rollover_saturday": {"type": "boolean"},
-                        "extra_non_juridical_dates": {"type": "array", "items": {"type": "string"}},
+                        "extra_non_juridical_dates": {
+                            "type": "array",
+                            "maxItems": 50,
+                            "items": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        },
                     },
                     "required": ["event_date", "deadlines"],
                     "additionalProperties": False,
@@ -509,15 +725,45 @@ class MockMcpServer:
             }
             tools["interets_1619"] = {
                 "name": "interets_1619",
-                "description": "Calcul d'intérêts légaux (5%) et indemnité art. 1619 C.c.Q.",
+                "description": "Calcul d'intérêts légaux (5%), indemnité art. 1619 C.c.Q., taux contractuel ou taux préférentiel BDC V80691311 + marge.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "end_date": {"type": "string"},
-                        "tranches": {"type": "array"},
-                        "mode": {"type": "string", "enum": ["legal_plus_1619", "legal_only", "contractual"]},
-                        "rate_bps": {"type": "integer"},
-                        "rate_overrides": {"type": "array"},
+                        "mode": {"type": "string", "enum": ["legal_plus_1619", "legal_only", "contractual", "prime_plus_margin"]},
+                        "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
+                        "spread_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
+                        "rate_overrides": {
+                            "type": "array",
+                            "maxItems": 40,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "quarter": {"type": "string", "pattern": r"^\d{4}-Q[1-4]$"},
+                                    "laf_rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
+                                },
+                                "required": ["quarter", "laf_rate_bps"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "tranches": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "principal_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000000},
+                                    "start_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
+                                    "spread_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
+                                },
+                                "required": ["principal_cents", "start_date"],
+                                "additionalProperties": False,
+                            },
+                        },
                     },
                     "required": ["end_date", "tranches"],
                     "additionalProperties": False,
@@ -529,7 +775,7 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "court_file_number": {"type": "string"},
+                        "court_file_number": {"type": "string", "minLength": 1, "maxLength": 40},
                     },
                     "required": ["court_file_number"],
                     "additionalProperties": False,
@@ -541,8 +787,8 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "district": {"type": "string"},
-                        "query": {"type": "string"},
+                        "district": {"type": "string", "maxLength": 60},
+                        "query": {"type": "string", "maxLength": 60},
                         "type": {"type": "string", "enum": ["palais", "point_de_service"]},
                     },
                     "additionalProperties": False,
@@ -554,22 +800,22 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "greffe_number": {"type": "string"},
-                        "palais": {"type": "string"},
+                        "greffe_number": {"type": "string", "minLength": 1, "maxLength": 3},
+                        "palais": {"type": "string", "minLength": 1, "maxLength": 60},
                     },
                     "additionalProperties": False,
                 },
             }
             tools["registre_search"] = {
                 "name": "registre_search",
-                "description": "Recherche hors ligne dans les instantanés locaux du REQ (RBQ/OPC/RENA) et de Corporations Canada.",
+                "description": "Recherche hors ligne dans les instantanés locaux du REQ (RBQ/OPC/RENA), Corporations Canada et GLEIF (LEI canadiens).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string"},
-                        "jurisdiction": {"type": "string", "enum": ["qc", "ca", "all"]},
+                        "query": {"type": "string", "minLength": 2, "maxLength": 200},
+                        "jurisdiction": {"type": "string", "enum": ["qc", "ca", "gleif", "all"]},
                         "active_only": {"type": "boolean"},
-                        "limit": {"type": "integer"},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 25},
                     },
                     "required": ["query"],
                     "additionalProperties": False,
@@ -577,30 +823,33 @@ class MockMcpServer:
             }
             tools["registre_get_entity"] = {
                 "name": "registre_get_entity",
-                "description": "Fiche détaillée hors ligne d'une entreprise par NEQ, numéro fédéral ou NE.",
+                "description": "Fiche détaillée hors ligne d'une entreprise par NEQ, numéro fédéral, NE ou LEI (GLEIF Level 1/2 et liens vers portails officiels).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "neq": {"type": "string"},
-                        "corporation_number": {"type": "string"},
-                        "bn_ne": {"type": "string"},
+                        "neq": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "corporation_number": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "bn_ne": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "lei": {"type": "string", "minLength": 1, "maxLength": 40},
                     },
                     "additionalProperties": False,
                 },
             }
             tools["adresse_verify"] = {
                 "name": "adresse_verify",
-                "description": "Vérification et normalisation hors ligne d'une adresse québécoise selon le RQA (MRNF).",
+                "description": "Vérification et normalisation hors ligne d'une adresse québécoise selon le RQA (MRNF) ou recherche inversée par lot cadastral / matricule.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "address": {"type": "string"},
-                        "civic_number": {"type": "string"},
-                        "street": {"type": "string"},
-                        "unit": {"type": "string"},
-                        "municipality": {"type": "string"},
-                        "postal_code": {"type": "string"},
-                        "max_candidates": {"type": "integer"},
+                        "address": {"type": "string", "minLength": 2, "maxLength": 300},
+                        "civic_number": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "street": {"type": "string", "minLength": 1, "maxLength": 160},
+                        "unit": {"type": "string", "minLength": 1, "maxLength": 40},
+                        "municipality": {"type": "string", "minLength": 1, "maxLength": 120},
+                        "postal_code": {"type": "string", "minLength": 3, "maxLength": 10},
+                        "lot_number": {"type": "string", "minLength": 1, "maxLength": 30},
+                        "matricule": {"type": "string", "minLength": 4, "maxLength": 30},
+                        "max_candidates": {"type": "integer", "minimum": 1, "maximum": 10},
                     },
                     "additionalProperties": False,
                 },
@@ -611,10 +860,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string"},
+                        "query": {"type": "string", "minLength": 1, "maxLength": 200},
                         "source_lang": {"type": "string", "enum": ["fr", "en", "auto"]},
-                        "domain_filter": {"type": "string"},
-                        "limit": {"type": "integer"},
+                        "domain_filter": {"type": "string", "minLength": 1, "maxLength": 100},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 25},
                     },
                     "required": ["query"],
                     "additionalProperties": False,
@@ -626,10 +875,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "term": {"type": "string"},
+                        "term": {"type": "string", "minLength": 2, "maxLength": 160},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
-                        "law_filter": {"type": "string"},
-                        "limit": {"type": "integer"},
+                        "law_filter": {"type": "string", "minLength": 1, "maxLength": 80},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 20},
                     },
                     "required": ["term", "lang"],
                     "additionalProperties": False,
@@ -641,7 +890,7 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "text": {"type": "string"},
+                        "text": {"type": "string", "minLength": 1, "maxLength": 32000},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
                         "context_system": {"type": "string", "enum": ["droit_civil_qc", "bijuridique_federal"]},
                     },
@@ -649,6 +898,143 @@ class MockMcpServer:
                     "additionalProperties": False,
                 },
             }
+            tools["taux_boc_rates"] = {
+                "name": "taux_boc_rates",
+                "description": "Consultation hors ligne des taux de change Banque du Canada / StatCan et taux V39079/V122530/V80691311 avec conversion BigInt (art. 12 Loi sur la monnaie).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "category": {"type": "string", "enum": ["fx", "policy", "bank", "prime", "all_rates"]},
+                        "currency": {"type": "string", "minLength": 3, "maxLength": 16},
+                        "date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "start_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "amount": {"type": "string", "pattern": r"^\d+(?:\.\d{1,6})?$"},
+                        "direction": {"type": "string", "enum": ["foreign_to_cad", "cad_to_foreign"]},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    },
+                    "additionalProperties": False,
+                },
+            }
+            tools["indice_ipc"] = {
+                "name": "indice_ipc",
+                "description": "Consultation hors ligne de l'IPC StatCan (18-10-0004-01 / 18-10-0005-01) et indexation contractuelle exacte en BigInt avec contrôle strict d'année de base.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "geo": {"type": "string", "enum": ["quebec", "montreal_rmr", "quebec_rmr", "canada"]},
+                        "product": {"type": "string", "enum": ["all_items", "shelter", "rented_accommodation", "rent", "health_care_services"]},
+                        "frequency": {"type": "string", "enum": ["monthly", "annual"]},
+                        "uom": {"type": "string", "enum": ["2002=100", "1992=100"]},
+                        "end_uom": {"type": "string", "enum": ["2002=100", "1992=100"]},
+                        "period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "start_period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "end_period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "amount": {"type": "string", "pattern": r"^\d+(?:\.\d{1,6})?$"},
+                        "floor_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
+                        "cap_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
+                        "rounding": {"type": "string", "enum": ["half_away_from_zero", "half_up"]},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    },
+                    "additionalProperties": False,
+                },
+            }
+            tools["loyer_tal"] = {
+                "name": "loyer_tal",
+                "description": "Barèmes officiels du TAL (2015–2027), calculateur post-1er janv. 2026 (RLRQ, c. T-15.01, r. 2) en BigInt et loyers moyens du marché SCHL.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string", "enum": ["calcul_2026", "bareme", "schl"]},
+                        "year": {"type": "integer", "minimum": 1987, "maximum": 2027},
+                        "notice_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "lease_renewal_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "section_f_exemption_5_ans": {"type": "boolean"},
+                        "current_rent_cents": {"type": "integer", "minimum": 1, "maximum": 100000000},
+                        "is_rpa": {"type": "boolean"},
+                        "rpa_personal_services_cents": {"type": "integer", "minimum": 0, "maximum": 100000000},
+                        "building_residential_rents_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+                        "building_non_residential_rents_cents": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+                        "other_annual_revenue_cents": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+                        "municipal_taxes_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "municipal_taxes_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "school_taxes_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "school_taxes_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "insurance_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "insurance_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "snow_removal_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "snow_removal_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "capital_works": {
+                            "type": "array",
+                            "maxItems": 30,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "gross_amount_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "grant_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "third_party_indemnity_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "reduced_interest_loan_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "annual_loan_repayment_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "target_unit_benefits": {"type": "boolean"},
+                                    "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+                                },
+                                "required": ["gross_amount_cents"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "new_expenses": {
+                            "type": "array",
+                            "maxItems": 30,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "annual_amount_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "grant_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "target_unit_benefits": {"type": "boolean"},
+                                    "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+                                },
+                                "required": ["annual_amount_cents"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "aid_variations": {
+                            "type": "array",
+                            "maxItems": 30,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "previous_annual_aid_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "current_annual_aid_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "target_unit_benefits": {"type": "boolean"},
+                                    "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+                                },
+                                "required": ["previous_annual_aid_cents", "current_annual_aid_cents"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "cmhc_geo": {"type": "string", "minLength": 2, "maxLength": 120},
+                        "structure_type": {"type": "string", "enum": ["row_and_apartment_3_plus", "apartment_3_plus", "apartment_6_plus", "row_3_plus"]},
+                        "unit_type": {"type": "string", "enum": ["all", "bachelor", "one_bedroom", "two_bedroom", "three_bedroom"]},
+                    },
+                    "required": ["mode"],
+                    "additionalProperties": False,
+                },
+            }
+
+            read_only_local_annotations = {
+                "readOnlyHint": True,
+                "destructiveHint": False,
+                "idempotentHint": True,
+                "openWorldHint": False,
+            }
+            for tool_def in tools.values():
+                tool_def["annotations"] = dict(read_only_local_annotations)
 
         return tools
 
@@ -1003,6 +1389,84 @@ class MockMcpServer:
                 }).encode("utf-8"),
             )
 
+    def _validate_schema_value(
+        self, value: Any, schema: Dict[str, Any], path: str = "", tool_name: str = ""
+    ) -> Optional[str]:
+        """Valide récursivement une valeur contre un sous-schéma JSON Schema."""
+        expected_type = schema.get("type")
+        if expected_type == "object":
+            if not isinstance(value, dict):
+                label = path or "arguments"
+                return f"Type invalide pour '{label}' : attendu object, reçu {type(value).__name__}."
+            props = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                for key in value:
+                    if key not in props:
+                        prefix = f"{path}." if path else ""
+                        return f"Propriété non autorisée '{prefix}{key}' détectée (additionalProperties: false)."
+            for req_key in schema.get("required", []):
+                if req_key not in value or value[req_key] is None:
+                    prefix = f"{path}." if path else ""
+                    return f"Paramètre requis manquant : '{prefix}{req_key}'."
+            for k, v in value.items():
+                if k in props:
+                    sub_path = f"{path}.{k}" if path else k
+                    err = self._validate_schema_value(v, props[k], sub_path, tool_name)
+                    if err:
+                        return err
+            return None
+
+        if expected_type == "array":
+            if not isinstance(value, list):
+                return f"Type invalide pour '{path}' : attendu array, reçu {type(value).__name__}."
+            if "minItems" in schema and len(value) < schema["minItems"]:
+                return f"Tableau '{path}' doit contenir au moins {schema['minItems']} élément(s)."
+            if "maxItems" in schema and len(value) > schema["maxItems"]:
+                return f"Tableau '{path}' dépasse le maximum de {schema['maxItems']} élément(s)."
+            items_schema = schema.get("items")
+            if isinstance(items_schema, dict):
+                for idx, item in enumerate(value):
+                    err = self._validate_schema_value(item, items_schema, f"{path}[{idx}]", tool_name)
+                    if err:
+                        return err
+            return None
+
+        if expected_type == "integer":
+            if not isinstance(value, int) or isinstance(value, bool):
+                return f"Type invalide pour '{path}' : attendu integer, reçu {type(value).__name__}."
+            if "minimum" in schema and value < schema["minimum"]:
+                return f"Valeur hors borne pour '{path}' : {value} < minimum {schema['minimum']}."
+            if "maximum" in schema and value > schema["maximum"]:
+                return f"Valeur hors borne pour '{path}' : {value} > maximum {schema['maximum']}."
+            return None
+
+        if expected_type == "boolean":
+            if not isinstance(value, bool):
+                return f"Type invalide pour '{path}' : attendu boolean, reçu {type(value).__name__}."
+            return None
+
+        if expected_type == "string":
+            if not isinstance(value, str):
+                return f"Type invalide pour '{path}' : attendu string, reçu {type(value).__name__}."
+            norm_path = re.sub(r"\[\d+\]", "[]", path)
+            should_trim = (
+                self.server_name == "outils"
+                and norm_path in self._OUTILS_TRIMMED_PATHS.get(tool_name, set())
+            )
+            check_val = value.strip() if should_trim else value
+            if "minLength" in schema and len(check_val) < schema["minLength"]:
+                return f"Chaîne trop courte pour '{path}' (minimum {schema['minLength']} car.)."
+            if "maxLength" in schema and len(check_val) > schema["maxLength"]:
+                return f"Chaîne trop longue pour '{path}' (maximum {schema['maxLength']} car.)."
+            if "pattern" in schema:
+                if not re.match(schema["pattern"], check_val):
+                    return f"Format invalide pour '{path}' : '{value}'."
+            if "enum" in schema and check_val not in schema["enum"]:
+                return f"Valeur invalide '{value}' pour '{path}' : attendu parmi {schema['enum']}."
+            return None
+
+        return None
+
     def _validate_args(
         self, tool_name: str, args: Dict[str, Any], schema: Dict[str, Any]
     ) -> Optional[str]:
@@ -1010,49 +1474,354 @@ class MockMcpServer:
         if not isinstance(args, dict):
             return "Les arguments doivent être un objet JSON."
 
-        # Vérification des propriétés inattendues (additionalProperties: false)
-        allowed_props = set(schema.get("properties", {}).keys())
-        for key in args:
-            if key not in allowed_props:
-                return f"Propriété non autorisée '{key}' détectée (additionalProperties: false)."
-
-        # Vérification des paramètres requis
-        required = schema.get("required", [])
-        for req_key in required:
-            if req_key not in args or args[req_key] is None:
-                return f"Paramètre requis manquant : '{req_key}'."
-
-        # Contrôles de types fondamentaux
-        props = schema.get("properties", {})
-        for k, v in args.items():
-            if k in props:
-                expected_type = props[k].get("type")
-                if expected_type == "integer" and not isinstance(v, int):
-                    return f"Type invalide pour '{k}' : attendu integer, reçu {type(v).__name__}."
-                if expected_type == "string" and not isinstance(v, str):
-                    return f"Type invalide pour '{k}' : attendu string, reçu {type(v).__name__}."
-                if expected_type == "array" and not isinstance(v, list):
-                    return f"Type invalide pour '{k}' : attendu array, reçu {type(v).__name__}."
+        schema_err = self._validate_schema_value(args, schema, "", tool_name)
+        if schema_err:
+            return schema_err
 
         # Règle XOR pour palais_get
         if tool_name == "palais_get":
-            has_greffe = bool(args.get("greffe_number"))
-            has_palais = bool(args.get("palais"))
+            has_greffe = bool(str(args.get("greffe_number") or "").strip())
+            has_palais = bool(str(args.get("palais") or "").strip())
             if has_greffe and has_palais:
                 return "Exclusion mutuelle (XOR) violée : fournir soit greffe_number soit palais, pas les deux."
             if not has_greffe and not has_palais:
                 return "Exclusion mutuelle (XOR) violée : fournir au moins greffe_number ou palais."
 
-        # Règle XOR pour registre_get_entity (exactement l'un de neq, corporation_number, bn_ne)
+        # Règle XOR pour registre_get_entity (exactement l'un de neq, corporation_number, bn_ne, lei)
         if tool_name == "registre_get_entity":
-            provided = [k for k in ("neq", "corporation_number", "bn_ne") if bool(str(args.get(k, "")).strip())]
+            provided = [k for k in ("neq", "corporation_number", "bn_ne", "lei") if bool(str(args.get(k) or "").strip())]
             if len(provided) != 1:
-                return "Exclusion mutuelle (XOR) violée : fournir exactement l'un des identifiants neq, corporation_number ou bn_ne."
+                return "Exclusion mutuelle (XOR) violée : fournir exactement l'un des identifiants neq, corporation_number, bn_ne ou lei."
+            id_key = provided[0]
+            raw_val = str(args[id_key]).strip()
+            if id_key == "neq":
+                clean_digits = re.sub(r"[\s-]", "", raw_val)
+                if not re.match(r"^\d{10}$", clean_digits):
+                    return f"Format de NEQ invalide (« {raw_val} ») : un numéro d'entreprise du Québec comporte exactement 10 chiffres."
+            elif id_key == "bn_ne":
+                clean_digits = re.sub(r"[\s-]", "", raw_val)
+                if not re.match(r"^\d{9}$", clean_digits):
+                    return f"Format de NE/BN invalide (« {raw_val} ») : le numéro d'entreprise fédéral comporte exactement 9 chiffres."
+            elif id_key == "lei":
+                lei_clean = re.sub(r"[\s-]+", "", raw_val).upper()
+                if not re.match(r"^[A-Z0-9]{20}$", lei_clean):
+                    return f"Format de LEI invalide (« {raw_val} ») : un identifiant d'entité juridique (LEI ISO 17442) comporte exactement 20 caractères alphanumériques (A–Z, 0–9)."
 
-        # Règle d'au moins un champ significatif pour adresse_verify
+        # Règles directe vs recherche inversée (lot_number / matricule) pour adresse_verify
         if tool_name == "adresse_verify":
-            if not any(bool(str(args.get(k, "")).strip()) for k in ("address", "street", "postal_code")):
-                return "Paramètre requis manquant : fournir address ou street."
+            has_lot = bool(str(args.get("lot_number", "")).strip())
+            has_mat = bool(str(args.get("matricule", "")).strip())
+            has_forward = any(
+                bool(str(args.get(k, "")).strip())
+                for k in ("address", "civic_number", "street", "unit", "postal_code")
+            )
+            if has_lot and has_mat:
+                return "Paramètres incompatibles : fournir lot_number ou matricule, pas les deux."
+            if (has_lot or has_mat) and has_forward:
+                return "Recherche inversée (lot_number/matricule) incompatible avec les paramètres d'adresse directe."
+            if not (has_lot or has_mat) and not any(bool(str(args.get(k, "")).strip()) for k in ("address", "street", "postal_code")):
+                return "Paramètre requis manquant : fournir address, street, postal_code, lot_number ou matricule."
+
+        # Règles interets_1619 (prime_plus_margin, spread_bps, rate_overrides, contractual)
+        if tool_name == "interets_1619":
+            end_d = str(args.get("end_date", ""))
+            try:
+                datetime.date.fromisoformat(end_d)
+            except ValueError:
+                return f"Date de fin invalide '{end_d}'."
+            mode = args.get("mode", "legal_plus_1619")
+            tranches = args.get("tranches", [])
+            if not tranches:
+                return "La liste des tranches ne peut pas être vide."
+            if mode == "prime_plus_margin":
+                if args.get("rate_overrides"):
+                    return "rate_overrides est interdit en mode 'prime_plus_margin'."
+                if args.get("rate_bps") is not None:
+                    return "rate_bps est réservé au mode 'contractual'."
+            else:
+                if args.get("spread_bps") is not None or any(
+                    isinstance(t, dict) and t.get("spread_bps") is not None for t in tranches
+                ):
+                    return "spread_bps est réservé au mode 'prime_plus_margin'."
+            if mode != "contractual" and (
+                args.get("rate_bps") is not None
+                or any(isinstance(t, dict) and t.get("rate_bps") is not None for t in tranches)
+            ):
+                return "rate_bps est réservé au mode 'contractual'."
+            for idx, t in enumerate(tranches):
+                st_d = str(t.get("start_date", ""))
+                tr_end = str(t.get("end_date") or end_d)
+                try:
+                    datetime.date.fromisoformat(st_d)
+                    datetime.date.fromisoformat(tr_end)
+                except ValueError as err:
+                    return f"Tranche #{idx + 1} : date invalide ({err})."
+                if tr_end < st_d:
+                    return f"Tranche #{idx + 1} : end_date ({tr_end}) précède start_date ({st_d})."
+                if mode == "contractual" and t.get("rate_bps") is None and args.get("rate_bps") is None:
+                    return f"Tranche #{idx + 1} : rate_bps est requis (par tranche ou globalement) en mode 'contractual'."
+
+        # Règles taux_boc_rates
+        if tool_name == "taux_boc_rates":
+            has_date = args.get("date") is not None
+            has_start = args.get("start_date") is not None
+            has_end = args.get("end_date") is not None
+            if has_date and (has_start or has_end):
+                return "date est exclusif avec start_date et end_date."
+            if has_start != has_end:
+                return "start_date et end_date doivent être fournis ensemble."
+            if not has_date and not (has_start and has_end):
+                return "Préciser soit 'date', soit la paire complète 'start_date' et 'end_date'."
+            for dk in ("date", "start_date", "end_date"):
+                if args.get(dk):
+                    try:
+                        datetime.date.fromisoformat(str(args[dk]))
+                    except ValueError:
+                        return f"Date invalide pour {dk} : '{args[dk]}'."
+            if has_start and has_end and str(args["start_date"]) > str(args["end_date"]):
+                return f"start_date ({args['start_date']}) ne peut pas être postérieure à end_date ({args['end_date']})."
+            eff_cat = args.get("category") or (
+                "fx" if (args.get("currency") is not None or args.get("amount") is not None) else "all_rates"
+            )
+            supported_fx_currencies = {
+                "AED", "ANG", "ARS", "ATS", "AUD", "BEF", "BRL", "BSD", "CHF", "CLP",
+                "CNY", "COP", "CZK", "DEM", "DKK", "ESP", "EUR", "FIM", "FJD", "FRF",
+                "GBP", "GHC", "GHS", "GTQ", "HKD", "HNL", "HRK", "HUF", "IDR", "IEP",
+                "ILS", "INR", "ISK", "ITL", "JMD", "JPY", "KRW", "LKR", "MAD", "MMK",
+                "MXN", "MYR", "NLG", "NOK", "NZD", "PAB", "PEN", "PHP", "PKR", "PLN",
+                "RON", "RSD", "RUB", "SAR", "SEK", "SGD", "SKK", "THB", "TND", "TRY",
+                "TTD", "TWD", "USD", "VEB", "VEF", "VND", "XAF", "XCD", "XPF", "ZAR",
+            }
+            cur = args.get("currency")
+            if cur is not None:
+                cur_u = cur.strip().upper()
+                m_valet = re.match(r"^FX([A-Z]{3})CAD$", cur_u)
+                code_u = m_valet.group(1) if m_valet else cur_u
+                if code_u == "CAD":
+                    return "Ne pas passer 'CAD' pour currency : tous les taux BdC sont déjà exprimés face au CAD."
+                if not re.match(r"^[A-Z]{3}$", code_u):
+                    return f"Code de devise invalide « {cur} »."
+                if eff_cat != "fx":
+                    return "currency requiert category='fx'."
+                if code_u not in supported_fx_currencies:
+                    return f"Devise « {code_u} » introuvable dans l'instantané DB_ECONOMIE (Banque du Canada / StatCan 10-10-0008-01)."
+            if eff_cat == "fx" and not (cur and cur.strip()):
+                return "Préciser 'currency' (p. ex. 'USD', 'EUR', 'GBP', 'JPY') pour consulter un taux de change."
+            if args.get("amount") is not None:
+                amt_s = str(args["amount"]).strip()
+                if not re.match(r"^\d+(?:\.\d{1,6})?$", amt_s):
+                    return f"Format de montant invalide pour 'amount' : '{args['amount']}'."
+                whole, _, frac = amt_s.partition(".")
+                if int(whole) == 0 and (not frac or int(frac) == 0):
+                    return "Le montant 'amount' doit être strictement supérieur à zéro."
+                if eff_cat != "fx" or not has_date or not cur:
+                    return "La conversion avec amount requiert category='fx', date et currency."
+            elif args.get("direction") is not None:
+                return "direction requiert amount."
+            if eff_cat == "fx":
+                if has_date:
+                    req_d = str(args["date"])
+                    if req_d < "2001-01-02":
+                        return f"Aucun taux de change disponible pour {code_u} au {req_d} (plage disponible sous ce régime : 2001-01-02 au 2017-04-28)."
+                    tail_days = (datetime.date.fromisoformat(req_d) - datetime.date(2026, 11, 24)).days
+                    if tail_days > 4:
+                        return f"La date demandée ({req_d}) dépasse la dernière observation vérifiée dans DB_ECONOMIE (2026-11-24) pour le régime moyenne quotidienne 16 h 30 HE (2017-05-01+). Aucune extrapolation n'est effectuée."
+                else:
+                    s_d = str(args["start_date"])
+                    e_d = str(args["end_date"])
+                    if e_d < "2001-01-02" or s_d > "2026-11-24":
+                        return f"Aucune observation de taux de change pour {code_u} entre {s_d} et {e_d}."
+            else:
+                target_sids = (
+                    ["V39079"] if eff_cat == "policy" else
+                    ["V122530"] if eff_cat == "bank" else
+                    ["V80691311"] if eff_cat == "prime" else
+                    ["V39079", "V122530", "V80691311"]
+                )
+                valid_any = False
+                for sid in target_sids:
+                    s_min, s_max, max_tail = self._BOC_SERIES_BOUNDS[sid]
+                    if has_date:
+                        req_d = str(args["date"])
+                        tail_days = (
+                            datetime.date.fromisoformat(req_d) - datetime.date.fromisoformat(s_max)
+                        ).days
+                        if req_d >= s_min and tail_days <= max_tail:
+                            valid_any = True
+                            break
+                    else:
+                        s_d = str(args["start_date"])
+                        e_d = str(args["end_date"])
+                        if not (e_d < s_min or s_d > s_max):
+                            valid_any = True
+                            break
+                if not valid_any:
+                    if has_date:
+                        return f"Aucun taux Banque du Canada disponible pour la date {args['date']} (hors instantané DB_ECONOMIE sans extrapolation)."
+                    return f"Aucune observation pour {', '.join(target_sids)} entre {args['start_date']} et {args['end_date']}."
+
+        # Règles indice_ipc
+        if tool_name == "indice_ipc":
+            has_per = args.get("period") is not None
+            has_start = args.get("start_period") is not None
+            has_end = args.get("end_period") is not None
+            if has_per and (has_start or has_end):
+                return "period est exclusif avec start_period et end_period."
+            if has_start != has_end:
+                return "start_period et end_period doivent être fournis ensemble."
+            if not has_per and not (has_start and has_end):
+                return "Préciser soit 'period', soit la paire complète 'start_period' et 'end_period'."
+            if has_per and args.get("end_uom") is not None:
+                return "Le paramètre 'end_uom' s'applique uniquement avec 'start_period' et 'end_period'."
+            parsed_freqs: Dict[str, Tuple[str, int]] = {}
+            for pk in ("period", "start_period", "end_period"):
+                pval = args.get(pk)
+                if pval is not None:
+                    m_p = re.match(r"^(\d{4})(?:-(\d{2}))?$", pval.strip())
+                    if not m_p:
+                        return f"Période IPC invalide '{pval}'."
+                    yr = int(m_p.group(1))
+                    if yr < 1914:
+                        return f"Année IPC hors plage ({yr}) : >= 1914 requis."
+                    if m_p.group(2) is not None:
+                        mo = int(m_p.group(2))
+                        if mo < 1 or mo > 12:
+                            return f"Mois IPC invalide dans '{pval}' (01..12)."
+                        pf = ("monthly", yr * 100 + mo)
+                    else:
+                        pf = ("annual", yr)
+                    if args.get("frequency") and args["frequency"] != pf[0]:
+                        return f"Incohérence entre frequency='{args['frequency']}' et {pk}='{pval}'."
+                    parsed_freqs[pk] = pf
+            if has_start and has_end:
+                if parsed_freqs["start_period"][0] != parsed_freqs["end_period"][0]:
+                    return "start_period et end_period doivent avoir la même fréquence ('YYYY-MM' ou 'YYYY')."
+                if parsed_freqs["start_period"][1] > parsed_freqs["end_period"][1]:
+                    return "start_period ne peut pas être postérieure à end_period."
+            geo = args.get("geo", "quebec")
+            product = args.get("product", "all_items")
+            if geo in ("montreal_rmr", "quebec_rmr") and product in ("rent", "health_care_services"):
+                return f"La composante '{product}' est absente à l'échelle RMR ({geo}, vectorId=0)."
+            uom = args.get("uom", "2002=100")
+            end_uom = args.get("end_uom", uom)
+            if args.get("amount") is not None:
+                amt_s = str(args["amount"]).strip()
+                if not re.match(r"^\d+(?:\.\d{1,6})?$", amt_s):
+                    return f"Format de montant invalide pour 'amount' : '{args['amount']}'."
+                whole, _, frac = amt_s.partition(".")
+                if int(whole) == 0 and (not frac or int(frac) == 0):
+                    return "Le montant 'amount' doit être strictement supérieur à zéro."
+                if not (has_start and has_end):
+                    return "L'indexation contractuelle avec amount requiert start_period et end_period."
+                if uom != end_uom:
+                    return f"Divergence d'année de base ({uom} vs {end_uom}) : indexation bloquée sans facteur de raccordement officiel StatCan."
+                if (
+                    args.get("floor_bps") is not None
+                    and args.get("cap_bps") is not None
+                    and args["floor_bps"] > args["cap_bps"]
+                ):
+                    return f"Plancher incohérent : floor_bps ({args['floor_bps']}) > cap_bps ({args['cap_bps']})."
+            elif any(args.get(k) is not None for k in ("floor_bps", "cap_bps", "rounding")):
+                return "floor_bps, cap_bps et rounding requièrent amount."
+            eff_freq = next(iter(parsed_freqs.values()))[0]
+            start_bounds = self._cpi_series_bounds(eff_freq, geo, product, uom)
+            if start_bounds is None:
+                return f"Série IPC introuvable dans DB_ECONOMIE pour geo='{geo}', product='{product}', frequency='{eff_freq}', uom='{uom}'."
+            end_bounds = self._cpi_series_bounds(eff_freq, geo, product, end_uom)
+            if end_bounds is None:
+                return f"Série IPC de fin introuvable dans DB_ECONOMIE pour geo='{geo}', product='{product}', frequency='{eff_freq}', end_uom='{end_uom}'."
+            if has_per:
+                p_int = parsed_freqs["period"][1]
+                if p_int < start_bounds[0] or p_int > start_bounds[1]:
+                    return f"La période demandée ({args['period']}) est hors de l'instantané vérifié ({uom}). Aucune extrapolation n'est effectuée."
+            else:
+                s_int = parsed_freqs["start_period"][1]
+                e_int = parsed_freqs["end_period"][1]
+                if uom == end_uom:
+                    if s_int < start_bounds[0] or e_int > start_bounds[1]:
+                        return f"La plage demandée ({args['start_period']} à {args['end_period']}) déborde de l'instantané vérifié ({uom}). Aucune extrapolation n'est effectuée."
+                else:
+                    if s_int < start_bounds[0] or s_int > start_bounds[1] or e_int < end_bounds[0] or e_int > end_bounds[1]:
+                        return f"La plage demandée ({args['start_period']} à {args['end_period']}) déborde de l'instantané vérifié. Aucune extrapolation n'est effectuée."
+
+        # Règles loyer_tal
+        if tool_name == "loyer_tal":
+            tal_mode = args.get("mode")
+            if tal_mode == "bareme":
+                tal_year = args.get("year")
+                if tal_year is not None and (int(tal_year) < 2015 or int(tal_year) > 2027):
+                    return f"Année '{tal_year}' hors couverture des barèmes TAL embarqués (2015 à 2027)."
+            if tal_mode == "schl":
+                centres, cmhc_err = self._resolve_mock_cmhc(args.get("cmhc_geo"))
+                if cmhc_err or not centres:
+                    return cmhc_err or "Aucun centre urbain SCHL trouvé."
+                tal_year = args.get("year")
+                if tal_year is not None:
+                    yr_i = int(tal_year)
+                    for c in centres:
+                        if yr_i < c[7] or yr_i > c[8]:
+                            return f"Année {yr_i} hors plage SCHL pour {c[2]} (disponible : {c[7]} à {c[8]}). Aucune extrapolation n'est effectuée."
+            if tal_mode == "calcul_2026":
+                if not args.get("lease_renewal_date") or args.get("current_rent_cents") is None:
+                    return "Le mode 'calcul_2026' requiert lease_renewal_date et current_rent_cents."
+                try:
+                    datetime.date.fromisoformat(str(args["lease_renewal_date"]))
+                    if args.get("notice_date"):
+                        datetime.date.fromisoformat(str(args["notice_date"]))
+                except ValueError as err:
+                    return f"Date invalide dans loyer_tal : {err}"
+                for pair_label, k_prev, k_curr in (
+                    ("taxes municipales", "municipal_taxes_prev_cents", "municipal_taxes_curr_cents"),
+                    ("taxes scolaires", "school_taxes_prev_cents", "school_taxes_curr_cents"),
+                    ("assurances", "insurance_prev_cents", "insurance_curr_cents"),
+                    ("déneigement", "snow_removal_prev_cents", "snow_removal_curr_cents"),
+                ):
+                    if (args.get(k_prev) is not None) != (args.get(k_curr) is not None):
+                        return f"Paramètre incomplet pour {pair_label} : fournir simultanément précédent et courant."
+                if (args.get("rpa_personal_services_cents") or 0) > 0 and not args.get("is_rpa"):
+                    return "rpa_personal_services_cents > 0 requiert is_rpa=true."
+                notice_d = args.get("notice_date")
+                is_pre_2026_notice = bool(notice_d and str(notice_d) < "2026-01-01")
+                is_sec_f = bool(args.get("section_f_exemption_5_ans"))
+                if not is_pre_2026_notice and not is_sec_f:
+                    renewal_iso = str(args["lease_renewal_date"])
+                    if renewal_iso < "2026-01-01":
+                        return f"Date de renouvellement ({renewal_iso}) antérieure au 2026-01-01 : relève du régime pré-2026 (utiliser mode='bareme' ou fournir notice_date < 2026-01-01)."
+                    if renewal_iso > "2027-04-01":
+                        return f"Aucun pourcentage TAL publié/vérifié dans tal_criteres.json pour le renouvellement {renewal_iso} (couvert jusqu'au 2027-04-01). Aucune extrapolation n'est effectuée."
+                    cur_rent = int(args["current_rent_cents"])
+                    if args.get("is_rpa") and (args.get("rpa_personal_services_cents") or 0) > cur_rent:
+                        return "La part des services personnels RPA ne peut pas excéder le loyer total."
+                    if args.get("building_residential_rents_cents") is not None and int(args["building_residential_rents_cents"]) < cur_rent:
+                        return "Les loyers résidentiels de l'immeuble ne peuvent pas être inférieurs au loyer du logement visé."
+                    for zero_label, k_prev, k_curr in (
+                        ("Taxes municipales", "municipal_taxes_prev_cents", "municipal_taxes_curr_cents"),
+                        ("Taxes scolaires", "school_taxes_prev_cents", "school_taxes_curr_cents"),
+                        ("Prime d'assurance", "insurance_prev_cents", "insurance_curr_cents"),
+                    ):
+                        if (args.get(k_prev) or 0) == 0 and (args.get(k_curr) or 0) > 0:
+                            return f"{zero_label} précédente(s) nulle(s) alors que le montant courant est > 0 : variation en pourcentage indéfinie (art. 4)."
+                    for item in args.get("capital_works") or []:
+                        if isinstance(item, dict) and item.get("target_unit_benefits", True) is not False:
+                            if item.get("beneficiary_rents_monthly_cents") is not None and int(item["beneficiary_rents_monthly_cents"]) < cur_rent:
+                                return "La somme des loyers bénéficiaires ne peut pas être inférieure au loyer du logement visé."
+                            net_amt = max(
+                                0,
+                                int(item.get("gross_amount_cents", 0))
+                                - int(item.get("grant_cents") or 0)
+                                - int(item.get("third_party_indemnity_cents") or 0),
+                            )
+                            loan_amt = int(item.get("reduced_interest_loan_cents") or 0)
+                            if loan_amt > 0:
+                                if loan_amt > net_amt:
+                                    return "Prêt à intérêt réduit supérieur à la dépense nette."
+                                if item.get("annual_loan_repayment_cents") is None:
+                                    return "annual_loan_repayment_cents requis lorsqu'un prêt à intérêt réduit est déclaré."
+                    for list_key in ("new_expenses", "aid_variations"):
+                        for item in args.get(list_key) or []:
+                            if isinstance(item, dict) and item.get("target_unit_benefits", True) is not False:
+                                if item.get("beneficiary_rents_monthly_cents") is not None and int(item["beneficiary_rents_monthly_cents"]) < cur_rent:
+                                    return "La somme des loyers bénéficiaires ne peut pas être inférieure au loyer du logement visé."
 
         # Règle XOR pour get_case, citator et subsequent_history
         if tool_name in ("get_case", "citator", "subsequent_history"):
@@ -1072,15 +1841,52 @@ class MockMcpServer:
             if not args.get("citation", "").strip():
                 return "La citation ne peut pas être vide."
 
-        # Contrôle de date pour calendrier
+        # Contrôle de date et cohérence pour calendrier
         if tool_name == "calendrier_deadlines":
             ev_date = args.get("event_date", "")
             try:
                 datetime.date.fromisoformat(ev_date)
             except ValueError:
                 return f"Date invalide '{ev_date}' : format attendu YYYY-MM-DD valide."
+            ev_time = args.get("event_time")
+            if ev_time is not None:
+                tm_parts = [int(p) for p in str(ev_time).split(":")]
+                hh, mm = tm_parts[0], tm_parts[1]
+                ss = tm_parts[2] if len(tm_parts) > 2 else 0
+                if hh > 23 or mm > 59 or ss > 59:
+                    return f"Heure hors bornes (00:00[:00]..23:59[:59]) : '{ev_time}'."
+            province = args.get("province")
+            regime = args.get("regime") or "qc_cpc"
+            if province is not None and province != "QC" and regime != "ca_li":
+                return f"Le paramètre province='{province}' hors Québec ne s'applique qu'au régime fédéral 'ca_li'."
             if not args.get("deadlines"):
                 return "La liste des délais (deadlines) ne peut pas être vide."
+            for idx, dl in enumerate(args.get("deadlines") or []):
+                if isinstance(dl, dict):
+                    if dl.get("anchor_date") is not None:
+                        try:
+                            datetime.date.fromisoformat(str(dl["anchor_date"]))
+                        except ValueError:
+                            return f"Date d'ancrage invalide dans deadlines[{idx}].anchor_date : '{dl['anchor_date']}'."
+                    if dl.get("anchor_time") is not None:
+                        at_parts = [int(p) for p in str(dl["anchor_time"]).split(":")]
+                        ah, am = at_parts[0], at_parts[1]
+                        as_ = at_parts[2] if len(at_parts) > 2 else 0
+                        if ah > 23 or am > 59 or as_ > 59:
+                            return f"Heure hors bornes dans deadlines[{idx}].anchor_time : '{dl['anchor_time']}'."
+                    dep_idx = dl.get("depends_on_index")
+                    if dep_idx is not None:
+                        if dl.get("anchor_date") is not None:
+                            return f"Étape #{idx + 1} : ne pas combiner depends_on_index et anchor_date."
+                        if idx == 0:
+                            return "Étape #1 : depends_on_index ne peut pas être utilisé sur la première étape (utiliser event_date ou anchor_date)."
+                        if dep_idx >= idx:
+                            return f"Étape #{idx + 1} : depends_on_index ({dep_idx}) doit référencer une étape antérieure (0..{idx - 1})."
+            for idx, extra_d in enumerate(args.get("extra_non_juridical_dates") or []):
+                try:
+                    datetime.date.fromisoformat(str(extra_d))
+                except ValueError:
+                    return f"Date invalide dans extra_non_juridical_dates[{idx}] : '{extra_d}'."
 
         return None
 
@@ -1487,24 +2293,71 @@ class MockMcpServer:
         # --- Outils ---
         elif tool_name == "calendrier_holidays":
             year = args.get("year", 2026)
-            holidays = [
-                {"date": f"{year}-01-01", "nom": "Jour de l'An", "basis": "art. 82 al. 1 C.p.c."},
-                {"date": f"{year}-04-03", "nom": "Vendredi saint", "basis": "art. 82 al. 2 C.p.c."},
-                {"date": f"{year}-04-06", "nom": "Lundi de Pâques", "basis": "art. 82 al. 2 C.p.c."},
-                {"date": f"{year}-05-18", "nom": "Journée nationale des patriotes", "basis": "art. 82 al. 3 C.p.c."},
-                {"date": f"{year}-06-24", "nom": "Fête nationale du Québec", "basis": "art. 82 al. 4 C.p.c."},
-                {"date": f"{year}-07-01", "nom": "Fête du Canada", "basis": "art. 82 al. 5 C.p.c."},
-                {"date": f"{year}-09-07", "nom": "Fête du Travail", "basis": "art. 82 al. 6 C.p.c."},
-                {"date": f"{year}-10-12", "nom": "Action de grâce", "basis": "art. 82 al. 7 C.p.c."},
-                {"date": f"{year}-12-25", "nom": "Noël", "basis": "art. 82 al. 8 C.p.c."},
+            regime = args.get("regime", "qc_cpc")
+            province = args.get("province")
+            regime_labels = {
+                "qc_cpc": "Québec — Code de procédure civile (art. 82 al. 1, 83 al. 3 C.p.c. et art. 61 par. 23° L.I.)",
+                "qc_prescription": "Québec — Prescription extinctive et acquisitive (art. 2879 al. 2 C.c.Q. et art. 61 par. 23° L.I.)",
+                "qc_li": "Québec — Loi d'interprétation générale (art. 61 par. 23° et art. 52 L.I., RLRQ c. I-16)",
+                "ca_li": "Canada — Loi d'interprétation fédérale (art. 35(1) L.I., L.R.C. 1985, c. I-21)",
+            }
+            weekdays_fr = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+            raw_holidays = [
+                (f"{year}-01-01", "Jour de l'An", "art. 61 par. 23° a) L.I.", False),
+                (f"{year}-04-03", "Vendredi saint", "art. 61 par. 23° b) L.I.", True),
+                (f"{year}-04-06", "Lundi de Pâques", "art. 61 par. 23° b) L.I.", True),
+                (f"{year}-05-18", "Journée nationale des patriotes", "art. 61 par. 23° c) L.I.", True),
+                (f"{year}-06-24", "Fête nationale du Québec", "art. 61 par. 23° d) L.I.", False),
+                (f"{year}-07-01", "Fête du Canada", "art. 61 par. 23° e) L.I.", False),
+                (f"{year}-09-07", "Fête du Travail", "art. 61 par. 23° f) L.I.", True),
+                (f"{year}-10-12", "Action de grâce", "art. 61 par. 23° g) L.I.", True),
+                (f"{year}-12-25", "Noël", "art. 61 par. 23° h) L.I.", False),
             ]
-            return {"content": [{"type": "text", "text": json.dumps(holidays, ensure_ascii=False)}]}
+            holidays = [
+                {
+                    "date": d_iso,
+                    "weekday_fr": weekdays_fr[datetime.date.fromisoformat(d_iso).weekday()],
+                    "name_fr": nom,
+                    "legal_basis": basis,
+                    "movable": mov,
+                }
+                for d_iso, nom, basis, mov in raw_holidays
+            ]
+            return {
+                "content": [{"type": "text", "text": json.dumps(holidays, ensure_ascii=False)}],
+                "structuredContent": {
+                    "year": year,
+                    "regime": regime,
+                    "province": province,
+                    "regime_label_fr": regime_labels.get(regime, regime_labels["qc_cpc"]),
+                    "weekly_non_juridical_days": ["saturday", "sunday"] if regime == "qc_cpc" else ["sunday"],
+                    "saturday_triggers_deadline_rollover": regime in ("qc_cpc", "qc_prescription"),
+                    "holidays": holidays,
+                    "count": len(holidays),
+                    "provenance": {"source": "C.p.c. / Loi d'interprétation (QC / CA)", "verified_at": "2026-11-19"},
+                    "gardes": [
+                        {"code": "JOURS_PROCLAMES_NON_PREVISIBLES", "message": "Le calendrier statutaire n'inclut pas les jours fériés proclamés ad hoc."},
+                    ],
+                },
+            }
 
         elif tool_name == "calendrier_deadlines":
             ev_date_str = args.get("event_date", "2026-07-03")
             d_date = datetime.date.fromisoformat(ev_date_str)
             mode = args.get("notification_mode", "none")
             ev_time = args.get("event_time", "")
+            regime = args.get("regime", "qc_cpc")
+            province = args.get("province")
+            rollover_saturday = args.get("rollover_saturday")
+            if rollover_saturday is None:
+                rollover_saturday = regime in ("qc_cpc", "qc_prescription")
+            regime_labels = {
+                "qc_cpc": "Québec — Code de procédure civile (art. 82 al. 1, 83 al. 3 C.p.c. et art. 61 par. 23° L.I.)",
+                "qc_prescription": "Québec — Prescription extinctive et acquisitive (art. 2879 al. 2 C.c.Q. et art. 61 par. 23° L.I.)",
+                "qc_li": "Québec — Loi d'interprétation générale (art. 61 par. 23° et art. 52 L.I., RLRQ c. I-16)",
+                "ca_li": "Canada — Loi d'interprétation fédérale (art. 35(1) L.I., L.R.C. 1985, c. I-21)",
+            }
+            weekdays_fr = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
             # Art. 111 al. 2 C.p.c. : notification techno après 17h00 strictly -> report au prochain jour ouvrable
             shifted_start = d_date
@@ -1522,20 +2375,53 @@ class MockMcpServer:
                     shifted_start += datetime.timedelta(days=1)
 
             results = []
+            gardes = [
+                {"code": "JOURS_PROCLAMES_NON_PREVISIBLES", "message": "Le calendrier statutaire n'inclut pas les jours fériés proclamés ad hoc."},
+                {"code": "DEPOT_GREFFE_HEURES_OUVERTURE", "message": "Prévoir le dépôt pendant les heures d'ouverture du dernier jour (art. 107 C.p.c.)."},
+            ]
+            if shifted_start != d_date:
+                gardes.append({"code": "NOTIFICATION_TECHNOLOGIQUE_APRES_17H", "message": "Notification technologique après 17 h 00 réputée faite le jour ouvrable suivant (art. 111 al. 2 C.p.c.)."})
+
             for idx, item in enumerate(args.get("deadlines", [])):
                 amt = item.get("amount", 15)
-                due = shifted_start + datetime.timedelta(days=amt)
+                unit = item.get("unit", "days")
+                direction = item.get("direction", "forward")
+                raw_due = shifted_start + datetime.timedelta(days=amt)
+                due = raw_due
+                hops = []
                 # Art. 83 C.p.c. : si samedi ou dimanche, reporte au lundi
                 while due.weekday() >= 5:
+                    hops.append({
+                        "date": due.isoformat(),
+                        "weekday_fr": weekdays_fr[due.weekday()],
+                        "reason": "Fin de semaine (art. 83 al. 3 C.p.c.)",
+                    })
                     due += datetime.timedelta(days=1)
+                in_non_sitting = (
+                    (due.month == 6 and due.day == 30)
+                    or due.month in (7, 8)
+                    or (due.month == 9 and due.day == 1)
+                )
                 results.append({
                     "index": idx,
                     "label": item.get("label", "Délai"),
+                    "direction": direction,
+                    "unit": unit,
                     "amount": amt,
                     "input_anchor_date": d_date.isoformat(),
                     "effective_anchor_date": shifted_start.isoformat(),
                     "anchor_shifted_art_111": shifted_start != d_date,
+                    "anchor_shift_reason": "Notification technologique après 17 h 00 (art. 111 al. 2 C.p.c.)" if shifted_start != d_date else None,
+                    "raw_date": raw_due.isoformat(),
+                    "raw_weekday_fr": weekdays_fr[raw_due.weekday()],
                     "effective_date": due.isoformat(),
+                    "effective_weekday_fr": weekdays_fr[due.weekday()],
+                    "preceding_business_day": None,
+                    "rolled_over": due != raw_due,
+                    "rollover_hops": hops,
+                    "in_non_sitting_period": in_non_sitting,
+                    "non_sitting_period_label": "du 30 juin au 1er septembre (art. 82 al. 2 C.p.c.)" if in_non_sitting else None,
+                    "formula_summary_fr": f"{shifted_start.isoformat()} + {amt} {unit} -> {due.isoformat()}",
                 })
 
             summary_lines = [
@@ -1545,45 +2431,178 @@ class MockMcpServer:
             return {
                 "content": [{"type": "text", "text": "\n".join(summary_lines)}],
                 "structuredContent": {
-                    "regime": args.get("regime", "qc_cpc"),
+                    "regime": regime,
+                    "province": province,
+                    "regime_label_fr": regime_labels.get(regime, regime_labels["qc_cpc"]),
+                    "rollover_saturday": rollover_saturday,
                     "results": results,
+                    "provenance": {"source": "C.p.c. (art. 82, 83, 111) / L.I.", "verified_at": "2026-11-19"},
+                    "gardes": gardes,
                 },
             }
 
         elif tool_name == "interets_1619":
+            def _fmt_cad2(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}"
+
+            def _fmt_cad6_from_cents(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}0000"
+
             tranches = args.get("tranches", [])
-            total_principal = sum(t.get("principal_cents", 0) for t in tranches)
-            # Calcul authentique d'intérêts : 5% légal + indemnité additionnelle (~4%)
-            taux_legal = 0.05
-            taux_indemnite = 0.04
-            interet_legal_cents = int(total_principal * taux_legal)
-            indemnite_cents = int(total_principal * taux_indemnite)
-            total_interest_cents = interet_legal_cents + indemnite_cents
+            mode = args.get("mode", "legal_plus_1619")
+            global_end = str(args.get("end_date") or "2026-11-18")
+            total_principal = 0
+            interet_legal_cents = 0
+            indemnite_cents = 0
+            contractual_cents = 0
+            tranche_results = []
+
+            for idx, tr in enumerate(tranches):
+                p_cents = int(tr.get("principal_cents", 0))
+                st_d = str(tr.get("start_date", "2025-01-01"))
+                req_end = str(tr.get("end_date") or global_end)
+                acc_days = max(0, (datetime.date.fromisoformat(req_end) - datetime.date.fromisoformat(st_d)).days)
+                tr_label = str(tr.get("label") or f"Tranche #{idx + 1}")
+                tr_legal = 0
+                tr_add = 0
+                tr_contr = 0
+                laf_bps = None
+                prime_bps = None
+                spread_bps = None
+                legal_bps = 0
+                add_bps = 0
+                contr_bps = 0
+                eff_bps = 0
+                if mode == "legal_plus_1619":
+                    tr_legal = int(p_cents * 0.05)
+                    tr_add = int(p_cents * 0.04)
+                    laf_bps = 900
+                    legal_bps = 500
+                    add_bps = 400
+                    eff_bps = 900
+                elif mode == "legal_only":
+                    tr_legal = int(p_cents * 0.05)
+                    legal_bps = 500
+                    eff_bps = 500
+                elif mode == "contractual":
+                    rate_bps = int(tr.get("rate_bps") if tr.get("rate_bps") is not None else (args.get("rate_bps") or 800))
+                    tr_contr = int(p_cents * rate_bps / 10000)
+                    contr_bps = rate_bps
+                    eff_bps = rate_bps
+                elif mode == "prime_plus_margin":
+                    prime_bps = 495
+                    spread_bps = int(tr.get("spread_bps") if tr.get("spread_bps") is not None else (args.get("spread_bps") or 0))
+                    eff_bps = max(0, prime_bps + spread_bps)
+                    contr_bps = eff_bps
+                    tr_contr = int(p_cents * eff_bps / 10000)
+
+                tr_tot_int = tr_legal + tr_add + tr_contr
+                tr_tot_all = p_cents + tr_tot_int
+                total_principal += p_cents
+                interet_legal_cents += tr_legal
+                indemnite_cents += tr_add
+                contractual_cents += tr_contr
+
+                st_inc = (datetime.date.fromisoformat(st_d) + datetime.timedelta(days=1)).isoformat() if acc_days > 0 else st_d
+                yr_days = 366 if datetime.date.fromisoformat(req_end).year % 4 == 0 else 365
+                tranche_results.append({
+                    "index": idx,
+                    "label": tr_label,
+                    "principal_cents": p_cents,
+                    "principal_cad": _fmt_cad2(p_cents),
+                    "start_date_excluded": st_d,
+                    "requested_end_date": req_end,
+                    "effective_end_date": req_end,
+                    "truncated": False,
+                    "missing_quarter": None,
+                    "accrued_days": acc_days,
+                    "legal_interest_cents": tr_legal,
+                    "legal_interest_cad": _fmt_cad2(tr_legal),
+                    "additional_indemnity_cents": tr_add,
+                    "additional_indemnity_cad": _fmt_cad2(tr_add),
+                    "contractual_interest_cents": tr_contr,
+                    "contractual_interest_cad": _fmt_cad2(tr_contr),
+                    "total_interest_cents": tr_tot_int,
+                    "total_interest_cad": _fmt_cad2(tr_tot_int),
+                    "total_with_principal_cents": tr_tot_all,
+                    "total_with_principal_cad": _fmt_cad2(tr_tot_all),
+                    "periods": [
+                        {
+                            "period_label": f"{req_end[:4]}-Q{(datetime.date.fromisoformat(req_end).month - 1) // 3 + 1}",
+                            "start_date_included": st_inc,
+                            "end_date_included": req_end,
+                            "days": acc_days,
+                            "year_days": yr_days,
+                            "laf_rate_bps": laf_bps,
+                            "prime_rate_bps": prime_bps,
+                            "spread_bps": spread_bps,
+                            "overridden": False,
+                            "legal_rate_bps": legal_bps,
+                            "additional_rate_bps": add_bps,
+                            "contractual_rate_bps": contr_bps,
+                            "effective_rate_bps": eff_bps,
+                            "legal_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_legal),
+                            "additional_indemnity_cad_exact_6dec": _fmt_cad6_from_cents(tr_add),
+                            "contractual_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_contr),
+                            "total_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_tot_int),
+                        }
+                    ] if acc_days > 0 else [],
+                })
+
+            total_interest_cents = interet_legal_cents + indemnite_cents + contractual_cents
             grand_total_cents = total_principal + total_interest_cents
+            gardes = [
+                {"code": "INTERET_SIMPLE_ART_1620_CCQ", "message": "Calcul en intérêt simple (art. 1620 C.c.Q.), convention Exact/Exact."},
+            ]
+            if mode == "prime_plus_margin":
+                gardes.append({
+                    "code": "TAUX_BOC_PRIME_INDICATIF_BANCAIRE",
+                    "message": "Fondé sur le taux préférentiel indicatif BDC V80691311 ; vérifier le taux du prêteur contractuel, la date de prise d'effet et tout plancher.",
+                })
 
             return {
                 "content": [
                     {
                         "type": "text",
                         "text": (
-                            f"Calcul art. 1619 C.c.Q. jusqu'au {args.get('end_date')} — "
+                            f"Calcul ({mode}) jusqu'au {global_end} — "
                             f"Capital : {total_principal} cents, Intérêt légal : {interet_legal_cents} cents, "
-                            f"Indemnité additionnelle : {indemnite_cents} cents, Total général : {grand_total_cents} cents."
+                            f"Indemnité additionnelle : {indemnite_cents} cents, "
+                            f"Intérêt contractuel/préférentiel : {contractual_cents} cents, "
+                            f"Total général : {grand_total_cents} cents."
                         ),
                     }
                 ],
                 "structuredContent": {
+                    "mode": mode,
+                    "convention": "Exact/Exact (365/366), start_excluded_end_included, simple",
+                    "laf_table_last_quarter": "2026-Q4",
+                    "prime_table_last_verified_date": "2026-11-18",
+                    "truncated_any": False,
                     "total_principal_cents": total_principal,
+                    "total_principal_cad": _fmt_cad2(total_principal),
                     "total_legal_interest_cents": interet_legal_cents,
+                    "total_legal_interest_cad": _fmt_cad2(interet_legal_cents),
                     "total_additional_indemnity_cents": indemnite_cents,
+                    "total_additional_indemnity_cad": _fmt_cad2(indemnite_cents),
+                    "total_contractual_interest_cents": contractual_cents,
+                    "total_contractual_interest_cad": _fmt_cad2(contractual_cents),
                     "total_interest_cents": total_interest_cents,
+                    "total_interest_cad": _fmt_cad2(total_interest_cents),
                     "grand_total_cents": grand_total_cents,
-                    "end_date": args.get("end_date"),
+                    "grand_total_cad": _fmt_cad2(grand_total_cents),
+                    "tranches": tranche_results,
+                    "provenance": {"source": "Art. 28 L.A.F. (Revenu Québec) / BDC V80691311", "verified_at": "2026-11-18"},
+                    "gardes": gardes,
                 },
             }
 
         elif tool_name == "greffe_parse_number":
-            num = args.get("court_file_number", "")
+            num = str(args.get("court_file_number", "")).strip()
             # Format standard québécois : 500-17-012345-211
             parts = num.split("-")
             greffe = parts[0] if len(parts) >= 1 else "500"
@@ -1591,6 +2610,20 @@ class MockMcpServer:
             districts = {"500": "Montréal", "200": "Québec", "400": "Trois-Rivières"}
             district = districts.get(greffe, "District québécois")
             court = "Cour supérieure" if court_code == "17" else "Cour d'appel" if court_code == "09" else "Cour du Québec"
+            palais_key = "montreal" if greffe == "500" else "quebec"
+            palais_addr = {
+                "key": palais_key,
+                "name": district,
+                "location_type": "palais",
+                "street": "1, rue Notre-Dame Est" if greffe == "500" else "300, boulevard Jean-Lesage",
+                "unit": None,
+                "city": district,
+                "province": "Québec",
+                "postal_code": "H2Y 1B6" if greffe == "500" else "G1K 8K6",
+                "country": "Canada",
+                "mailing_address": None,
+                "contacts": [{"service": "Greffe civil", "tel": "514-393-2721", "courriel": None}],
+            }
             return {
                 "content": [
                     {
@@ -1599,16 +2632,63 @@ class MockMcpServer:
                     }
                 ],
                 "structuredContent": {
+                    "input": num,
                     "outcome": "judicial",
-                    "court_file_number": num,
+                    "is_administrative": False,
+                    "forum": None,
                     "greffe_number": greffe,
-                    "district": district,
-                    "court": court,
-                    "matter": "civil",
+                    "greffe": {
+                        "palais_de_justice": f"Palais de justice de {district}",
+                        "district_judiciaire": district,
+                        "palais_key": palais_key,
+                        "point_de_service": False,
+                        "localites_itinerantes": [],
+                        "adresse": palais_addr,
+                    },
+                    "juridiction_number": court_code,
+                    "juridiction": {
+                        "tribunal": court,
+                        "competence": "Civile" if court_code in ("17", "05", "09") else "Générale",
+                        "greffe_type": "GC",
+                        "greffe_type_label_fr": "Greffe civil",
+                    },
+                    "parse_error": None,
+                    "parse_warning": None,
+                    "provenance": {"source": "Ministère de la Justice du Québec — numéros des greffes et nomenclature judiciaire", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "DOSSIER_NOMENCLATURE_SEULEMENT", "message": "Décomposition purement syntaxique sans validation de somme de contrôle ni accès au plumitif."},
+                        {"code": "GREFFE_SANS_PLUMITIF", "message": "Cet outil n'interroge aucun plumitif et n'établit pas que le dossier existe ou est actif."},
+                    ],
                 },
             }
 
         elif tool_name == "palais_list":
+            palais_rows = [
+                {
+                    "key": "montreal",
+                    "name": "Montréal",
+                    "location_type": "palais",
+                    "street": "1, rue Notre-Dame Est",
+                    "unit": None,
+                    "city": "Montréal",
+                    "province": "Québec",
+                    "postal_code": "H2Y 1B6",
+                    "country": "Canada",
+                    "greffes": [{"numero": "500", "palais_de_justice": "Palais de justice de Montréal", "district_judiciaire": "Montréal", "point_de_service": False}],
+                },
+                {
+                    "key": "quebec",
+                    "name": "Québec",
+                    "location_type": "palais",
+                    "street": "300, boulevard Jean-Lesage",
+                    "unit": None,
+                    "city": "Québec",
+                    "province": "Québec",
+                    "postal_code": "G1K 8K6",
+                    "country": "Canada",
+                    "greffes": [{"numero": "200", "palais_de_justice": "Palais de justice de Québec", "district_judiciaire": "Québec", "point_de_service": False}],
+                },
+            ]
             return {
                 "content": [
                     {
@@ -1618,116 +2698,483 @@ class MockMcpServer:
                             {"palais": "Québec", "greffe_number": "200", "district": "Québec"},
                         ], ensure_ascii=False),
                     }
-                ]
+                ],
+                "structuredContent": {
+                    "filters": {
+                        "district": args.get("district"),
+                        "query": args.get("query"),
+                        "type": args.get("type"),
+                    },
+                    "count": len(palais_rows),
+                    "results": palais_rows,
+                    "known_districts": ["Montréal", "Québec"],
+                    "provenance": {"source": "Ministère de la Justice du Québec — répertoire des palais de justice et points de service", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "PALAIS_RELEVE_MJQ_DATE", "message": "Relevé local auprès du ministère de la Justice du Québec (2026-11-17)."},
+                    ],
+                },
             }
 
         elif tool_name == "palais_get":
             greffe = args.get("greffe_number")
             palais = args.get("palais")
-            if greffe == "500" or (palais and "montr" in palais.lower()):
-                info = {
-                    "name": "Montréal",
-                    "greffe_number": "500",
-                    "district": "Montréal",
-                    "street_address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
-                }
+            if greffe is not None and str(greffe).strip():
+                greffe_clean = str(greffe).strip()
+                if greffe_clean == "500":
+                    is_mtl = True
+                elif greffe_clean == "200":
+                    is_mtl = False
+                else:
+                    return {
+                        "isError": True,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"Le greffe « {greffe_clean} » ne figure pas dans la table de référence.\n\n"
+                                    "Consulter palais_list pour le répertoire connu."
+                                ),
+                            }
+                        ],
+                    }
             else:
-                info = {
-                    "name": "Québec",
-                    "greffe_number": "200",
-                    "district": "Québec",
-                    "street_address": "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6",
-                }
+                palais_clean = str(palais or "").strip()
+                folded_palais = re.sub(
+                    r"\s+",
+                    " ",
+                    re.sub(
+                        r"[^a-z0-9]+",
+                        " ",
+                        "".join(
+                            ch for ch in unicodedata.normalize("NFD", palais_clean)
+                            if unicodedata.category(ch) != "Mn"
+                        ).lower().replace("'", " ").replace("\u2019", " "),
+                    ),
+                ).strip()
+                if "montr" in folded_palais or folded_palais == "500":
+                    is_mtl = True
+                elif "queb" in folded_palais or folded_palais == "200":
+                    is_mtl = False
+                else:
+                    return {
+                        "isError": True,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"Aucun lieu de justice ne correspond à « {palais_clean} ».\n\n"
+                                    "Employer palais_list pour parcourir le répertoire."
+                                ),
+                            }
+                        ],
+                    }
+            if is_mtl:
+                g_num = "500"
+                p_name = "Montréal"
+                street = "1, rue Notre-Dame Est"
+                postal = "H2Y 1B6"
+                p_key = "montreal"
+                street_full = "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6"
+            else:
+                g_num = "200"
+                p_name = "Québec"
+                street = "300, boulevard Jean-Lesage"
+                postal = "G1K 8K6"
+                p_key = "quebec"
+                street_full = "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6"
+            info = {
+                "key": p_key,
+                "name": p_name,
+                "location_type": "palais",
+                "street": street,
+                "unit": None,
+                "city": p_name,
+                "province": "Québec",
+                "postal_code": postal,
+                "country": "Canada",
+                "mailing_address": None,
+                "contacts": [{"service": "Greffe civil", "tel": "514-393-2721" if is_mtl else "418-649-3400", "courriel": None}],
+            }
+            greffe_summary = {
+                "numero": g_num,
+                "palais_de_justice": f"Palais de justice de {p_name}",
+                "district_judiciaire": p_name,
+                "point_de_service": False,
+            }
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Palais de justice de {info['name']} (greffe {info['greffe_number']}) — {info['street_address']}.",
+                        "text": f"Palais de justice de {p_name} (greffe {g_num}) — {street_full}.",
                     }
                 ],
-                "structuredContent": {"palais": info},
+                "structuredContent": {
+                    "lookup_by": "greffe_number" if greffe else "palais",
+                    "greffe": {
+                        **greffe_summary,
+                        "localites_itinerantes": [],
+                        "siege_fixe_palais_key": None,
+                    },
+                    "palais": info,
+                    "greffes_at_palais": [greffe_summary],
+                    "provenance": {"source": "Ministère de la Justice du Québec — répertoire des palais de justice et points de service", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "PALAIS_RELEVE_MJQ_DATE", "message": "Relevé local auprès du ministère de la Justice du Québec (2026-11-17)."},
+                    ],
+                },
             }
 
         elif tool_name == "registre_search":
-            q = args.get("query", "")
-            cand = {
-                "jurisdiction": "qc",
-                "neq": "1172345678",
-                "corporation_number": None,
-                "bn_ne": None,
-                "nom_officiel": "9123-4567 QUÉBEC INC.",
-                "autres_noms": ["Construction Boréale"],
-                "forme_juridique": "Société par actions ou compagnie",
-                "statut": "Immatriculée",
-                "is_active": True,
-                "faillite_declaree": False,
-                "date_constitution": "2018-04-12",
-                "ville": "Montréal",
-                "has_rbq_licence": True,
-                "has_opc_permit": False,
-                "in_rena": False,
-            }
+            q = str(args.get("query", "")).strip()
+            jur = args.get("jurisdiction", "all")
+            is_gleif = jur == "gleif" or bool(re.match(r"^[A-Za-z0-9]{20}$", q.strip()))
+            is_ca = jur == "ca"
+            if is_gleif:
+                cand = {
+                    "jurisdiction": "gleif",
+                    "neq": None,
+                    "corporation_number": None,
+                    "bn_ne": None,
+                    "lei": "549300BOREALE0000001",
+                    "has_lei": True,
+                    "nom_officiel": "BANQUE BORÉALE DU CANADA",
+                    "autres_noms": [],
+                    "forme_juridique": "Banque",
+                    "statut": "ACTIVE",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2018-04-12",
+                    "ville": "Montréal",
+                    "has_rbq_licence": False,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
+            elif is_ca:
+                cand = {
+                    "jurisdiction": "ca",
+                    "neq": None,
+                    "corporation_number": "8284083",
+                    "bn_ne": "123456789",
+                    "lei": "549300FEDBOREALE0002",
+                    "has_lei": True,
+                    "nom_officiel": "CORPORATION BORÉALE DU CANADA INC.",
+                    "autres_noms": [],
+                    "forme_juridique": "Société par actions de régime fédéral (L.C.S.A.)",
+                    "statut": "Active",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2015-06-01",
+                    "ville": "Montréal",
+                    "has_rbq_licence": False,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
+            else:
+                cand = {
+                    "jurisdiction": "qc",
+                    "neq": "1172345678",
+                    "corporation_number": None,
+                    "bn_ne": None,
+                    "lei": "549300BOREALE0000001",
+                    "has_lei": True,
+                    "nom_officiel": "9123-4567 QUÉBEC INC.",
+                    "autres_noms": ["Construction Boréale"],
+                    "forme_juridique": "Société par actions ou compagnie",
+                    "statut": "Immatriculée",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2018-04-12",
+                    "ville": "Montréal",
+                    "has_rbq_licence": True,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Recherche d'entreprises pour « {q} » : 1 candidat (NEQ 1172345678 — 9123-4567 QUÉBEC INC., Montréal).",
+                        "text": f"Recherche d'entreprises pour « {q} » : 1 candidat ({cand['nom_officiel']}, LEI {cand['lei']}).",
                     }
                 ],
                 "structuredContent": {
                     "query": q,
-                    "jurisdiction": args.get("jurisdiction", "all"),
+                    "jurisdiction": jur,
                     "active_only": bool(args.get("active_only", False)),
                     "count": 1,
-                    "snapshots": {"req": "2026-11-01"},
+                    "exact_match_found": True,
+                    "snapshots": {"req": "2026-11-01", "corp_ca": "2026-11-01", "gleif": "2026-11-18"},
                     "entities": [cand],
-                    "provenance": {"source": "Instantané REQ / Corporations Canada", "verified_at": "2026-11-01"},
+                    "provenance": {"source": "Instantané REQ / Corporations Canada / GLEIF CC0", "verified_at": "2026-11-18"},
                     "gardes": [
                         {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
                         {"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."},
+                        {"code": "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION", "message": "Les liens GLEIF Level 2 reflètent la consolidation comptable déclarée et n'établissent ni contrôle juridique ni bénéficiaire ultime."},
                     ],
                 },
             }
 
         elif tool_name == "registre_get_entity":
-            neq = args.get("neq") or "1172345678"
+            if args.get("lei"):
+                lookup_by = "lei"
+                lookup_val = re.sub(r"[\s-]+", "", str(args["lei"])).upper()
+                quebec_obj = None
+                federal_obj = None
+                lei_val = lookup_val
+                gleif_name = "BANQUE BORÉALE DU CANADA"
+                matched_neq = None
+                matched_corp = None
+                ra_id = "RA000831"
+                ra_entity_id = None
+            elif args.get("corporation_number"):
+                lookup_by = "corporation_number"
+                lookup_val = str(args["corporation_number"]).strip()
+                quebec_obj = None
+                corp_num = lookup_val
+                bn_num = "123456789"
+                lei_val = "549300FEDBOREALE0002"
+                gleif_name = "CORPORATION BORÉALE DU CANADA INC."
+                matched_neq = None
+                matched_corp = corp_num
+                ra_id = "RA000072"
+                ra_entity_id = corp_num
+                federal_obj = {
+                    "corporation_number": corp_num,
+                    "bn_ne": bn_num,
+                    "nom_officiel": gleif_name,
+                    "autres_denominations": [],
+                    "is_active": True,
+                    "regime_legislatif": "Loi canadienne sur les sociétés par actions (L.C.S.A.)",
+                    "statut": "Active",
+                    "detail_statut": None,
+                    "dates": {
+                        "date_constitution_ou_anniversaire": "2015-06-01",
+                        "annee_dernier_depot_annuel": "2026",
+                        "date_derniere_assemblee": "2026-05-15",
+                    },
+                    "adresse_siege": {
+                        "rue": "1, rue Notre-Dame Est",
+                        "ville": "Montréal",
+                        "province": "QC",
+                        "pays": "CA",
+                        "code_postal": "H2Y 1B6",
+                    },
+                    "administrateurs": {"min": 1, "max": 10},
+                }
+            elif args.get("bn_ne"):
+                lookup_by = "bn_ne"
+                lookup_val = str(args["bn_ne"]).strip()
+                quebec_obj = None
+                corp_num = "8284083"
+                bn_num = re.sub(r"[\s-]", "", lookup_val)
+                lei_val = "549300FEDBOREALE0002"
+                gleif_name = "CORPORATION BORÉALE DU CANADA INC."
+                matched_neq = None
+                matched_corp = corp_num
+                ra_id = "RA000072"
+                ra_entity_id = corp_num
+                federal_obj = {
+                    "corporation_number": corp_num,
+                    "bn_ne": bn_num,
+                    "nom_officiel": gleif_name,
+                    "autres_denominations": [],
+                    "is_active": True,
+                    "regime_legislatif": "Loi canadienne sur les sociétés par actions (L.C.S.A.)",
+                    "statut": "Active",
+                    "detail_statut": None,
+                    "dates": {
+                        "date_constitution_ou_anniversaire": "2015-06-01",
+                        "annee_dernier_depot_annuel": "2026",
+                        "date_derniere_assemblee": "2026-05-15",
+                    },
+                    "adresse_siege": {
+                        "rue": "1, rue Notre-Dame Est",
+                        "ville": "Montréal",
+                        "province": "QC",
+                        "pays": "CA",
+                        "code_postal": "H2Y 1B6",
+                    },
+                    "administrateurs": {"min": 1, "max": 10},
+                }
+            else:
+                lookup_by = "neq"
+                lookup_val = str(args.get("neq") or "1172345678").strip()
+                clean_neq = re.sub(r"[\s-]", "", lookup_val)
+                federal_obj = None
+                lei_val = "549300BOREALE0000001"
+                gleif_name = "9123-4567 QUÉBEC INC."
+                matched_neq = clean_neq
+                matched_corp = None
+                ra_id = "RA000842"
+                ra_entity_id = clean_neq
+                quebec_obj = {
+                    "neq": clean_neq,
+                    "nom_officiel": "9123-4567 QUÉBEC INC.",
+                    "is_active": True,
+                    "statut_immatriculation": {
+                        "code": "IM",
+                        "libelle": "Immatriculée",
+                        "date_statut": "2018-04-12",
+                    },
+                    "forme_juridique": {
+                        "code": "210",
+                        "libelle": "Société par actions ou compagnie",
+                    },
+                    "regime_juridique": {
+                        "code": "LSQ",
+                        "libelle": "Loi sur les sociétés par actions (RLRQ, c. S-31.1)",
+                    },
+                    "regime_constitutif": {
+                        "code": "LSQ",
+                        "libelle": "Loi sur les sociétés par actions (Québec)",
+                        "lieu_constitution": "Québec",
+                    },
+                    "dates": {
+                        "date_immatriculation": "2018-04-12",
+                        "date_constitution": "2018-04-12",
+                        "date_cessation_prevue": None,
+                        "annee_declaration_courante": "2026",
+                    },
+                    "indicateurs": {
+                        "faillite_declaree": False,
+                        "convention_unanime_actionnaires": False,
+                        "tranche_employes_quebec": "De 1 à 5",
+                    },
+                    "domicile_declare": {
+                        "dispense_adresse": False,
+                        "adresse": "1, rue Notre-Dame Est, Montréal (Québec)",
+                        "ville": "Montréal",
+                        "code_postal": "H2Y1B6",
+                    },
+                    "activites_economiques": [],
+                    "autres_noms": [],
+                    "etablissements": [],
+                    "fusions_scissions": [],
+                    "continuations_transformations": [],
+                    "rbq_licences": [],
+                    "opc_permis": [],
+                    "rena_inscriptions": [],
+                }
+
+            gleif_obj = {
+                "lei": lei_val,
+                "is_canadian": True,
+                "nom_legal": gleif_name,
+                "autres_noms": [],
+                "statut_entite": "ACTIVE",
+                "registration_status": "ISSUED",
+                "next_renewal_date": "2027-06-15",
+                "initial_registration_date": "2019-01-15",
+                "last_update_date": "2026-10-01",
+                "legal_jurisdiction": "CA-QC" if quebec_obj is not None else "CA",
+                "entity_category": "GENERAL",
+                "registration_authority_id": ra_id,
+                "registration_authority_entity_id": ra_entity_id,
+                "matched_neq": matched_neq,
+                "matched_corporation_number": matched_corp,
+                "adresse_legale": {
+                    "ville": "Montréal",
+                    "region": "CA-QC",
+                    "pays": "CA",
+                    "code_postal": "H2Y 1B6",
+                },
+                "parent_direct": {
+                    "lei": "549300PARENTDIRECT01",
+                    "nom_legal": "GROUPE BORÉAL LTÉE",
+                    "pays": "CA",
+                    "legal_jurisdiction": "CA",
+                    "statut_entite": "ACTIVE",
+                    "relationship_status": "ACTIVE",
+                    "accounting_standard": "IFRS",
+                    "quantifier_amount": None,
+                    "quantifier_units": None,
+                    "validation_sources": "FULLY_CORROBORATED",
+                    "in_canadian_snapshot": True,
+                    "matched_neq": None,
+                    "matched_corporation_number": None,
+                },
+                "parent_ultime": {
+                    "lei": "549300PARENTULTIME02",
+                    "nom_legal": "GROUPE BORÉAL LTÉE",
+                    "pays": "CA",
+                    "legal_jurisdiction": "CA",
+                    "statut_entite": "ACTIVE",
+                    "relationship_status": "ACTIVE",
+                    "accounting_standard": "IFRS",
+                    "quantifier_amount": None,
+                    "quantifier_units": None,
+                    "validation_sources": "FULLY_CORROBORATED",
+                    "in_canadian_snapshot": True,
+                    "matched_neq": None,
+                    "matched_corporation_number": None,
+                },
+                "exceptions_declaration": [],
+                "filiales_canadiennes": [],
+                "filiales_canadiennes_total": 0,
+            }
+
+            portails_officiels = {
+                "req": {
+                    "url": "https://www.registreentreprises.gouv.qc.ca/REQNA/GR/GR03/GR03A71.RechercheRegistre.MVC/GR03A71/RechercheParNeq",
+                    "portal_info_url": "https://www.quebec.ca/entreprises-et-travailleurs-autonomes/obtenir-renseignements-entreprise/recherche-registre-entreprises/acceder-registre-entreprises",
+                    "libelle_fr": "Registraire des entreprises du Québec (REQ) — Recherche par NEQ",
+                    "objet_fr": f"Consulter l'état des informations en direct (valeur probante L.P.L.E.), les administrateurs, dirigeants, actionnaires principaux et bénéficiaires ultimes pour le NEQ {quebec_obj['neq']}.",
+                } if quebec_obj is not None else None,
+                "corporations_canada": {
+                    "url": f"https://ised-isde.canada.ca/cc/lgcy/fdrlCrpDtls.html?corpId={federal_obj['corporation_number']}&lang=fra",
+                    "search_url": "https://ised-isde.canada.ca/cc/lgcy/fdrlCrpSrch.html?lang=fra",
+                    "libelle_fr": "Corporations Canada — Fiche officielle de société fédérale",
+                    "objet_fr": f"Consulter les administrateurs actuels, le siège social et les dépôts annuels de la société fédérale n° {federal_obj['corporation_number']}.",
+                } if federal_obj is not None else None,
+                "isc_pisc": {
+                    "url": "https://ised-isde.canada.ca/site/corporations-canada/fr/particuliers-ayant-controle-important",
+                    "libelle_fr": "Corporations Canada — Particuliers ayant un contrôle important (PCI / ISC)",
+                    "objet_fr": "Consulter le registre fédéral des particuliers ayant un contrôle important (bénéficiaires ultimes L.C.S.A.) et les règles de divulgation applicables.",
+                } if federal_obj is not None else None,
+                "gleif": {
+                    "url": f"https://search.gleif.org/#/record/{gleif_obj['lei']}",
+                    "libelle_fr": "GLEIF — Fiche publique officielle du LEI",
+                    "objet_fr": f"Vérifier en direct le statut d'enregistrement ({gleif_obj['registration_status']}), la date de renouvellement et les déclarations Level 2 du LEI {gleif_obj['lei']}.",
+                } if gleif_obj is not None else None,
+            }
+
+            gardes = [
+                {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
+            ]
+            if quebec_obj is not None:
+                gardes.append({"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."})
+            if gleif_obj is not None:
+                gardes.append({"code": "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION", "message": "Les liens GLEIF Level 2 reflètent la consolidation comptable déclarée et n'établissent ni contrôle juridique ni bénéficiaire ultime."})
+
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Fiche REQ NEQ {neq} — 9123-4567 QUÉBEC INC. (Immatriculée, domicile déclaré : 1, rue Notre-Dame Est, Montréal).",
+                        "text": f"Fiche entreprise ({lookup_by}={lookup_val}) — {gleif_name} / LEI {lei_val}.",
                     }
                 ],
                 "structuredContent": {
-                    "lookup_by": "neq",
-                    "lookup_value": neq,
-                    "snapshots": {"req": "2026-11-01"},
-                    "quebec": {
-                        "neq": neq,
-                        "nom_officiel": "9123-4567 QUÉBEC INC.",
-                        "is_active": True,
-                        "domicile_declare": {
-                            "dispense_adresse": False,
-                            "adresse": "1, rue Notre-Dame Est, Montréal (Québec)",
-                            "ville": "Montréal",
-                            "code_postal": "H2Y1B6",
-                        },
-                    },
-                    "federal": None,
-                    "provenance": {"source": "Instantané REQ", "verified_at": "2026-11-01"},
-                    "gardes": [
-                        {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
-                        {"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."},
-                    ],
+                    "lookup_by": lookup_by,
+                    "lookup_value": lookup_val,
+                    "snapshots": {"req": "2026-11-01", "corp_ca": "2026-11-01", "gleif": "2026-11-18"},
+                    "quebec": quebec_obj,
+                    "federal": federal_obj,
+                    "gleif": gleif_obj,
+                    "portails_officiels": portails_officiels,
+                    "provenance": {"source": "Instantané REQ / Corporations Canada / GLEIF CC0", "verified_at": "2026-11-18"},
+                    "gardes": gardes,
                 },
             }
 
         elif tool_name == "adresse_verify":
+            lot_arg = str(args.get("lot_number", "")).strip()
+            mat_arg = str(args.get("matricule", "")).strip()
+            lots = [lot_arg] if lot_arg else ["2359285"]
+            mat = mat_arg if mat_arg else "9891-44-1234"
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": "Adresse RQA vérifiée (exact_civic) : 1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6 — district judiciaire probable : Montréal (500).",
+                        "text": f"Adresse RQA vérifiée (exact_civic) : 1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6 — lot {lots[0]} — district judiciaire probable : Montréal (500).",
                     }
                 ],
                 "structuredContent": {
@@ -1736,21 +3183,53 @@ class MockMcpServer:
                     "corrections_appliquees": [],
                     "candidates": [
                         {
+                            "id_adresse": 100001,
+                            "seqodo": "0660230001",
                             "adresse_normalisee": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                            "composantes": {
+                                "numero_municipal": 1,
+                                "suffixe": None,
+                                "unite": None,
+                                "type_unite": None,
+                                "generique_odonyme": "rue",
+                                "particule_odonyme": None,
+                                "specifique_odonyme": "Notre-Dame",
+                                "point_cardinal": "Est",
+                                "odonyme_complet": "rue Notre-Dame Est",
+                                "code_municipalite": "66023",
+                                "municipalite": "Montréal",
+                                "mrc": "Montréal",
+                                "region_administrative": "Montréal",
+                                "province": "Québec",
+                                "code_postal": "H2Y 1B6",
+                            },
                             "etat_rqa": "Certifiée",
-                            "district_judiciaire_probable": {"district": "Montréal", "greffes": ["500"]},
+                            "categorie_rqa": "Principal",
+                            "plage_civique_rue": {"min": 1, "max": 500},
+                            "district_judiciaire_probable": {
+                                "district": "Montréal",
+                                "greffes": ["500"],
+                                "reserve": "Rattachement purement indicatif par nom de municipalité au relevé MJQ des lieux de séance (RLRQ, c. D-11).",
+                            },
+                            "lots_cadastraux": lots,
+                            "matricule_evaluation": mat,
+                            "lot_source": "rqa_unite",
+                            "repli_immeuble_parent": False,
+                            "ambiguites_cadastrales": [],
+                            "coordonnees": {"latitude": 45.5067, "longitude": -73.5546},
                         }
                     ],
                     "provenance": {"source": "Référentiel québécois des adresses (RQA, MRNF)", "verified_at": "2026-11-01"},
                     "gardes": [
                         {"code": "ADRESSE_EXISTENCE_CIVIQUE_NON_DOMICILE", "message": "Confirme l'existence municipale sans établir le domicile d'une partie."},
-                        {"code": "ADRESSE_LOT_ET_MATRICULE_SANS_VALEUR_LEGALE", "message": "Les numéros de lot et le matricule sont indicatifs et sans valeur légale."},
+                        {"code": "ADRESSE_LOT_ET_MATRICULE_SANS_VALEUR_LEGALE", "message": "Les numéros de lot et le matricule sont indicatifs et sans valeur légale (art. 3030 al. 2 et 3032 C.c.Q.)."},
                     ],
                 },
             }
 
         elif tool_name == "terminologie_lookup":
-            q = args.get("query", "mortgage")
+            q = str(args.get("query", "mortgage")).strip()
+            src_lang = args.get("source_lang", "auto")
             return {
                 "content": [
                     {
@@ -1760,14 +3239,27 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "query": q,
+                    "source_lang": src_lang,
                     "count": 1,
                     "fiches": [
                         {
+                            "id": 1,
                             "rang_source": 1,
+                            "source_nom": "Glossaire bijuridique québécois",
+                            "licence_source": "CC BY 4.0",
                             "terme_fr": "hypothèque",
+                            "synonymes_fr": [],
                             "terme_en": "hypothec",
+                            "synonymes_en": [],
+                            "termes_deconseilles": [
+                                {"terme": "mortgage", "langue": "en", "origine": "common_law", "motif": "Faux ami de common law en droit civil québécois."}
+                            ],
                             "systeme_juridique": "droit_civil_qc",
+                            "domaine": "sûretés",
+                            "note_ou_definition": "Droit réel sur un bien meuble ou immeuble affecté à l'exécution d'une obligation.",
                             "base_legale": "art. 2660 C.c.Q.",
+                            "url_fiche": None,
+                            "date_verification": "2026-11-15",
                         }
                     ],
                     "provenance": {"source": "Glossaire bijuridique québécois", "verified_at": "2026-11-15"},
@@ -1778,8 +3270,9 @@ class MockMcpServer:
             }
 
         elif tool_name == "termino_attestations":
-            term = args.get("term", "hypothec")
+            term = str(args.get("term", "hypothec")).strip()
             lang = args.get("lang", "en")
+            law_filter = str(args["law_filter"]).strip() if args.get("law_filter") is not None else None
             return {
                 "content": [
                     {
@@ -1790,8 +3283,28 @@ class MockMcpServer:
                 "structuredContent": {
                     "term": term,
                     "lang": lang,
+                    "law_filter": law_filter,
                     "total_matching_articles": 142,
-                    "by_law": [{"law_id": "ccq", "official_cite": "RLRQ, c. CCQ-1991", "article_count": 142}],
+                    "by_law": [
+                        {
+                            "law_id": "ccq",
+                            "official_cite": "RLRQ, c. CCQ-1991",
+                            "law_title_fr": "Code civil du Québec",
+                            "law_title_en": "Civil Code of Québec",
+                            "jurisdiction": "QC",
+                            "article_count": 142,
+                        }
+                    ],
+                    "attestations": [
+                        {
+                            "law_id": "ccq",
+                            "official_cite": "RLRQ, c. CCQ-1991",
+                            "article_number": "2660",
+                            "snippet_fr": "L'hypothèque est un droit réel sur un bien, meuble ou immeuble, affecté à l'exécution d'une obligation.",
+                            "snippet_en": "A hypothec is a real right on a movable or immovable property made liable for the performance of an obligation.",
+                            "consol_date": "2026-11-01",
+                        }
+                    ],
                     "provenance": {"source": "Concordancier législatif bilingue", "verified_at": "2026-11-15"},
                     "gardes": [
                         {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
@@ -1802,13 +3315,25 @@ class MockMcpServer:
         elif tool_name == "terminologie_scan":
             txt = args.get("text", "")
             lang = args.get("lang", "fr")
+            ctx_sys = args.get("context_system", "droit_civil_qc")
             occurrences = []
-            if "mortgage" in txt.lower() or "assignation" in txt.lower():
-                occurrences.append({
-                    "matched_text": "mortgage" if "mortgage" in txt.lower() else "assignation",
-                    "risk_category": "anglicisme_ou_common_law" if "mortgage" in txt.lower() else "francisme_france",
-                    "suggested_replacement": "hypothec" if "mortgage" in txt.lower() else "demande introductive d'instance",
-                })
+            lower_txt = txt.lower()
+            for needle, cat, repl, reason, basis in (
+                ("mortgage", "anglicisme_ou_common_law", "hypothec", "Faux ami de common law : employer « hypothec » en droit civil québécois.", "art. 2660 C.c.Q."),
+                ("assignation", "francisme_france", "demande introductive d'instance", "Francisme de procédure française : employer « demande introductive d'instance » au Québec.", "art. 141 C.p.c."),
+            ):
+                pos = lower_txt.find(needle)
+                if pos != -1:
+                    occurrences.append({
+                        "offset_start": pos,
+                        "offset_end": pos + len(needle),
+                        "matched_text": txt[pos:pos + len(needle)],
+                        "snippet": txt[max(0, pos - 20):min(len(txt), pos + len(needle) + 20)],
+                        "risk_category": cat,
+                        "reason_fr": reason,
+                        "suggested_replacement": repl,
+                        "legal_basis": basis,
+                    })
             return {
                 "content": [
                     {
@@ -1818,6 +3343,7 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "lang": lang,
+                    "context_system": ctx_sys,
                     "scanned_length": len(txt),
                     "flagged_count": len(occurrences),
                     "occurrences": occurrences,
@@ -1825,6 +3351,481 @@ class MockMcpServer:
                     "gardes": [
                         {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
                     ],
+                },
+            }
+
+        elif tool_name == "taux_boc_rates":
+            def _round_half_away(num: int, den: int) -> int:
+                neg = num < 0
+                abs_n = -num if neg else num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 >= den else q
+                return -res_v if neg else res_v
+
+            def _fmt_micros6(micros: int) -> str:
+                neg = micros < 0
+                abs_m = -micros if neg else micros
+                return f"{'-' if neg else ''}{abs_m // 1_000_000}.{abs_m % 1_000_000:06d}"
+
+            def _fmt_cents(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}"
+
+            cat = args.get("category") or ("fx" if (args.get("currency") or args.get("amount")) else "all_rates")
+            is_range = bool(args.get("start_date") and args.get("end_date"))
+            req_date = args.get("date") or args.get("start_date") or "2026-11-18"
+            raw_cur = (args.get("currency") or "USD").strip().upper()
+            m_valet = re.match(r"^FX([A-Z]{3})CAD$", raw_cur)
+            cur = m_valet.group(1) if m_valet else raw_cur
+            is_pre_2017 = req_date < "2017-05-01"
+            methodology = "noon_spot_pre_2017_05_01" if is_pre_2017 else "daily_average_1630_et"
+            rate_micros = 1291400 if (is_pre_2017 and cur == "USD") else 1395000
+            dt_req = datetime.date.fromisoformat(req_date)
+            rollback_days = 2 if dt_req.weekday() == 6 else (1 if dt_req.weekday() == 5 else 0)
+            eff_date = (dt_req - datetime.timedelta(days=rollback_days)).isoformat()
+            if cat == "fx" and not is_range and req_date > "2026-11-24":
+                eff_date = "2026-11-24"
+                rollback_days = (dt_req - datetime.date(2026, 11, 24)).days
+            rolled_back = rollback_days > 0
+            cad_per_foreign = _fmt_micros6(rate_micros)
+            foreign_per_cad_micros = _round_half_away(1_000_000 * 1_000_000, rate_micros)
+            fx_obs = []
+            int_obs = []
+            currency_summary = None
+            if cat == "fx":
+                currency_summary = {
+                    "code": cur,
+                    "name_fr": "Dollar américain" if cur == "USD" else cur,
+                    "name_en": "US Dollar" if cur == "USD" else cur,
+                    "active_daily": True,
+                }
+                fx_obs.append({
+                    "currency_code": cur,
+                    "requested_date": None if is_range else req_date,
+                    "effective_observation_date": eff_date,
+                    "rolled_back": rolled_back,
+                    "rollback_days": rollback_days,
+                    "rate_methodology": methodology,
+                    "cad_per_foreign_unit": cad_per_foreign,
+                    "foreign_per_cad_approx": _fmt_micros6(foreign_per_cad_micros),
+                    "rate_micros": rate_micros,
+                })
+            else:
+                series_map = {
+                    "V39079": ("Taux cible du financement à un jour (taux directeur, V39079)", 375),
+                    "V122530": ("Taux officiel d'escompte mensuel (V122530)", 400),
+                    "V80691311": ("Taux préférentiel hebdomadaire des banques à charte (V80691311)", 495),
+                }
+                target_sids = (
+                    ["V39079"] if cat == "policy" else
+                    ["V122530"] if cat == "bank" else
+                    ["V80691311"] if cat == "prime" else
+                    ["V39079", "V122530", "V80691311"]
+                )
+                for sid in target_sids:
+                    s_min, s_max, max_tail = self._BOC_SERIES_BOUNDS[sid]
+                    if is_range:
+                        s_d = str(args["start_date"])
+                        e_d = str(args["end_date"])
+                        if e_d < s_min or s_d > s_max:
+                            continue
+                        sid_eff = max(s_d, s_min)
+                        sid_rb = 0
+                    else:
+                        dt_smax = datetime.date.fromisoformat(s_max)
+                        if req_date < s_min or (dt_req - dt_smax).days > max_tail:
+                            continue
+                        if req_date > s_max:
+                            sid_eff = s_max
+                            sid_rb = (dt_req - dt_smax).days
+                        else:
+                            sid_eff = eff_date
+                            sid_rb = rollback_days
+                    lbl_fr, bps_val = series_map[sid]
+                    int_obs.append({
+                        "series_id": sid,
+                        "series_label_fr": lbl_fr,
+                        "requested_date": None if is_range else req_date,
+                        "effective_observation_date": sid_eff,
+                        "rolled_back": sid_rb > 0,
+                        "rollback_days": sid_rb,
+                        "rate_bps": bps_val,
+                        "rate_percent": f"{bps_val / 100:.2f} %",
+                    })
+            conv = None
+            if args.get("amount"):
+                amt_s = args["amount"].strip()
+                if "." in amt_s:
+                    w_p, f_p = amt_s.split(".", 1)
+                    amt_num = int(f"{w_p}{f_p}")
+                    amt_scale = 10 ** len(f_p)
+                else:
+                    amt_num = int(amt_s)
+                    amt_scale = 1
+                direction = args.get("direction", "foreign_to_cad")
+                if direction == "foreign_to_cad":
+                    raw_cents = _round_half_away(amt_num * rate_micros * 100, amt_scale * 1_000_000)
+                    raw_micros = _round_half_away(amt_num * rate_micros * 1_000_000, amt_scale * 1_000_000)
+                else:
+                    raw_cents = _round_half_away(amt_num * 1_000_000 * 100, amt_scale * rate_micros)
+                    raw_micros = _round_half_away(amt_num * 1_000_000 * 1_000_000, amt_scale * rate_micros)
+                conv = {
+                    "direction": direction,
+                    "foreign_currency": cur,
+                    "input_amount": amt_s,
+                    "effective_observation_date": eff_date,
+                    "rate_methodology": methodology,
+                    "cad_per_foreign_unit": cad_per_foreign,
+                    "converted_currency": "CAD" if direction == "foreign_to_cad" else cur,
+                    "converted_cents": raw_cents,
+                    "converted_amount_2dec": _fmt_cents(raw_cents),
+                    "converted_amount_exact_6dec": _fmt_micros6(raw_micros),
+                    "legal_basis": "Loi sur la monnaie (L.R.C. 1985, c. C-52, art. 12); art. 1561 et 3161 C.c.Q.",
+                }
+            gardes = [
+                {"code": "TAUX_BOC_INSTANTANE_HORS_LIGNE", "message": "Données issues d'un instantané local Banque du Canada / StatCan (aucun appel réseau sortant)."},
+            ]
+            if is_pre_2017 and cat == "fx":
+                gardes.append({"code": "TAUX_BOC_NOON_HISTORIQUE_PRE_2017", "message": "Taux au comptant de midi HE antérieur au 2017-05-01."})
+            if rolled_back:
+                gardes.append({"code": "TAUX_BOC_REPORT_JOUR_OUVRABLE_PRECEDENT", "message": "Date demandée non ouvrable : report au jour ouvrable précédent."})
+            if conv is not None:
+                gardes.append({"code": "TAUX_BOC_CONVERSION_LOI_MONNAIE", "message": "La date de conversion judiciaire applicable relève d'une question de droit (art. 12 Loi sur la monnaie ; art. 1561 et 3161 C.c.Q.)."})
+            return {
+                "content": [{"type": "text", "text": f"Taux BdC ({cat}) pour {req_date} (effectif {eff_date})."}],
+                "structuredContent": {
+                    "category": cat,
+                    "mode": "range" if is_range else "single_date",
+                    "requested_date": args.get("date"),
+                    "start_date": args.get("start_date"),
+                    "end_date": args.get("end_date"),
+                    "currency": currency_summary,
+                    "count": len(fx_obs) + len(int_obs),
+                    "fx_observations": fx_obs,
+                    "interest_observations": int_obs,
+                    "conversion": conv,
+                    "provenance": {"source": "Banque du Canada API Valet / StatCan 10-10-0008-01", "verified_at": "2026-11-18"},
+                    "gardes": gardes,
+                },
+            }
+
+        elif tool_name == "indice_ipc":
+            def _ipc_round_half_away(num: int, den: int) -> int:
+                neg = num < 0
+                abs_n = -num if neg else num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 >= den else q
+                return -res_v if neg else res_v
+
+            def _ipc_round_half_up(num: int, den: int) -> int:
+                if num >= 0:
+                    return (num * 2 + den) // (2 * den)
+                abs_n = -num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 > den else q
+                return 0 if res_v == 0 else -res_v
+
+            def _fmt_milli(m: int) -> str:
+                whole, rem = divmod(m, 1000)
+                if rem % 100 == 0:
+                    return f"{whole}.{rem // 100}"
+                if rem % 10 == 0:
+                    return f"{whole}.{rem // 10:02d}"
+                return f"{whole}.{rem:03d}"
+
+            def _fmt_signed_bps(bps: int) -> str:
+                abs_b = abs(bps)
+                sign = "+" if bps > 0 else ("-" if bps < 0 else "")
+                return f"{sign}{abs_b // 100}.{abs_b % 100:02d} %"
+
+            geo = args.get("geo", "quebec")
+            product = args.get("product", "all_items")
+            uom = args.get("uom", "2002=100")
+            is_range = bool(args.get("start_period") and args.get("end_period"))
+            start_p = args.get("start_period") or args.get("period") or "2025-01"
+            end_p = args.get("end_period") or start_p
+            freq = args.get("frequency") or ("annual" if start_p.isdigit() else "monthly")
+
+            known_qc_cpi = {
+                "2023-01": 149900,
+                "2024-01": 154800,
+                "2025-01": 157600,
+                "2026-01": 162300,
+            }
+            start_milli = known_qc_cpi.get(start_p, 159400)
+            end_milli = known_qc_cpi.get(end_p, 163200 if start_p != end_p else start_milli)
+            obs = [
+                {"period": start_p, "value_decimal": _fmt_milli(start_milli), "value_milli": start_milli, "uom": uom, "yoy_bps": 210, "yoy_percent": "+2.10 %"},
+            ]
+            raw_bps = None
+            if is_range:
+                raw_bps = _ipc_round_half_away((end_milli - start_milli) * 10_000, start_milli) if start_p != end_p else 0
+                obs.append({"period": end_p, "value_decimal": _fmt_milli(end_milli), "value_milli": end_milli, "uom": uom, "yoy_bps": raw_bps, "yoy_percent": _fmt_signed_bps(raw_bps)})
+            escalation = None
+            if args.get("amount"):
+                amt_s = args["amount"].strip()
+                if "." in amt_s:
+                    w_p, f_p = amt_s.split(".", 1)
+                    amt_num = int(f"{w_p}{f_p}")
+                    amt_scale = 10 ** len(f_p)
+                else:
+                    amt_num = int(amt_s)
+                    amt_scale = 1
+                assert raw_bps is not None
+                below_floor = args.get("floor_bps") is not None and (end_milli - start_milli) * 10_000 < args["floor_bps"] * start_milli
+                above_cap = args.get("cap_bps") is not None and (end_milli - start_milli) * 10_000 > args["cap_bps"] * start_milli
+                eff_num, eff_den = end_milli, start_milli
+                bound = "none"
+                eff_bps = raw_bps
+                if below_floor:
+                    eff_bps = args["floor_bps"]
+                    eff_num, eff_den = 10_000 + eff_bps, 10_000
+                    bound = "floor"
+                elif above_cap:
+                    eff_bps = args["cap_bps"]
+                    eff_num, eff_den = 10_000 + eff_bps, 10_000
+                    bound = "cap"
+                rounding_mode = args.get("rounding") or "half_away_from_zero"
+                round_fn = _ipc_round_half_up if rounding_mode == "half_up" else _ipc_round_half_away
+                esc_cents = round_fn(amt_num * eff_num * 100, amt_scale * eff_den)
+                esc_micros = round_fn(amt_num * eff_num * 1_000_000, amt_scale * eff_den)
+                ratio_micros = _ipc_round_half_away(end_milli * 1_000_000, start_milli)
+                escalation = {
+                    "input_amount": amt_s,
+                    "start_period": start_p,
+                    "end_period": end_p,
+                    "start_index_decimal": _fmt_milli(start_milli),
+                    "end_index_decimal": _fmt_milli(end_milli),
+                    "start_uom": uom,
+                    "end_uom": uom,
+                    "raw_ratio_decimal": f"{ratio_micros // 1_000_000}.{ratio_micros % 1_000_000:06d}",
+                    "raw_change_bps": raw_bps,
+                    "raw_change_percent": _fmt_signed_bps(raw_bps),
+                    "floor_bps": args.get("floor_bps"),
+                    "cap_bps": args.get("cap_bps"),
+                    "applied_bound": bound,
+                    "effective_change_bps": eff_bps,
+                    "effective_change_percent": _fmt_signed_bps(eff_bps),
+                    "rounding": rounding_mode,
+                    "escalated_cents": esc_cents,
+                    "escalated_amount_2dec": f"{esc_cents // 100}.{esc_cents % 100:02d}",
+                    "escalated_amount_exact_6dec": f"{esc_micros // 1_000_000}.{esc_micros % 1_000_000:06d}",
+                }
+            gardes = [
+                {"code": "IPC_INSTANTANE_HORS_LIGNE", "message": "Données StatCan 18-10-0004-01 / 18-10-0005-01 hors ligne sans extrapolation."},
+            ]
+            if uom != "2002=100" or escalation is not None:
+                gardes.append({"code": "IPC_BASE_REINDEXATION_ATTENTION", "message": "Vérifier l'année de base StatCan (2002=100 vs 1992=100)."})
+            if escalation is not None:
+                gardes.append({"code": "IPC_INDEXATION_CONTRACTUELLE_NON_NORMATIVE", "message": "L'indexation contractuelle est indicative ; les baux résidentiels relèvent de l'art. 1942 C.c.Q. et du TAL."})
+            return {
+                "content": [{"type": "text", "text": f"IPC StatCan ({geo}/{product}, {uom}) : {len(obs)} observation(s)."}],
+                "structuredContent": {
+                    "mode": "range" if is_range else "single_period",
+                    "geo_code": geo,
+                    "geo_label_fr": "Québec",
+                    "geo_label_en": "Quebec",
+                    "product_code": product,
+                    "product_label_fr": "Ensemble",
+                    "product_label_en": "All-items",
+                    "frequency": freq,
+                    "vector_id": "v41691783",
+                    "coordinate": "5.2",
+                    "uom": uom,
+                    "available_first_period": "2002-01",
+                    "available_last_period": "2026-10",
+                    "count": len(obs),
+                    "total_observations": len(obs),
+                    "observations_truncated": False,
+                    "cumulative_change_bps": raw_bps if is_range else None,
+                    "observations": obs,
+                    "escalation": escalation,
+                    "provenance": {"source": "Statistique Canada (18-10-0004-01 / 18-10-0005-01)", "verified_at": "2026-11-18"},
+                    "gardes": gardes,
+                },
+            }
+
+        elif tool_name == "loyer_tal":
+            post_2026_entries = [
+                {
+                    "reference_year": 2024,
+                    "lease_renewal_start": "2026-01-01",
+                    "lease_renewal_end": "2026-04-01",
+                    "base_rent_bps": 450,
+                    "rpa_personal_services_bps": 600,
+                    "capital_expenditures_bps": 500,
+                    "official_ref": "TAL Simulateurdecalcul-2025-n.asp (avis >= 2026-01-01, baux se terminant du 1er janv. au 31 mars 2026)",
+                },
+                {
+                    "reference_year": 2025,
+                    "lease_renewal_start": "2026-04-02",
+                    "lease_renewal_end": "2027-04-01",
+                    "base_rent_bps": 310,
+                    "rpa_personal_services_bps": 670,
+                    "capital_expenditures_bps": 500,
+                    "official_ref": "(2026) 158 G.O. 1, 146 ; TAL Simulateurdecalcul.asp",
+                },
+            ]
+            pre_2025_entry = {
+                "year": 2025,
+                "electricity_bps": 290,
+                "gas_bps": -580,
+                "oil_other_bps": -290,
+                "maintenance_bps": 690,
+                "services_bps": 450,
+                "rpa_personal_services_bps": 590,
+                "management_bps": 820,
+                "net_income_bps": 690,
+                "capital_expenditures_bps": 470,
+            }
+            mode = args["mode"]
+            if mode == "bareme":
+                return {
+                    "content": [{"type": "text", "text": "Barèmes officiels du TAL (2015–2027, Décret 1455-2025)."}],
+                    "structuredContent": {
+                        "mode": "bareme",
+                        "regime": "bareme_officiel",
+                        "calculation": None,
+                        "bareme_post_2026": post_2026_entries,
+                        "bareme_pre_2026": [pre_2025_entry],
+                        "cmhc_results": [],
+                        "provenance": {"source": "TAL / LégisQuébec RLRQ, c. T-15.01, r. 2", "verified_at": "2026-11-25"},
+                        "gardes": [
+                            {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation (RLRQ, c. T-15.01, r. 2)."},
+                            {"code": "TAL_REGIME_TRANSITOIRE_PRE_2026", "message": "Les avis donnés avant le 1er janvier 2026 demeurent régis par l'ancien règlement (art. 6 Décret 1455-2025)."},
+                        ],
+                    },
+                }
+            if mode == "schl":
+                centres, cmhc_err = self._resolve_mock_cmhc(args.get("cmhc_geo"))
+                if cmhc_err or not centres:
+                    return {
+                        "isError": True,
+                        "content": [{"type": "text", "text": cmhc_err or "Aucun centre urbain SCHL trouvé."}],
+                    }
+                struct_type = args.get("structure_type") or "row_and_apartment_3_plus"
+                unit_type = args.get("unit_type") or "all"
+                all_cells = [
+                    {"unit_type": "bachelor", "unit_label_fr": "Studio", "rent_dollars": 1085, "suppressed": False},
+                    {"unit_type": "one_bedroom", "unit_label_fr": "1 chambre", "rent_dollars": 1245, "suppressed": False},
+                    {"unit_type": "two_bedroom", "unit_label_fr": "2 chambres", "rent_dollars": 1425, "suppressed": False},
+                    {"unit_type": "three_bedroom", "unit_label_fr": "3 chambres", "rent_dollars": 1680, "suppressed": False},
+                ]
+                cells = all_cells if unit_type == "all" else [c for c in all_cells if c["unit_type"] == unit_type]
+                cmhc_results = [
+                    {
+                        "geo_member_id": c[0],
+                        "geo_key": c[1],
+                        "name_fr": c[2],
+                        "name_en": c[3],
+                        "province_code": c[5],
+                        "is_quebec": bool(c[6]),
+                        "year": args.get("year") or c[8],
+                        "structure_type": struct_type,
+                        "structure_label_fr": "Logements en bandes et immeubles d'appartements de 3 logements et plus",
+                        "uom": "Dollars",
+                        "cells": cells,
+                    }
+                    for c in centres
+                ]
+                geo_summary = ", ".join(c["name_fr"] for c in cmhc_results[:3])
+                return {
+                    "content": [{"type": "text", "text": f"Loyers moyens du marché SCHL pour {geo_summary} (StatCan 34-10-0133-01)."}],
+                    "structuredContent": {
+                        "mode": "schl",
+                        "regime": "schl_marche",
+                        "calculation": None,
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [],
+                        "cmhc_results": cmhc_results,
+                        "provenance": {"source": "Statistique Canada / SCHL (34-10-0133-01)", "verified_at": "2025-12-17"},
+                        "gardes": [{"code": "SCHL_LOYER_MOYEN_INDICATIF", "message": "Moyenne statistique indicative sans valeur de plafond légal ni preuve comparative au sens des art. 1896 et 1950 C.c.Q."}],
+                    },
+                }
+            notice_d = args.get("notice_date")
+            if notice_d and str(notice_d) < "2026-01-01":
+                return {
+                    "content": [{"type": "text", "text": f"Avis du {notice_d} (< 2026-01-01) : régime transitoire pré-2026 applicable (art. 6 Décret 1455-2025)."}],
+                    "structuredContent": {
+                        "mode": "calcul_2026",
+                        "regime": "pre_2026_transitoire",
+                        "calculation": None,
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [pre_2025_entry],
+                        "cmhc_results": [],
+                        "provenance": {"source": "TAL / Décret 1455-2025 art. 6", "verified_at": "2026-11-25"},
+                        "gardes": [
+                            {"code": "TAL_REGIME_TRANSITOIRE_PRE_2026", "message": "Avis donné avant le 1er janvier 2026 : l'ancien règlement s'applique (art. 6 Décret 1455-2025)."},
+                            {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation."},
+                        ],
+                    },
+                }
+            if args.get("section_f_exemption_5_ans"):
+                return {
+                    "content": [{"type": "text", "text": "Exemption de 5 ans (art. 1955 C.c.Q., Section F du bail obligatoire)."}],
+                    "structuredContent": {
+                        "mode": "calcul_2026",
+                        "regime": "exemption_art_1955_ccq",
+                        "calculation": None,
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [],
+                        "cmhc_results": [],
+                        "provenance": {"source": "Art. 1955 C.c.Q. / Section F", "verified_at": "2026-11-25"},
+                        "gardes": [
+                            {"code": "TAL_EXEMPTION_CINQ_ANS_ART_1955_CCQ", "message": "Immeuble visé par l'exemption de 5 ans (art. 1955 C.c.Q.) si mentionné à la Section F du bail."},
+                            {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation."},
+                        ],
+                    },
+                }
+            cur_rent = int(args["current_rent_cents"])
+            renewal_iso = str(args["lease_renewal_date"])
+            lease_term_date = (datetime.date.fromisoformat(renewal_iso) - datetime.timedelta(days=1)).isoformat()
+            regime_entry = post_2026_entries[1] if renewal_iso >= "2026-04-02" else post_2026_entries[0]
+            base_bps = regime_entry["base_rent_bps"]
+            adj_cents = (cur_rent * base_bps * 2 + 10_000) // (2 * 10_000)
+            unrounded_new_rent = cur_rent + adj_cents
+            new_rent = ((unrounded_new_rent * 2 + 100) // 200) * 100
+            eff_inc_bps = ((new_rent - cur_rent) * 10_000 * 2 + cur_rent) // (2 * cur_rent)
+            return {
+                "content": [{"type": "text", "text": f"Fixation TAL post-2026 : loyer {cur_rent} -> {new_rent} cents (base {base_bps} bps)."}],
+                "structuredContent": {
+                    "mode": "calcul_2026",
+                    "regime": "post_2026_calcul",
+                    "calculation": {
+                        "lease_term_date": lease_term_date,
+                        "lease_renewal_date": renewal_iso,
+                        "reference_year": regime_entry["reference_year"],
+                        "base_rent_bps": base_bps,
+                        "rpa_personal_services_bps": regime_entry["rpa_personal_services_bps"],
+                        "capital_expenditures_bps": regime_entry["capital_expenditures_bps"],
+                        "current_rent_cents": cur_rent,
+                        "current_rent_cad": f"{cur_rent // 100}.{cur_rent % 100:02d}",
+                        "adj_base_cents": adj_cents,
+                        "adj_base_normal_cents": adj_cents,
+                        "adj_base_rpa_cents": 0,
+                        "adj_municipal_taxes_cents": 0,
+                        "adj_school_taxes_cents": 0,
+                        "adj_insurance_cents": 0,
+                        "adj_taxes_and_insurance_cents": 0,
+                        "adj_capital_works_cents": 0,
+                        "adj_new_expenses_cents": 0,
+                        "adj_aid_variations_cents": 0,
+                        "adj_snow_removal_cents": 0,
+                        "total_adjustment_cents": adj_cents,
+                        "total_adjustment_cad": f"{adj_cents // 100}.{adj_cents % 100:02d}",
+                        "unrounded_new_rent_cents": unrounded_new_rent,
+                        "unrounded_new_rent_cad": f"{unrounded_new_rent // 100}.{unrounded_new_rent % 100:02d}",
+                        "new_rent_cents": new_rent,
+                        "new_rent_dollars": new_rent // 100,
+                        "new_rent_cad": f"{new_rent // 100}.{new_rent % 100:02d}",
+                        "effective_increase_bps": eff_inc_bps,
+                    },
+                    "bareme_post_2026": [regime_entry],
+                    "bareme_pre_2026": [],
+                    "cmhc_results": [],
+                    "provenance": {"source": "RLRQ, c. T-15.01, r. 2 (Décret 1455-2025)", "verified_at": "2026-11-25"},
+                    "gardes": [{"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation (art. 6, 7, 8–9, 11–12, 13 et 15)."}],
                 },
             }
 
@@ -1944,11 +3945,11 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
             data = json.loads(resp.read().decode("utf-8"))
             tools = data.get("tools", [])
             version = data.get("version", "0.0.0")
-            # Le build de l'itération requiert 12 outils (version 0.3.0+)
-            if len(tools) < 12:
+            # Le build de l'itération requiert 15 outils (version 2.2.0+)
+            if len(tools) < 15:
                 return False, (
                     f"Serveur MCP-Outils distant en retard de synchronisation : "
-                    f"version {version} exposant {len(tools)} outils (attendu >= 12 outils pour v0.3.0+)."
+                    f"version {version} exposant {len(tools)} outils (attendu >= 15 outils pour v2.2.0+)."
                 )
     except Exception as exc:
         return False, f"MCP-Outils injoignable : {exc}"
@@ -2156,7 +4157,7 @@ class UnifiedMcpClient:
 def run_tier_1_tests(
     client: UnifiedMcpClient, repo_root: Path, target_server: str
 ) -> List[TestResult]:
-    """Exécute les vérifications du Palier 1 (manifestes, endpoints, 26 outils)."""
+    """Exécute les vérifications du Palier 1 (manifestes, endpoints, 35 outils)."""
     results: List[TestResult] = []
 
     def add_result(
@@ -2555,7 +4556,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # --- 1.3 32-Tool Enumeration & Schema Inspection ---
+    # --- 1.3 35-Tool Enumeration & Schema Inspection ---
     discovered_tools: Dict[str, List[Dict[str, Any]]] = {}
     for srv_key in ("lois", "juris", "outils"):
         if target_server not in ("all", srv_key):
@@ -2565,7 +4566,7 @@ def run_tier_1_tests(
             res = client.call_rpc(srv_key, "tools/list")
             tools = res.get("result", {}).get("tools", [])
             discovered_tools[srv_key] = tools
-            exp_count = 10 if srv_key in ("lois", "juris") else 12
+            exp_count = 10 if srv_key in ("lois", "juris") else 15
             cnt_ok = len(tools) == exp_count
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -2589,7 +4590,7 @@ def run_tier_1_tests(
                 str(ex),
             )
 
-    # T1.3.total_tools_32 : Total de 32 outils sans doublons
+    # T1.3.total_tools_35 : Total de 35 outils sans doublons
     if target_server == "all":
         t0 = time.perf_counter()
         all_tools_set: Set[str] = set()
@@ -2600,15 +4601,15 @@ def run_tier_1_tests(
                 if t_name in all_tools_set:
                     duplicates.append(t_name)
                 all_tools_set.add(t_name)
-        total_ok = len(all_tools_set) == 32 and len(duplicates) == 0
+        total_ok = len(all_tools_set) == 35 and len(duplicates) == 0
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
-            "T1.3.total_32_tools",
-            "Catalogue total de exactement 32 outils distincts",
+            "T1.3.total_35_tools",
+            "Catalogue total de exactement 35 outils distincts",
             "all",
             total_ok,
             elapsed,
-            f"Total {len(all_tools_set)}/32, doublons : {duplicates}" if not total_ok else None,
+            f"Total {len(all_tools_set)}/35, doublons : {duplicates}" if not total_ok else None,
         )
 
     # T1.3.schema_completeness : Présence description et inputSchema type object
@@ -2663,7 +4664,7 @@ def run_tier_1_tests(
         f"Noms inattendus : {juris_bad}" if juris_bad else None,
     )
 
-    # T1.3.prefix_outils : Préfixes sectoriels autorisés sur les 12 outils de MCP-Outils
+    # T1.3.prefix_outils : Préfixes sectoriels autorisés sur les 15 outils de MCP-Outils
     t0 = time.perf_counter()
     outils_allowed = (
         "calendrier_",
@@ -2674,6 +4675,9 @@ def run_tier_1_tests(
         "adresse_",
         "terminologie_",
         "termino_",
+        "taux_",
+        "indice_",
+        "loyer_",
     )
     outils_bad_prefix = [
         t.get("name", "") for t in discovered_tools.get("outils", [])
@@ -2682,7 +4686,7 @@ def run_tier_1_tests(
     elapsed = (time.perf_counter() - t0) * 1000
     add_result(
         "T1.3.prefix_outils",
-        "Préfixes sectoriels autorisés sur les 12 outils Outils",
+        "Préfixes sectoriels autorisés sur les 15 outils Outils",
         "outils",
         len(outils_bad_prefix) == 0,
         elapsed,
@@ -2709,7 +4713,7 @@ def run_tier_1_tests(
         f"Dépassements > 64 car. : {over_64}" if over_64 else None,
     )
 
-    # T1.3.additional_properties_hardened : additionalProperties: false sur tous les 26 outils
+    # T1.3.additional_properties_hardened : additionalProperties: false sur tous les 35 outils
     t0 = time.perf_counter()
     not_hardened = []
     for srv_k, srv_tools in discovered_tools.items():
@@ -3583,6 +5587,213 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             elapsed = (time.perf_counter() - t0) * 1000
             add_result("T2.4.11", "XOR registre_get_entity", "outils", False, elapsed, str(ex))
 
+    # T2.4.12 : Conflit recherche inversée vs directe sur adresse_verify
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            res_rev_fwd = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "adresse_verify", "arguments": {"lot_number": "1 181 642", "address": "1, rue Notre-Dame Est, Montréal"}},
+            )
+            res_lot_mat = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "adresse_verify", "arguments": {"lot_number": "1 181 642", "matricule": "9891-44-1234"}},
+            )
+            ok = (
+                res_rev_fwd.get("result", {}).get("isError") is True
+                and res_lot_mat.get("result", {}).get("isError") is True
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.12",
+                "Rejet conflit recherche inversée / directe sur adresse_verify",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"rev_fwd={res_rev_fwd}, lot_mat={res_lot_mat}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.12", "Conflit adresse_verify", "outils", False, elapsed, str(ex))
+
+    # T2.4.13 : Rejet CAD et conflit de dates sur taux_boc_rates
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            res_cad = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "taux_boc_rates", "arguments": {"category": "fx", "currency": "CAD", "date": "2026-11-18"}},
+            )
+            res_dates = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "taux_boc_rates", "arguments": {"date": "2026-11-18", "start_date": "2026-11-01", "end_date": "2026-11-18"}},
+            )
+            ok = (
+                res_cad.get("result", {}).get("isError") is True
+                and res_dates.get("result", {}).get("isError") is True
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.13",
+                "Rejet devise CAD et conflit date/plage sur taux_boc_rates",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"cad={res_cad}, dates={res_dates}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.13", "Validation taux_boc_rates", "outils", False, elapsed, str(ex))
+
+    # T2.4.14 : Blocage divergence d'année de base IPC (2002=100 vs 1992=100) et RMR rent
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            res_uom = client.call_rpc(
+                "outils",
+                "tools/call",
+                {
+                    "name": "indice_ipc",
+                    "arguments": {
+                        "uom": "1992=100",
+                        "end_uom": "2002=100",
+                        "start_period": "2010-01",
+                        "end_period": "2025-01",
+                        "amount": "1000.00",
+                    },
+                },
+            )
+            res_rmr = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "indice_ipc", "arguments": {"geo": "montreal_rmr", "product": "rent", "period": "2025-01"}},
+            )
+            ok = (
+                res_uom.get("result", {}).get("isError") is True
+                and res_rmr.get("result", {}).get("isError") is True
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.14",
+                "Rejet divergence base IPC (1992=100 vs 2002=100) et composante absente RMR",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"uom={res_uom}, rmr={res_rmr}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.14", "Validation indice_ipc", "outils", False, elapsed, str(ex))
+
+    # T2.4.15 : Rejet paramètres incomplets sur loyer_tal calcul_2026 et rate_overrides en prime_plus_margin
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            res_tal = client.call_rpc(
+                "outils",
+                "tools/call",
+                {"name": "loyer_tal", "arguments": {"mode": "calcul_2026", "current_rent_cents": 120000}},
+            )
+            res_prime = client.call_rpc(
+                "outils",
+                "tools/call",
+                {
+                    "name": "interets_1619",
+                    "arguments": {
+                        "mode": "prime_plus_margin",
+                        "end_date": "2026-11-18",
+                        "rate_overrides": [{"quarter": "2027-Q1", "laf_rate_bps": 700}],
+                        "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}],
+                    },
+                },
+            )
+            ok = (
+                res_tal.get("result", {}).get("isError") is True
+                and res_prime.get("result", {}).get("isError") is True
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.15",
+                "Rejet calcul_2026 sans lease_renewal_date et rate_overrides en prime_plus_margin",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"tal={res_tal}, prime={res_prime}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.15", "Validation loyer_tal / interets_1619", "outils", False, elapsed, str(ex))
+
+    # T2.4.16 : Validation imbriquée (items), bornes numériques et format amount (taux_boc_rates, indice_ipc, interets_1619, loyer_tal)
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            neg_probes = [
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2026-11-18", "amount": "abc"}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2026-11-18", "amount": "-50.00"}),
+                ("indice_ipc", {"geo": "quebec", "product": "all_items", "start_period": "2024-01", "end_period": "2025-01", "amount": "abc"}),
+                ("interets_1619", {"mode": "prime_plus_margin", "spread_bps": -5001, "end_date": "2026-11-18", "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}]}),
+                ("interets_1619", {"mode": "legal_plus_1619", "end_date": "2026-11-18", "tranches": [{}]}),
+                ("interets_1619", {"mode": "contractual", "end_date": "2026-11-18", "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}]}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": -100}),
+                ("loyer_tal", {"mode": "bareme", "year": 1800}),
+                ("loyer_tal", {"mode": "bareme", "year": 2014}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2027-04-02", "current_rent_cents": 100000}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "is_rpa": True, "rpa_personal_services_cents": 200000}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"gross_amount_cents": 10000, "beneficiary_rents_monthly_cents": 50000}]}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"gross_amount_cents": 500000, "bogus": True}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "deadlines": [{"amount": 10, "depends_on_index": 0}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "deadlines": [{"amount": 10}, {"amount": 5, "anchor_date": "2026-05-10", "depends_on_index": 0}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "regime": "qc_cpc", "province": "ON", "deadlines": [{"amount": 10}]}),
+                ("registre_get_entity", {"neq": "abc"}),
+                ("registre_get_entity", {"neq": "12345678901"}),
+                ("registre_get_entity", {"bn_ne": "abc"}),
+                ("palais_get", {"greffe_number": "999"}),
+                ("palais_get", {"palais": "Atlantis"}),
+                ("registre_search", {"query": "   "}),
+                ("terminologie_lookup", {"query": "   "}),
+                ("greffe_parse_number", {"court_file_number": "   "}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "   "}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"label": "   ", "gross_amount_cents": 10000}]}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2030-01-01"}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2000-01-05"}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "Montréal", "year": 2027}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "Atlantis"}),
+                ("indice_ipc", {"geo": "quebec", "product": "all_items", "period": "2030-01"}),
+            ]
+            failed_probes = []
+            for tname, targs in neg_probes:
+                r_probe = client.call_rpc("outils", "tools/call", {"name": tname, "arguments": targs})
+                if not ("error" in r_probe or r_probe.get("result", {}).get("isError") is True):
+                    failed_probes.append(f"{tname}({targs}) -> {r_probe}")
+            ok = len(failed_probes) == 0
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.16",
+                "Rejet bornes numériques, objets imbriqués (items) et formats amount sur outils économie/calcul",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else "; ".join(failed_probes[:3]),
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.16", "Bornes et items imbriqués", "outils", False, elapsed, str(ex))
+
     return results
 
 
@@ -3703,8 +5914,8 @@ def run_tier_3_tests(
             for tid, name, srv in [
                 ("T3.2.1", "Partition du cache Législation sur disque (10 outils)", "lois"),
                 ("T3.2.2", "Partition du cache Jurisprudence sur disque (10 outils)", "juris"),
-                ("T3.2.3", "Partition du cache Outils sur disque (12 outils)", "outils"),
-                ("T3.2.4", "Intégrité approfondie des 32 schémas d'outils sur disque", "all"),
+                ("T3.2.3", "Partition du cache Outils sur disque (15 outils)", "outils"),
+                ("T3.2.4", "Intégrité approfondie des 35 schémas d'outils sur disque", "all"),
                 ("T3.2.5", "Présence et conformité de instructions.md sur disque", "all"),
             ]:
                 add_result(tid, name, srv, False, 0.0, f"Cache absent dans {antigravity_mcp_base}")
@@ -3713,7 +5924,7 @@ def run_tier_3_tests(
                 ("T3.2.1", "Partition du cache Législation sur disque (ignoré : cache Antigravity absent hors local)", "lois"),
                 ("T3.2.2", "Partition du cache Jurisprudence sur disque (ignoré : cache Antigravity absent hors local)", "juris"),
                 ("T3.2.3", "Partition du cache Outils sur disque (ignoré : cache Antigravity absent hors local)", "outils"),
-                ("T3.2.4", "Intégrité approfondie des 32 schémas (ignoré : cache Antigravity absent hors local)", "all"),
+                ("T3.2.4", "Intégrité approfondie des 35 schémas (ignoré : cache Antigravity absent hors local)", "all"),
                 ("T3.2.5", "Présence instructions.md (ignoré : cache Antigravity absent hors local)", "all"),
             ]:
                 add_result(tid, name, srv, True, 0.0, None, skipped=True)
@@ -3749,22 +5960,22 @@ def run_tier_3_tests(
             f"Trouvé {len(jur_tools)} fichiers (stale: {stale_in_jur}) au lieu de 10 dans {jur_dir}" if not c_jur_ok else None,
         )
 
-        # T3.2.3 : Partition Outils sur disque (12 outils sur 5 familles)
+        # T3.2.3 : Partition Outils sur disque (15 outils sur 6 familles)
         t0 = time.perf_counter()
         out_tools = list(out_dir.glob("*.json")) if out_dir.is_dir() else []
         out_names = {f.stem for f in out_tools}
-        c_out_ok = (len(out_tools) == 12) and (out_names == set(NOMS_OUTILS_ATTENDUS["outils"]))
+        c_out_ok = (len(out_tools) == 15) and (out_names == set(NOMS_OUTILS_ATTENDUS["outils"]))
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.3",
-            "Partition du cache Outils sur disque (exactement 12 outils sur 5 familles)",
+            "Partition du cache Outils sur disque (exactement 15 outils sur 6 familles)",
             "outils",
             c_out_ok,
             elapsed,
-            f"Trouvé {len(out_tools)} fichiers au lieu de 12 dans {out_dir}" if not c_out_ok else None,
+            f"Trouvé {len(out_tools)} fichiers au lieu de 15 dans {out_dir}" if not c_out_ok else None,
         )
 
-        # T3.2.4 : Intégrité approfondie des 32 schémas d'outils sur disque (descriptions et items)
+        # T3.2.4 : Intégrité approfondie des 35 schémas d'outils sur disque (descriptions et items)
         t0 = time.perf_counter()
         schema_errs = []
         total_inspected = 0
@@ -3809,15 +6020,15 @@ def run_tier_3_tests(
                 except Exception as ex:
                     schema_errs.append(f"{srv_name}/{json_file.name} erreur JSON: {ex}")
 
-        t324_ok = (total_inspected == 32) and (len(schema_errs) == 0)
+        t324_ok = (total_inspected == 35) and (len(schema_errs) == 0)
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T3.2.4",
-            "Intégrité approfondie des 32 schémas d'outils sur disque (descriptions et items)",
+            "Intégrité approfondie des 35 schémas d'outils sur disque (descriptions et items)",
             "all",
             t324_ok,
             elapsed,
-            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 32 else f"Inspecté {total_inspected}/32 schémas"),
+            "; ".join(schema_errs[:5]) + (f" (+{len(schema_errs)-5} erreurs)" if len(schema_errs) > 5 else "") if schema_errs else (None if total_inspected == 35 else f"Inspecté {total_inspected}/35 schémas"),
         )
 
         # T3.2.5 : Présence et conformité de instructions.md dans les 3 serveurs sur disque
@@ -4030,6 +6241,220 @@ def run_tier_3_tests(
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
             add_result("T3.3.5", "Contrat Registres -> Adresses -> Terminologie", "outils", False, elapsed, str(ex))
+
+    # T3.3.6 : Contrat Économie / BoC -> Intérêts prime_plus_margin & Conversion Loi sur la monnaie
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            fx_res = client.call_tool(
+                "outils",
+                "taux_boc_rates",
+                {"category": "fx", "currency": "USD", "date": "2016-06-15", "amount": "10000.00"},
+            )
+            fx_sc = fx_res.get("structuredContent") or {}
+            fx_gardes = {g.get("code") for g in (fx_sc.get("gardes") or [])}
+            prime_res = client.call_tool(
+                "outils",
+                "interets_1619",
+                {
+                    "mode": "prime_plus_margin",
+                    "spread_bps": 200,
+                    "end_date": "2026-11-18",
+                    "tranches": [{"principal_cents": 1000000, "start_date": "2025-01-01"}],
+                },
+            )
+            prime_sc = prime_res.get("structuredContent") or {}
+            prime_gardes = {g.get("code") for g in (prime_sc.get("gardes") or [])}
+            ipc_res = client.call_tool(
+                "outils",
+                "indice_ipc",
+                {"geo": "quebec", "product": "all_items", "start_period": "2024-01", "end_period": "2025-01", "amount": "2000.00", "cap_bps": 150},
+            )
+            ipc_sc = ipc_res.get("structuredContent") or {}
+            fx_obs_0 = (fx_sc.get("fx_observations") or [{}])[0]
+            ok = (
+                "TAUX_BOC_NOON_HISTORIQUE_PRE_2017" in fx_gardes
+                and "TAUX_BOC_CONVERSION_LOI_MONNAIE" in fx_gardes
+                and isinstance(fx_sc.get("currency"), dict)
+                and fx_sc["currency"].get("code") == "USD"
+                and fx_obs_0.get("currency_code") == "USD"
+                and (fx_sc.get("conversion") or {}).get("converted_cents", 0) > 0
+                and "TAUX_BOC_PRIME_INDICATIF_BANCAIRE" in prime_gardes
+                and prime_sc.get("total_contractual_interest_cents", 0) > 0
+                and (ipc_sc.get("escalation") or {}).get("applied_bound") == "cap"
+                and (ipc_sc.get("escalation") or {}).get("escalated_cents") == 203000
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T3.3.6",
+                "Contrat Économie : taux_boc_rates + interets_1619 (prime_plus_margin) + indice_ipc",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"fx={fx_sc}, prime={prime_sc}, ipc={ipc_sc}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T3.3.6", "Contrat Économie", "outils", False, elapsed, str(ex))
+
+    # T3.3.7 : Contrat TAL & SCHL (calcul_2026, pré-2026 transitoire, SCHL indicatif)
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            tal_2026 = client.call_tool(
+                "outils",
+                "loyer_tal",
+                {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000},
+            )
+            tal_2026_sc = tal_2026.get("structuredContent") or {}
+            tal_pre = client.call_tool(
+                "outils",
+                "loyer_tal",
+                {"mode": "calcul_2026", "notice_date": "2025-12-15", "lease_renewal_date": "2026-04-01", "current_rent_cents": 100000},
+            )
+            tal_pre_sc = tal_pre.get("structuredContent") or {}
+            tal_pre_gardes = {g.get("code") for g in (tal_pre_sc.get("gardes") or [])}
+            schl_res = client.call_tool(
+                "outils",
+                "loyer_tal",
+                {"mode": "schl", "cmhc_geo": "Montréal"},
+            )
+            schl_sc = schl_res.get("structuredContent") or {}
+            schl_gardes = {g.get("code") for g in (schl_sc.get("gardes") or [])}
+            schl_first = (schl_sc.get("cmhc_results") or [{}])[0]
+            ok = (
+                tal_2026_sc.get("regime") == "post_2026_calcul"
+                and (tal_2026_sc.get("calculation") or {}).get("new_rent_cents", 0) > 100000
+                and (tal_2026_sc.get("calculation") or {}).get("base_rent_bps", 0) > 0
+                and isinstance(tal_2026_sc.get("bareme_post_2026"), list)
+                and isinstance(tal_2026_sc.get("bareme_pre_2026"), list)
+                and isinstance(tal_2026_sc.get("cmhc_results"), list)
+                and tal_pre_sc.get("regime") == "pre_2026_transitoire"
+                and "TAL_REGIME_TRANSITOIRE_PRE_2026" in tal_pre_gardes
+                and "SCHL_LOYER_MOYEN_INDICATIF" in schl_gardes
+                and isinstance(schl_first.get("cells"), list)
+                and len(schl_first.get("cells") or []) >= 1
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T3.3.7",
+                "Contrat loyer_tal : calcul_2026 + garde pré-2026 + SCHL indicatif",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"tal2026={tal_2026_sc}, pre={tal_pre_sc}, schl={schl_sc}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T3.3.7", "Contrat loyer_tal", "outils", False, elapsed, str(ex))
+
+    # T3.3.8 : Contrat GLEIF LEI + Recherche inversée lot cadastral RQA (découverte dynamique)
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            gleif_search = client.call_tool(
+                "outils",
+                "registre_search",
+                {"jurisdiction": "gleif", "query": "Banque"},
+            )
+            gleif_search_sc = gleif_search.get("structuredContent") or {}
+            discovered_lei = next(
+                (e.get("lei") for e in (gleif_search_sc.get("entities") or []) if e.get("lei")),
+                None,
+            )
+            lei_res = (
+                client.call_tool("outils", "registre_get_entity", {"lei": discovered_lei})
+                if discovered_lei
+                else {}
+            )
+            lei_sc = lei_res.get("structuredContent") or {}
+            lei_gardes = {g.get("code") for g in (lei_sc.get("gardes") or [])}
+            lei_portails = lei_sc.get("portails_officiels") or {}
+
+            ca_search = client.call_tool(
+                "outils",
+                "registre_search",
+                {"jurisdiction": "ca", "query": "Canada"},
+            )
+            ca_search_sc = ca_search.get("structuredContent") or {}
+            discovered_corp = next(
+                (e.get("corporation_number") for e in (ca_search_sc.get("entities") or []) if e.get("corporation_number")),
+                None,
+            )
+            ca_res = (
+                client.call_tool("outils", "registre_get_entity", {"corporation_number": discovered_corp})
+                if discovered_corp
+                else {}
+            )
+            ca_sc = ca_res.get("structuredContent") or {}
+            ca_portails = ca_sc.get("portails_officiels") or {}
+
+            addr_fwd = client.call_tool(
+                "outils",
+                "adresse_verify",
+                {"address": "1, rue Notre-Dame Est, Montréal"},
+            )
+            addr_fwd_sc = addr_fwd.get("structuredContent") or {}
+            fwd_cand = (addr_fwd_sc.get("candidates") or [{}])[0]
+            discovered_lot = ((fwd_cand.get("lots_cadastraux") or [None])[0])
+
+            lot_res = (
+                client.call_tool("outils", "adresse_verify", {"lot_number": discovered_lot})
+                if discovered_lot
+                else {}
+            )
+            lot_sc = lot_res.get("structuredContent") or {}
+            lot_gardes = {g.get("code") for g in (lot_sc.get("gardes") or [])}
+            first_cand = (lot_sc.get("candidates") or [{}])[0]
+            gleif_portail_ok = (
+                isinstance(lei_portails.get("gleif"), dict)
+                and bool((lei_portails.get("gleif") or {}).get("url"))
+                and (
+                    (isinstance(lei_portails.get("isc_pisc"), dict) and bool((lei_portails.get("isc_pisc") or {}).get("url")))
+                    if lei_sc.get("federal") is not None
+                    else (lei_portails.get("isc_pisc") is None and lei_portails.get("corporations_canada") is None)
+                )
+            )
+            ca_portail_ok = (
+                bool(discovered_corp)
+                and ca_sc.get("lookup_by") == "corporation_number"
+                and isinstance(ca_sc.get("federal"), dict)
+                and isinstance(ca_portails.get("corporations_canada"), dict)
+                and bool((ca_portails.get("corporations_canada") or {}).get("url"))
+                and isinstance(ca_portails.get("isc_pisc"), dict)
+                and bool((ca_portails.get("isc_pisc") or {}).get("url"))
+            )
+            ok = (
+                bool(discovered_lei)
+                and bool(re.match(r"^[A-Z0-9]{20}$", str(discovered_lei)))
+                and lei_sc.get("lookup_by") == "lei"
+                and isinstance(lei_sc.get("gleif"), dict)
+                and gleif_portail_ok
+                and ca_portail_ok
+                and "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION" in lei_gardes
+                and bool(discovered_lot)
+                and first_cand.get("lot_source") in ("rqa_unite", "rqa_immeuble_parent", "absent")
+                and bool(first_cand.get("lots_cadastraux"))
+                and "ADRESSE_LOT_ET_MATRICULE_SANS_VALEUR_LEGALE" in lot_gardes
+            )
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T3.3.8",
+                "Contrat GLEIF (LEI + portails_officiels) et RQA inversé (lot_number + lot_source)",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"lei_search={gleif_search_sc}, lei={lei_sc}, ca={ca_sc}, fwd={addr_fwd_sc}, lot={lot_sc}",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T3.3.8", "Contrat GLEIF & RQA inversé", "outils", False, elapsed, str(ex))
 
     # --- 3.4 Static Verifier Alignment ---
     # T3.4.1 : Présence de verifier_tout.py dans ROOT_ALLOWLIST de verifier.py
@@ -4588,7 +7013,7 @@ def format_report_terminal(
         by_tier.setdefault(r.tier, []).append(r)
 
     tier_names = {
-        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 32 outils)",
+        1: "Palier 1 : Couverture fonctionnelle (Manifestes, Handshakes, 35 outils)",
         2: "Palier 2 : Limites & Négatifs (Auth 401/404, Headers, JSON-RPC, Schémas)",
         3: "Palier 3 : Compatibilité inter-plateformes (Claude, Gemini, Antigravity)",
         4: "Palier 4 : Scénarios réels de litige civil québécois (Workflows)",

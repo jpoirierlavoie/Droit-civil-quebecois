@@ -6,8 +6,8 @@ Encadre la rédaction et la révision de contrats civils et commerciaux soumis a
 
 ## Objet et destinataire
 
-* **Identification :** Vérifier la dénomination exacte et le NEQ des personnes morales via `outils.registre_search`/`registre_get_entity` (sans valeur de certificat : confirmer au REQ avant signature) et l'adresse civique via `outils.adresse_verify`.
-* **Vecteur `law="ccq"` à lire via `lois.get_articles` :** `numbers=["1379", "1385", "1432", "1434", "1435", "1436", "1437", "1438", "1474", "1604", "1605", "1606", "1621", "1622", "1733", "3148"]`.
+* **Identification :** Vérifier la dénomination exacte, le NEQ et la chaîne corporative via `outils.registre_search`/`registre_get_entity` (`lei` / `portails_officiels` `req`, `corporations_canada`, `isc_pisc` ; la consolidation comptable GLEIF `REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION` n'établit ni contrôle juridique ni pouvoir de signature — confirmer au REQ avant signature) et l'adresse civique ou les lots indicatifs via `outils.adresse_verify` (vérifier au Registre foncier avant toute clause immobilière, art. `3030 al. 2, 3032 C.c.Q.`).
+* **Vecteur `law="ccq"` à lire via `lois.get_articles` :** `numbers=["1379", "1385", "1432", "1434", "1435", "1436", "1437", "1438", "1474", "1561", "1604", "1605", "1606", "1620", "1621", "1622", "1733", "1942", "1955", "3030", "3032", "3148", "3161"]`.
 
 ## Mentions obligatoires
 
@@ -15,6 +15,10 @@ Encadre la rédaction et la révision de contrats civils et commerciaux soumis a
 * Objet déterminé ou déterminable (`1373 C.c.Q.`);
 * Nature exacte des engagements (**obligation de moyens** vs **obligation de résultat** — jamais l'anglicisme flou « meilleurs efforts »);
 * En contrat d'adhésion (`1379`) : mise en évidence des clauses externes (`1435`), lisibilité (`1436`) et équilibre au regard de `1437 C.c.Q.`.
+* **Clauses financières, d'indexation et de devises (déterminisme) :**
+  * *Indexation IPC (`outils.indice_ipc`) :* stipuler explicitement territoire (`quebec`/`montreal_rmr`/`canada`), composante (`all_items`/`shelter`), année de base (`2002=100`, ne jamais mélanger avec `1992=100` sans facteur StatCan), période de référence, plancher/plafond (`floor_bps`/`cap_bps`) et règle d'arrondi (`half_away_from_zero`/`half_up`) — **rappel d'ordre public :** l'indexation automatique à l'IPC est inopérante en bail résidentiel (`1942 C.c.Q.` et `RLRQ, c. T-15.01, r. 2`, `outils.loyer_tal`) ;
+  * *Taux préférentiel + marge (`outils.interets_1619`, `V80691311`) :* nommer la banque prêteuse, la date de prise d'effet des variations, le plancher éventuel, la convention de décompte de jours et préciser si intérêt simple (`1620 C.c.Q.`) ou composé ;
+  * *Conversion de devises (`outils.taux_boc_rates`) :* viser la moyenne quotidienne de 16 h 30 HE de la Banque du Canada (`post-2017-05-01`) et la règle de report au jour ouvrable précédent (`art. 12 Loi sur la monnaie`, `1561, 3161 C.c.Q.`).
 
 ## Structure
 
@@ -36,6 +40,6 @@ Encadre la rédaction et la révision de contrats civils et commerciaux soumis a
 ## Contrôle
 
 1. Vérifier chaque texte impératif du C.c.Q. (et L.p.c. s'il s'agit d'un contrat de consommation) via `lois`.
-2. Vérifier dénomination, NEQ et adresse via `outils.registre_search` / `adresse_verify`.
+2. Vérifier dénomination, NEQ/LEI (`portails_officiels`) et adresse/lots (`lot_source`) via `outils.registre_search` / `registre_get_entity` / `adresse_verify` ; valider calculs d'indexation, intérêts ou taux via `outils.indice_ipc` / `interets_1619` / `taux_boc_rates` / `loyer_tal`.
 3. Vérifier la cohérence interne (définitions utilisées, renvois d'articles, obligation de moyens vs de résultat).
 4. Exécuter `outils.terminologie_scan`.

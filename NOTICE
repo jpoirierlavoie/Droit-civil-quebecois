@@ -58,12 +58,17 @@ exclusivement par les licences et conditions de leurs éditeurs respectifs, ains
 que par les conditions générales du service hébergé (https://acces.poirierlavoie.ca/cgu) :
 
 - LégisQuébec (Éditeur officiel du Québec) : publications officielles du droit
-  québécois ; la version officielle publiée par l'Éditeur officiel du Québec
-  fait seule foi.
+  québécois (incluant le Règlement sur les critères de fixation de loyer,
+  RLRQ, c. T-15.01, r. 2 / CQLR, c. T-15.01, r. 2, Décret 1455-2025) ; la
+  version officielle publiée par l'Éditeur officiel du Québec fait seule foi.
 - Ministère de la Justice du Canada (justicecanada/laws-lois-xml), Corporations
-  Canada et Bureau de la traduction (TERMIUM Plus®) : Licence du gouvernement
-  ouvert – Canada (OGL-Canada ; art. 31 de la Loi sur la révision et la
-  codification des textes législatifs pour les lois fédérales).
+  Canada, Bureau de la traduction (TERMIUM Plus®) et Statistique Canada
+  (Tableau 10-10-0008-01 — taux de change au comptant de midi 2001–2007 ;
+  Tableaux 18-10-0004-01 et 18-10-0005-01 — Indice des prix à la consommation ;
+  Tableau 34-10-0133-01 — Loyers moyens du marché de la SCHL / CMHC average
+  market rents) : Licence du gouvernement ouvert – Canada (OGL-Canada ;
+  art. 31 de la Loi sur la révision et la codification des textes législatifs
+  pour les lois fédérales).
 - Cour supérieure du Québec et Cour du Québec : directives de pratique
   judiciaire officielles (propriété des tribunaux concernés).
 - Autorité des marchés financiers (AMF) : règlements et Instructions générales
@@ -79,13 +84,29 @@ que par les conditions générales du service hébergé (https://acces.poirierla
 - Régie du bâtiment du Québec (RBQ), Office de la protection du consommateur
   (OPC), Autorité des marchés publics (RENA) et ministère des Ressources
   naturelles et des Forêts (RQA) : données publiées sous licence CC BY 4.0.
-- Revenu Québec (taux d'intérêt légal, art. 28 L.A.F.) et ministère de la
-  Justice du Québec (palais de justice et greffes).
+- Global Legal Entity Identifier Foundation (GLEIF — Golden Copy Level 1
+  LEI-CDF, Level 2 RR-CDF et exceptions de déclaration REPEX) : CC0 1.0
+  Universel (https://creativecommons.org/publicdomain/zero/1.0/ ; conditions
+  d'utilisation : https://www.gleif.org/en/meta/lei-data-terms-of-use).
+- Banque du Canada / Bank of Canada (API Valet — FX_RATES_DAILY,
+  LEGACY_NOON_RATES, taux directeur V39079, taux officiel d'escompte V122530 et
+  taux préférentiel V80691311) : données statistiques publiques soumises aux
+  conditions d'utilisation de la Banque du Canada
+  (https://www.bankofcanada.ca/terms/).
+- Revenu Québec (taux d'intérêt légal, art. 28 L.A.F.), Tribunal administratif
+  du logement (TAL — pourcentages annuels publiés 2015–2027 et calculateurs
+  officiels) et ministère de la Justice du Québec (palais de justice et
+  greffes).
 
 Runtime data returned by the hosted connectors remains governed strictly by
 each upstream publisher's respective terms (including CC BY-NC-SA 4.0 for REQ
-and OQLF open data, CanLII API non-commercial/anti-bulk terms, and Québec/Canada
-official Crown publication rules) and https://acces.poirierlavoie.ca/cgu.
+and OQLF open data, CC0 1.0 and LEI Data Terms of Use for GLEIF Golden Copy
+datasets, Bank of Canada Terms of Use for Valet FX/policy/bank/prime series,
+Open Government Licence – Canada (OGL-Canada) for Statistics Canada Tables
+10-10-0008-01, 18-10-0004-01, 18-10-0005-01, and 34-10-0133-01 CMHC rents,
+CanLII API non-commercial/anti-bulk terms, and Québec/Canada official Crown
+publication rules including TAL and LégisQuébec CQLR, c. T-15.01, r. 2) and
+https://acces.poirierlavoie.ca/cgu.
 
 ================================================================================
 4. AUCUN CONSEIL JURIDIQUE, FOURNITURE « TEL QUEL » ET ABSENCE D'AVAL /

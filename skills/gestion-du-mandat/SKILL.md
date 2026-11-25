@@ -4,15 +4,15 @@ description: >-
   Utiliser pour la déontologie du Barreau du Québec, la gestion du mandat et les calculs
   procéduraux/financiers du dossier : conflit d'intérêts, identification et vérification du
   client, mandat, IA, feuilles de temps, fidéicommis, espèces, délais C.p.c. (calcul, 17 h,
-  fériés), intérêts art. 1619 C.c.Q., tableau Scott et état des frais de justice. En anglais —
+  fériés), intérêts art. 1619 C.c.Q., taux BdC/change, indexation IPC, fixation de loyer TAL, tableau Scott et état des frais de justice. En anglais —
   use for Quebec legal ethics, conflicts, retainer, timesheets, trust account, procedural
-  deadlines, legal interest, bill of costs. Ne pas utiliser pour la prescription (recherche-juridique)
+  deadlines, legal interest, BoC FX, CPI, TAL rent, bill of costs. Ne pas utiliser pour la prescription (recherche-juridique)
   ni rédiger un acte (redaction-juridique).
 ---
 
 # Gestion du mandat, déontologie, délais et quantum
 
-Encadre les obligations déontologiques et comptables du Barreau du Québec (`b-1-r.3.1`, `b-1-r.5`), le calcul déterministe des délais C.p.c., le décompte des intérêts `1619 C.c.Q.`, les tableaux de dommages et l'état des frais de justice (`339–344 C.p.c.`).
+Encadre les obligations déontologiques et comptables du Barreau du Québec (`b-1-r.3.1`, `b-1-r.5`), le calcul déterministe des délais C.p.c., le décompte des intérêts `1619 C.c.Q.`, les taux BdC (`taux_boc_rates`), l'indexation IPC (`indice_ipc`), la fixation de loyer TAL (`loyer_tal`, `RLRQ, c. T-15.01, r. 2`), les tableaux de dommages et l'état des frais de justice (`339–344 C.p.c.`).
 
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
@@ -44,19 +44,19 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 | Question déontologique (partie représentée, témoin, IA, confidentialité, retrait, silences) | `references/conformite-radar-deontologique.md` | `lois` (`b-1-r.3.1`, `b-1-r.5`, `cpc`) |
 | Feuilles de temps, libellés de facture (`104, 110`), fidéicommis et espèces (`69–72`) | `references/conformite-facturation-fideicommis.md` | `lois` (`b-1-r.3.1`, `b-1-r.5`) |
 | Calculer ou dresser le calendrier C.p.c. (ordinaire, C.Q. `535.1 s.`, appel, `111 al. 2`) | `references/conformite-echeanciers-cpc.md` + `scripts/calcul_delai.py` *(repli local)* | `outils` (`calendrier_deadlines`, `calendrier_holidays`), `lois` (`cpc`, `i-16`, `qccs-*`, `qccq-*`) |
-| Tableau de dommages, tableau *Scott*, intérêts (`1619 C.c.Q.`) et état des frais (`339–344`) | `references/conformite-quantum-interets-frais.md` | `outils` (`interets_1619`), `lois` (`ccq`, `cpc`, `t-16-r.10`) |
+| Tableau de dommages, tableau *Scott*, intérêts (`1619 C.c.Q.`), taux BdC/IPC/TAL et état des frais (`339–344`) | `references/conformite-quantum-interets-frais.md` | `outils` (`interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`), `lois` (`ccq`, `cpc`, `t-16-r.10`, `t-15.01`) |
 | Lettre au client, convention d'honoraires ou compte rendu à rédiger | `../redaction-juridique/references/corr-client.md` *(si absent : rédiger avec `lois`)* | `lois`, `outils` (`terminologie_scan`) |
 | Contrôle de privilège/caviardage sur des pièces avant communication ou facturation | `../analyse-et-strategie/references/preuve-privilege-confidentialite-caviardage.md` *(si absent : vérifier `cpc` art. 108 et `p-39.1` via `lois`)* | `lois` (`cpc`, `p-39.1`) |
 
 ## Règle de posture absolue
 
 1. **Rappeler, jamais attester :** Dire qu'une vérification (conflit, identité, conciliation) est due; ne jamais écrire qu'elle a été accomplie sans preuve directe.
-2. **Aucun calcul mental :** Tout délai passe par `outils.calendrier_deadlines` ou `scripts/calcul_delai.py` *(si `outils` échoue sans Python local en nuage, s'arrêter sur le calcul et renvoyer vers `acces.poirierlavoie.ca/moi`)*; tout décompte `1619 C.c.Q.` passe par `outils.interets_1619`.
+2. **Aucun calcul mental :** Tout délai passe par `outils.calendrier_deadlines` ou `scripts/calcul_delai.py` *(si `outils` échoue sans Python local en nuage, s'arrêter sur le calcul et renvoyer vers `acces.poirierlavoie.ca/moi`)*; tout décompte `1619 C.c.Q.` ou `prime_plus_margin` passe par `outils.interets_1619`, toute conversion BdC par `outils.taux_boc_rates`, toute indexation IPC par `outils.indice_ipc` et toute fixation de loyer / SCHL par `outils.loyer_tal`.
 3. **Pertinence stricte :** Hors déclencheur concret ou question directe, n'ajouter aucune clause déontologique générique.
 
 ## Contrôle avant remise
 
 1. **Textes et tarifs vérifiés :** Articles (`b-1-r.3.1`, `b-1-r.5`, `cpc`, `t-16-r.10`) lus via `lois`; silences pertinents explicités; paires confondables distinguées.
 2. **Délais et avertissements :** Ancrage nommé ou `[DATE À CONFIRMER]`; énoncer en toutes lettres que `30 juin – 1er septembre` / `20 décembre – 7 janvier` ne suspendent pas les délais (`82 al. 2`), que le `30 septembre` est ouvrable au C.p.c., et que la prescription relève de `recherche-juridique`.
-3. **Intérêts et frais :** Aucune extrapolation de trimestre futur non publié; honoraires extrajudiciaires exclus des frais de justice (`339` hors `54 C.p.c.`).
+3. **Intérêts, indicateurs et frais :** Aucune extrapolation de trimestre L.A.F., taux préférentiel BDC, indice IPC ou critère TAL futur non publié ; distinguer avis TAL `< 2026-01-01` vs `>= 2026-01-01` et exemption `1955 C.c.Q.` ; honoraires extrajudiciaires exclus des frais de justice (`339` hors `54 C.p.c.`).
 4. **Syndic (`Code 70`) :** Mentionné devant un doute sérieux sur la confidentialité ou un conflit aigu.

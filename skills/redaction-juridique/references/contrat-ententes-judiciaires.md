@@ -6,7 +6,7 @@ Encadre les ententes judiciaires conclues en cours d'instance : protocole d'expe
 
 ## Objet et destinataire
 
-`[FICHE À RÉDIGER]` — Parties représentées (ou non représentées avec avertissement explicite) et tribunal saisi lorsque l'entente vise à produire un effet judiciaire ou à être entérinée/homologuée.
+`[FICHE À RÉDIGER]` — Parties représentées (ou non représentées avec avertissement explicite) et tribunal saisi lorsque l'entente vise à produire un effet judiciaire ou à être entérinée/homologuée ; contrôler la dénomination, le `NEQ`/`LEI` et les liens officiels (`portails_officiels`) des personnes morales signataires via `outils.registre_search`/`registre_get_entity` et valider au REQ avant signature (`REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION` n'établit pas le pouvoir de lier une société affiliée).
 
 ## Mentions obligatoires
 

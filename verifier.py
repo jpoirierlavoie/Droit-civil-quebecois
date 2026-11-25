@@ -252,6 +252,9 @@ EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
         "terminologie_lookup",
         "termino_attestations",
         "terminologie_scan",
+        "taux_boc_rates",
+        "indice_ipc",
+        "loyer_tal",
     ),
 }
 
@@ -448,7 +451,13 @@ def _iter_repo_files(racine: Path) -> list[str]:
             continue
         rel = path.relative_to(racine).as_posix()
         parts = rel.split("/")
-        if parts[0] == "dist" or ".git" in parts or "__pycache__" in parts or ".in_use" in parts:
+        if (
+            parts[0] == "dist"
+            or ".git" in parts
+            or "__pycache__" in parts
+            or ".pytest_cache" in parts
+            or ".in_use" in parts
+        ):
             continue
         files.append(rel)
     return files

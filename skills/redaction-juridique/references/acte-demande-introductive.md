@@ -11,7 +11,7 @@
 
 1. Vérifier la prescription (`2892 C.c.Q.` : signification requise dans les 60 jours suivant l'expiration si dépôt proche de la limite) et tout avis préalable de déchéance (renvoi à `recherche-juridique` / `grille-prealables`).
 2. Vérifier le seuil de compétence (`33`, `35 C.p.c.`) : sous le plafond indexé de la Cour du Québec (`< 100 000 $` `[À VÉRIFIER À LA G.O.Q. — SEUIL INDEXÉ]`, l'indexation prévue à `35 al. 4` paraissant à la *Gazette officielle* avant de toucher le texte consolidé de `lois`), le **régime simplifié particulier (`535.1–535.15`)** s'applique de plein droit (attention : seuils distincts sous **`< 50 000 $`** `[À VÉRIFIER VIA LOIS]` pour l'interdiction d'interrogatoire oral préalable sous `229 al. 1` / `535.9` et pour l'**expertise commune obligatoire de `535.15 C.p.c.`**).
-3. Confirmer l'exactitude des personnes morales (`outils.registre_search`/`registre_get_entity`) et adresses (`outils.adresse_verify`), en rappelant de valider au REQ avant signification (incluant la vérification du *fondé de pouvoir* exigé par la *Loi sur la publicité légale des entreprises* `art. 26–28` lorsqu'une personne morale n'a ni domicile ni établissement au Québec).
+3. Confirmer l'exactitude des personnes morales (`outils.registre_search` / `registre_get_entity`, y compris `lei` et les liens `portails_officiels` `req`, `corporations_canada`, `isc_pisc`) et adresses ou lots indicatifs (`outils.adresse_verify` avec `lot_source` et `ambiguites_cadastrales` — consulter le Registre foncier pour toute action réelle immobilière), en rappelant de valider au REQ avant signification (incluant la vérification du *fondé de pouvoir* exigé par la *Loi sur la publicité légale des entreprises* `art. 26–28` lorsqu'une personne morale n'a ni domicile ni établissement au Québec).
 
 ## Forum et compétence
 
@@ -47,7 +47,7 @@
 ## Conclusions types
 
 * `ACCUEILLIR la présente demande introductive d'instance ;`
-* `CONDAMNER [la Défenderesse] à payer [au Demandeur] la somme de [montant] $, avec intérêts au taux légal et l'indemnité additionnelle prévue à l'article 1619 du Code civil du Québec à compter du [date de la mise en demeure / de la demande] ;`
+* `CONDAMNER [la Défenderesse] à payer [au Demandeur] la somme de [montant] $, avec intérêts au taux légal et l'indemnité additionnelle prévue à l'article 1619 du Code civil du Québec [ou au taux contractuel convenu] à compter du [date de la mise en demeure / de la demande] ;` *(utiliser `outils.interets_1619`, y compris `mode="prime_plus_margin"`, et convertir toute créance en devise étrangère en CAD selon art. 12 Loi sur la monnaie / `1561, 3161 C.c.Q.` via `outils.taux_boc_rates`)*
 * *(Si justifié et allégué)* `ORDONNER l'exécution provisoire du jugement à intervenir nonobstant appel ;` (`661 C.p.c.`)
 * `LE TOUT avec les frais de justice.`
 

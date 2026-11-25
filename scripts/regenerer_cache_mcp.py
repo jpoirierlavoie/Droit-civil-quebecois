@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 regenerer_cache_mcp.py (script mainteneur uniquement)
-Regénère de façon déterministe les 32 fichiers JSON de schémas d'outils et les 3 instructions.md
+Regénère de façon déterministe les 35 fichiers JSON de schémas d'outils et les 3 instructions.md
 dans ~/.gemini/antigravity/mcp/ à partir des descripteurs TypeScript faisant autorité.
 Prérequis : clones locaux frères de MCP-Legislation, MCP-Jurisprudence et MCP-Outils + Node.js (`npx tsx`).
 Usage:
-    python scripts/regenerer_cache_mcp.py          # validation / dry-run
-    python scripts/regenerer_cache_mcp.py --apply  # écriture sur disque
+    python scripts/regenerer_cache_mcp.py                        # validation / dry-run (all)
+    python scripts/regenerer_cache_mcp.py --server outils --apply  # écriture ciblée sur disque
+    python scripts/regenerer_cache_mcp.py --apply                # écriture complète sur disque
 """
+import argparse
 import os
 import sys
 import json
@@ -127,20 +129,50 @@ def load_outils():
         }
     return "droit-civil-quebecois_outils", tool_dict, data["instructions"]
 
+ALL_CACHE_FOLDERS = {
+    "droit-civil-quebecois_lois",
+    "droit-civil-quebecois_juris",
+    "droit-civil-quebecois_outils",
+}
+EXPECTED_COUNTS = {"lois": 10, "juris": 10, "outils": 15, "all": 35}
+
+
 def main():
-    apply_mode = "--apply" in sys.argv
-    print(f"[*] Régénération du cache Antigravity MCP (mode: {'APPLY' if apply_mode else 'DRY-RUN'})...")
-    
-    servers = [load_legislation(), load_jurisprudence(), load_outils()]
+    parser = argparse.ArgumentParser(
+        description="Régénère de façon déterministe les fichiers JSON de schémas d'outils Antigravity MCP."
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Écrire les fichiers générés dans le cache Antigravity MCP.",
+    )
+    parser.add_argument(
+        "--server",
+        choices=["lois", "juris", "outils", "all"],
+        default="all",
+        help="Serveur MCP ciblé (défaut: all).",
+    )
+    args = parser.parse_args()
+    apply_mode = args.apply
+    print(
+        f"[*] Régénération du cache Antigravity MCP (mode: {'APPLY' if apply_mode else 'DRY-RUN'}, server: {args.server})..."
+    )
+
+    loaders = {
+        "lois": load_legislation,
+        "juris": load_jurisprudence,
+        "outils": load_outils,
+    }
+    selected_keys = ["lois", "juris", "outils"] if args.server == "all" else [args.server]
+    servers = [loaders[k]() for k in selected_keys]
     total_tools = 0
 
     if apply_mode and BASE_CACHE.is_dir():
-        active_folders = {srv_folder for srv_folder, _, _ in servers}
         for existing in sorted(BASE_CACHE.iterdir()):
             if (
                 existing.is_dir()
                 and existing.name.startswith("droit-civil-quebecois_")
-                and existing.name not in active_folders
+                and existing.name not in ALL_CACHE_FOLDERS
             ):
                 shutil.rmtree(existing)
                 print(f"\n[-] Ancien répertoire de cache retiré : {existing.name}")
@@ -180,7 +212,8 @@ def main():
                     f.write(json.dumps(tool_data, indent=2, ensure_ascii=False) + "\n")
             print(f"    - {name}.json (desc: {len(tool_data['description'])} car., {len(props)} props)")
 
-    print(f"\n[OK] {total_tools}/32 outils vérifiés avec succès.")
+    expected_total = EXPECTED_COUNTS[args.server]
+    print(f"\n[OK] {total_tools}/{expected_total} outils vérifiés avec succès.")
 
 if __name__ == "__main__":
     main()

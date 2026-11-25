@@ -5,7 +5,7 @@ Encadre la rédaction d'une transaction civile ou commerciale mettant fin à un 
 ## Objet et destinataire
 
 * **Nature (`2631 C.c.Q.`) :** Contrat nommé par lequel les parties préviennent une contestation à naître, terminent un procès ou règlent les difficultés d'exécution d'un jugement au moyen de **concessions ou réserves réciproques**.
-* **Identification :** Vérifier la dénomination exacte et le NEQ des personnes morales via `outils.registre_search`/`registre_get_entity` (sans valeur de certificat : confirmer au REQ avant signature) et les adresses via `outils.adresse_verify`.
+* **Identification :** Vérifier la dénomination exacte, le NEQ et la chaîne de groupe (`lei`, `portails_officiels` REQ/Corporations Canada/ISC-PISC) des personnes morales signataires via `outils.registre_search`/`registre_get_entity` (sans valeur de certificat ni preuve de contrôle juridique sous `REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION` : confirmer au REQ avant signature et circonscrire expressément les sociétés affiliées visées par la quittance) et les adresses via `outils.adresse_verify`.
 
 ## Mentions obligatoires
 

@@ -40,9 +40,9 @@ Pour tout **acte de procédure**, charger obligatoirement `references/fondamenta
 
 | Intention | Feuille à lire | Connecteurs |
 |---|---|---|
-| Socle commun de tout acte de cour + déclaration sous serment (`105`) + mode bloc | `references/fondamentaux-actes.md` | `lois` (`cpc`, `ccq`), `outils` (`registre_*`, `adresse_verify`) |
+| Socle commun de tout acte de cour + déclaration sous serment (`105`) + mode bloc | `references/fondamentaux-actes.md` | `lois` (`cpc`, `ccq`), `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`) |
 | Révision anti-anglicismes/francismes ou rédaction en anglais devant forum QC | `references/anti-contamination-bilingue.md` | `outils` (`terminologie_scan`, `terminologie_lookup`), `lois` (`lang="en"`) |
-| Demande introductive (ordinaire ou simplifiée C.Q. `535.1`) et avis d'assignation (`145, 490`) | `references/acte-demande-introductive.md` | `lois`, `outils` (`registre_*`, `interets_1619`, `greffe_parse_number`) |
+| Demande introductive (ordinaire ou simplifiée C.Q. `535.1`) et avis d'assignation (`145, 490`) | `references/acte-demande-introductive.md` | `lois`, `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `greffe_parse_number`) |
 | Défense écrite (`170`) et exposé sommaire (`535.6`) | `references/acte-defense-et-expose-sommaire.md` | `lois` (`cpc`) |
 | Demande en cours d'instance (`101`), modification (`206–208`) ou sauvegarde | `references/acte-demandes-cours-instance.md` | `lois` (`cpc`), `outils` (`palais_get`) |
 | Moyens préliminaires (`166–168`, `51–54` : déclinatoire, irrecevabilité, abus) | `references/acte-moyens-preliminaires.md` | `lois` (`cpc`) |
@@ -53,18 +53,18 @@ Pour tout **acte de procédure**, charger obligatoirement `references/fondamenta
 | Pourvoi en contrôle judiciaire (`529–531`) | `references/acte-pourvoi-controle-judiciaire.md` | `lois` (`cpc`) |
 | Déclaration d'appel et demande de permission d'appeler (`352–358`) | `references/acte-appel-declaration-permission.md` | `lois` (`cpc`, `c-25.01-r.0.2.01`) |
 | Demande en rétractation de jugement ou tierce opposition (`345–349`) | `references/acte-retractation-jugement.md` | `lois` (`cpc`) |
-| Exécution des jugements et oppositions à saisie/vente (`656, 735–738`) | `references/acte-execution-et-oppositions.md` | `lois` (`cpc`), `outils` (`interets_1619`) |
+| Exécution des jugements et oppositions à saisie/vente (`656, 735–738`) | `references/acte-execution-et-oppositions.md` | `lois` (`cpc`), `outils` (`interets_1619`, `registre_*`, `adresse_verify`) |
 | Plan d'argumentation au juge de première instance (simple ou détaillé) | `references/arg-plan-argumentation.md` | `lois` (`c-25.01-r.0.2.1`, `r.9`, `qccs-*`, `qccq-*`), `juris` |
 | Argumentation écrite / notes et autorités de première instance | `references/arg-argumentation-ecrite.md` | `lois` (`c-25.01-r.0.2.1`, `r.9`, `qccs-*`, `qccq-*`), `juris` |
 | Mémoire d'appel et exposé en Cour d'appel (`372–374`) | `references/arg-memoire-et-expose-appel.md` | `lois` (`c-25.01-r.0.2.01`), `juris` |
 | Discipline de citation (Guide McGill), statut de lecture et crochet `[RATIO ...]` | `references/arg-citations.md` | `juris` (`verify_citations`, `get_case`) |
-| Mise en demeure (`1594–1597 C.c.Q.`) | `references/corr-mise-en-demeure.md` | `lois`, `outils` (`registre_*`, `adresse_verify`, `interets_1619`) |
+| Mise en demeure (`1594–1597 C.c.Q.`) | `references/corr-mise-en-demeure.md` | `lois`, `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`) |
 | Lettre au confrère, au tribunal ou au greffe | `references/corr-confrere-et-tribunal.md` | `outils` (`terminologie_scan`) |
 | Lettre d'opinion, rapport ou demande d'instructions au client | `references/corr-client.md` | `lois`, `outils` |
 | Protocole de l'instance (`148 C.p.c.`) | `references/contrat-protocole-instance.md` | `lois` (`cpc`) |
-| Ententes judiciaires (expertise commune, consentement à jugement, homologation) | `references/contrat-ententes-judiciaires.md` | `lois` (`cpc`) |
-| Transaction et quittance (`2631–2637 C.c.Q.`) | `references/contrat-transaction-quittance.md` | `lois` (`ccq`), `outils` (`registre_*`) |
-| Contrats civils et commerciaux (style civiliste, ordre public C.c.Q.) | `references/contrat-civil-commercial.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`) |
+| Ententes judiciaires (expertise commune, consentement à jugement, homologation) | `references/contrat-ententes-judiciaires.md` | `lois` (`cpc`), `outils` (`registre_*`, `interets_1619`) |
+| Transaction et quittance (`2631–2637 C.c.Q.`) | `references/contrat-transaction-quittance.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`) |
+| Contrats civils et commerciaux (style civiliste, ordre public C.c.Q.) | `references/contrat-civil-commercial.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`) |
 | Bordereau de pièces, endos de cour ou cahier des sources à joindre | `../production-et-conformite/references/cahier-des-pieces-et-bordereaux.md` *(ou `cahier-des-sources.md` / `controle-endos-depot-signification.md`)* | `lois`, `outils` (`greffe_parse_number`, `palais_get`) |
 | Délai d'avis d'assignation, de présentation (`101, 527`) ou de protocole à confirmer | `../gestion-du-mandat/references/conformite-echeanciers-cpc.md` *(si absent : `lois` + `outils.calendrier_deadlines`)* | `lois`, `outils` |
 | Fondement juridique non encore vérifié, caviardage (`108`) ou déclencheur déontologique | `../recherche-juridique/references/grille-prealables.md` ou `../analyse-et-strategie/references/preuve-privilege-confidentialite-caviardage.md` | `lois` (`get_articles`) |
