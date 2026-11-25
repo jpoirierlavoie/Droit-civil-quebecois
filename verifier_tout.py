@@ -141,6 +141,194 @@ class TestResult:
 class MockMcpServer:
     """Simulateur conforme JSON-RPC 2.0 pour les 3 serveurs MCP et leurs 35 outils."""
 
+    _OUTILS_TRIMMED_PATHS: Dict[str, Set[str]] = {
+        "greffe_parse_number": {"court_file_number"},
+        "palais_get": {"greffe_number", "palais"},
+        "registre_search": {"query"},
+        "registre_get_entity": {"neq", "corporation_number", "bn_ne", "lei"},
+        "adresse_verify": {
+            "address",
+            "civic_number",
+            "street",
+            "unit",
+            "municipality",
+            "postal_code",
+            "lot_number",
+            "matricule",
+        },
+        "terminologie_lookup": {"query", "domain_filter"},
+        "termino_attestations": {"term", "law_filter"},
+        "taux_boc_rates": {"currency", "amount"},
+        "indice_ipc": {"amount"},
+        "loyer_tal": {
+            "cmhc_geo",
+            "capital_works[].label",
+            "new_expenses[].label",
+            "aid_variations[].label",
+        },
+    }
+
+    _BOC_SERIES_BOUNDS: Dict[str, Tuple[str, str, int]] = {
+        "V39079": ("2009-04-21", "2026-11-23", 4),
+        "V122530": ("2001-01-01", "2026-10-01", 35),
+        "V80691311": ("2000-12-27", "2026-11-18", 10),
+    }
+
+    _MOCK_CMHC_CENTRES: Tuple[Tuple[int, str, str, str, str, str, int, int, int], ...] = (
+        (6, "st-john-s-nl", "St. John's, Terre-Neuve-et-Labrador", "St. John's, Newfoundland and Labrador", "st john s", "NL", 0, 1987, 2025),
+        (10, "halifax-ns", "Halifax, Nouvelle-Écosse", "Halifax, Nova Scotia", "halifax", "NS", 0, 1987, 2025),
+        (20, "moncton-nb", "Moncton, Nouveau-Brunswick", "Moncton, New Brunswick", "moncton", "NB", 0, 1987, 2025),
+        (23, "alma-qc", "Alma, Québec", "Alma, Quebec", "alma", "QC", 1, 1987, 2025),
+        (24, "amos-qc", "Amos, Québec", "Amos, Quebec", "amos", "QC", 1, 1992, 2025),
+        (25, "asbestos-qc", "Asbestos, Québec", "Asbestos, Quebec", "asbestos", "QC", 1, 1987, 1987),
+        (26, "baie-comeau-qc", "Baie-Comeau, Québec", "Baie-Comeau, Quebec", "baie comeau", "QC", 1, 1987, 2025),
+        (27, "becancour-qc", "Bécancour, Québec", "Bécancour, Quebec", "becancour", "QC", 1, 1987, 1987),
+        (29, "chibougamau-qc", "Chibougamau, Québec", "Chibougamau, Quebec", "chibougamau", "QC", 1, 1987, 1987),
+        (30, "saguenay-qc", "Saguenay, Québec", "Saguenay, Quebec", "saguenay", "QC", 1, 1987, 2025),
+        (31, "cowansville-qc", "Cowansville, Québec", "Cowansville, Quebec", "cowansville", "QC", 1, 1987, 2025),
+        (32, "dolbeau-mistassini-qc", "Dolbeau-Mistassini, Québec", "Dolbeau-Mistassini, Quebec", "dolbeau mistassini", "QC", 1, 1987, 2025),
+        (33, "drummondville-qc", "Drummondville, Québec", "Drummondville, Quebec", "drummondville", "QC", 1, 1987, 2025),
+        (34, "gaspe-qc", "Gaspé, Québec", "Gaspé, Quebec", "gaspe", "QC", 1, 1987, 2025),
+        (35, "granby-qc", "Granby, Québec", "Granby, Quebec", "granby", "QC", 1, 1987, 2025),
+        (36, "hawkesbury-partie-quebecoise-qc", "Hawkesbury, partie québécoise, Ontario/Québec", "Hawkesbury, Quebec part, Ontario/Quebec", "hawkesbury partie quebecoise", "QC", 1, 2003, 2025),
+        (37, "ottawa-gatineau-partie-quebecoise-qc", "Ottawa-Gatineau, partie québécoise, Ontario/Québec", "Ottawa-Gatineau, Quebec part, Ontario/Quebec", "ottawa gatineau partie quebecoise", "QC", 1, 1987, 2025),
+        (38, "joliette-qc", "Joliette, Québec", "Joliette, Quebec", "joliette", "QC", 1, 1987, 2025),
+        (39, "la-baie-qc", "La Baie, Québec", "La Baie, Quebec", "la baie", "QC", 1, 1987, 1987),
+        (40, "la-tuque-qc", "La Tuque, Québec", "La Tuque, Quebec", "la tuque", "QC", 1, 1987, 2025),
+        (41, "lachute-qc", "Lachute, Québec", "Lachute, Quebec", "lachute", "QC", 1, 1987, 2025),
+        (42, "magog-qc", "Magog, Québec", "Magog, Quebec", "magog", "QC", 1, 1987, 2006),
+        (43, "matane-qc", "Matane, Québec", "Matane, Quebec", "matane", "QC", 1, 1987, 2025),
+        (45, "montmagny-qc", "Montmagny, Québec", "Montmagny, Quebec", "montmagny", "QC", 1, 1987, 2025),
+        (46, "montreal-qc", "Montréal, Québec", "Montréal, Quebec", "montreal", "QC", 1, 1987, 2025),
+        (48, "quebec-qc", "Québec, Québec", "Québec, Quebec", "quebec", "QC", 1, 1987, 2025),
+        (49, "rimouski-qc", "Rimouski, Québec", "Rimouski, Quebec", "rimouski", "QC", 1, 1987, 2025),
+        (50, "riviere-du-loup-qc", "Rivière-du-Loup, Québec", "Rivière-du-Loup, Quebec", "riviere du loup", "QC", 1, 1987, 2025),
+        (51, "roberval-qc", "Roberval, Québec", "Roberval, Quebec", "roberval", "QC", 1, 1987, 2022),
+        (52, "rouyn-noranda-qc", "Rouyn-Noranda, Québec", "Rouyn-Noranda, Quebec", "rouyn noranda", "QC", 1, 1987, 2025),
+        (53, "salaberry-de-valleyfield-qc", "Salaberry-de-Valleyfield, Québec", "Salaberry-de-Valleyfield, Quebec", "salaberry de valleyfield", "QC", 1, 1987, 2025),
+        (54, "sept-iles-qc", "Sept-Îles, Québec", "Sept-Îles, Quebec", "sept iles", "QC", 1, 1987, 2025),
+        (55, "shawinigan-qc", "Shawinigan, Québec", "Shawinigan, Quebec", "shawinigan", "QC", 1, 1987, 2025),
+        (56, "sherbrooke-qc", "Sherbrooke, Québec", "Sherbrooke, Quebec", "sherbrooke", "QC", 1, 1987, 2025),
+        (57, "sorel-tracy-qc", "Sorel-Tracy, Québec", "Sorel-Tracy, Quebec", "sorel tracy", "QC", 1, 1987, 2025),
+        (58, "sainte-marie-qc", "Sainte-Marie, Québec", "Sainte-Marie, Quebec", "sainte marie", "QC", 1, 1992, 2025),
+        (59, "saint-georges-qc", "Saint-Georges, Québec", "Saint-Georges, Quebec", "saint georges", "QC", 1, 1987, 2025),
+        (60, "saint-hyacinthe-qc", "Saint-Hyacinthe, Québec", "Saint-Hyacinthe, Quebec", "saint hyacinthe", "QC", 1, 1987, 2025),
+        (61, "saint-jean-sur-richelieu-qc", "Saint-Jean-sur-Richelieu, Québec", "Saint-Jean-sur-Richelieu, Quebec", "saint jean sur richelieu", "QC", 1, 1987, 2016),
+        (62, "saint-jerome-qc", "Saint-Jérôme, Québec", "Saint-Jérôme, Quebec", "saint jerome", "QC", 1, 1987, 1997),
+        (63, "thetford-mines-qc", "Thetford Mines, Québec", "Thetford Mines, Quebec", "thetford mines", "QC", 1, 1987, 2025),
+        (64, "trois-rivieres-qc", "Trois-Rivières, Québec", "Trois-Rivières, Quebec", "trois rivieres", "QC", 1, 1987, 2025),
+        (65, "val-d-or-qc", "Val-d'Or, Québec", "Val-d'Or, Quebec", "val d or", "QC", 1, 1987, 2025),
+        (66, "victoriaville-qc", "Victoriaville, Québec", "Victoriaville, Quebec", "victoriaville", "QC", 1, 1987, 2025),
+        (105, "ottawa-gatineau-on-qc", "Ottawa-Gatineau, Ontario/Québec", "Ottawa-Gatineau, Ontario/Quebec", "ottawa gatineau", "ON/QC", 0, 1987, 2025),
+        (106, "ottawa-gatineau-partie-ontarienne-on", "Ottawa-Gatineau, partie ontarienne, Ontario/Québec", "Ottawa-Gatineau, Ontario part, Ontario/Quebec", "ottawa gatineau partie ontarienne", "ON", 0, 1987, 2025),
+        (125, "toronto-on", "Toronto, Ontario", "Toronto, Ontario", "toronto", "ON", 0, 1987, 2025),
+        (134, "winnipeg-mb", "Winnipeg, Manitoba", "Winnipeg, Manitoba", "winnipeg", "MB", 0, 1987, 2025),
+        (140, "regina-sk", "Regina, Saskatchewan", "Regina, Saskatchewan", "regina", "SK", 0, 1987, 2025),
+        (141, "saskatoon-sk", "Saskatoon, Saskatchewan", "Saskatoon, Saskatchewan", "saskatoon", "SK", 0, 1987, 2025),
+        (146, "calgary-ab", "Calgary, Alberta", "Calgary, Alberta", "calgary", "AB", 0, 1987, 2025),
+        (148, "edmonton-ab", "Edmonton, Alberta", "Edmonton, Alberta", "edmonton", "AB", 0, 1987, 2025),
+        (184, "vancouver-bc", "Vancouver, Colombie-Britannique", "Vancouver, British Columbia", "vancouver", "BC", 0, 1987, 2025),
+        (186, "victoria-bc", "Victoria, Colombie-Britannique", "Victoria, British Columbia", "victoria", "BC", 0, 1987, 2025),
+        (190, "saint-felicien-qc", "Saint-Félicien, Québec", "Saint-Félicien, Quebec", "saint felicien", "QC", 1, 2002, 2025),
+        (203, "saint-lin-laurentides-qc", "Saint-Lin--Laurentides, Québec", "Saint-Lin--Laurentides, Quebec", "saint lin laurentides", "QC", 1, 2007, 2016),
+        (214, "les-iles-de-la-madeleine-qc", "Les Îles-de-la-Madeleine, Québec", "Les Îles-de-la-Madeleine, Quebec", "les iles de la madeleine", "QC", 1, 2008, 2025),
+        (215, "mont-laurier-qc", "Mont-Laurier, Québec", "Mont-Laurier, Quebec", "mont laurier", "QC", 1, 2008, 2025),
+        (216, "prevost-qc", "Prévost, Québec", "Prévost, Quebec", "prevost", "QC", 1, 2008, 2025),
+        (217, "rawdon-qc", "Rawdon, Québec", "Rawdon, Quebec", "rawdon", "QC", 1, 2008, 2025),
+        (218, "sainte-adele-qc", "Sainte-Adèle, Québec", "Sainte-Adèle, Quebec", "sainte adele", "QC", 1, 2008, 2025),
+        (219, "sainte-sophie-qc", "Sainte- Sophie, Québec", "Sainte- Sophie, Quebec", "sainte sophie", "QC", 1, 2008, 2025),
+    )
+
+    @staticmethod
+    def _normalize_cmhc_search(raw: str) -> str:
+        folded = "".join(
+            ch for ch in unicodedata.normalize("NFD", raw)
+            if unicodedata.category(ch) != "Mn"
+        ).lower()
+        return re.sub(r"[^a-z0-9]+", " ", folded).strip()
+
+    @classmethod
+    def _resolve_mock_cmhc(
+        cls, raw_geo: Optional[str]
+    ) -> Tuple[Optional[List[Tuple[int, str, str, str, str, str, int, int, int]]], Optional[str]]:
+        if not raw_geo or not raw_geo.strip():
+            majors = [c for c in cls._MOCK_CMHC_CENTRES if c[0] in (46, 48, 37, 56, 64, 30)]
+            majors.sort(key=lambda c: (-c[6], c[0]))
+            return majors, None
+        cleaned = raw_geo.strip()
+        if cleaned.isdigit():
+            cid = int(cleaned)
+            found = [c for c in cls._MOCK_CMHC_CENTRES if c[0] == cid]
+            if found:
+                return found, None
+            return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+        q_norm = cls._normalize_cmhc_search(cleaned)
+        if not q_norm:
+            return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+        terms: List[str] = [q_norm]
+        stripped_prov = re.sub(
+            r"\s+(?:(?:ontario|new brunswick|nouveau brunswick)\s+quebec|saskatchewan\s+alberta|saskachewan\s+alberta|quebec|qc|ontario|on|new brunswick|nouveau brunswick|nb|alberta|ab|british columbia|colombie britannique|bc|manitoba|mb|nova scotia|nouvelle ecosse|ns|newfoundland and labrador|terre neuve et labrador|nl|prince edward island|ile du prince edouard|pe|pei|yukon|yt|northwest territories|territoires du nord ouest|nt|nunavut|nu)$",
+            "",
+            q_norm,
+        ).strip()
+        mapped_parts = (
+            stripped_prov.replace("quebec part", "partie quebecoise")
+            .replace("ontario part", "partie ontarienne")
+            .replace("new brunswick part", "partie nouveau brunswick")
+            .strip()
+        )
+        for t in (mapped_parts, stripped_prov):
+            if t and t not in terms:
+                terms.append(t)
+        ordered = sorted(cls._MOCK_CMHC_CENTRES, key=lambda c: (-c[6], c[0]))
+        for term in terms:
+            exact = [c for c in ordered if c[4] == term]
+            if exact:
+                return [exact[0]], None
+        term_set = set(terms)
+        name_matched = [
+            c for c in ordered
+            if cls._normalize_cmhc_search(c[2]) in term_set
+            or cls._normalize_cmhc_search(c[3]) in term_set
+            or c[4] in term_set
+        ]
+        if name_matched:
+            return [name_matched[0]], None
+        like_term = terms[1] if len(terms) > 1 else terms[0]
+        candidates = sorted(
+            [c for c in cls._MOCK_CMHC_CENTRES if like_term in c[4]],
+            key=lambda c: (-c[6], len(c[4]), c[0]),
+        )[:10]
+        if len(candidates) == 1:
+            return candidates, None
+        if len(candidates) > 1:
+            qc_cands = [c for c in candidates if c[6] == 1]
+            if len(qc_cands) == 1:
+                return qc_cands, None
+            list_label = ", ".join(f"{c[2]} (id={c[0]})" for c in candidates[:8])
+            return None, f"Plusieurs centres SCHL correspondent à « {cleaned} » : {list_label}. Préciser le nom exact ou l'identifiant numérique."
+        return None, f"Aucun centre urbain SCHL trouvé pour « {cleaned} » dans Statistique Canada 34-10-0133-01."
+
+    @staticmethod
+    def _cpi_series_bounds(freq: str, geo: str, product: str, uom: str) -> Optional[Tuple[int, int]]:
+        if uom == "1992=100":
+            if product != "all_items":
+                return None
+            last_p = 201812 if freq == "monthly" else 2018
+        else:
+            last_p = 202610 if freq == "monthly" else 2025
+        if geo == "canada" and product == "all_items":
+            first_p = 191401 if freq == "monthly" else 1914
+        elif geo == "canada" and product in ("rent", "rented_accommodation"):
+            first_p = 194901 if freq == "monthly" else 1949
+        elif geo in ("montreal_rmr", "quebec_rmr") and product in ("all_items", "rented_accommodation"):
+            first_p = 197101 if freq == "monthly" else 1971
+        elif product == "health_care_services":
+            first_p = 198501 if freq == "monthly" else 1985
+        else:
+            first_p = 197809 if freq == "monthly" else 1979
+        return first_p, last_p
+
     def __init__(self, server_name: str, secret_token: Optional[str] = None):
         self.server_name = server_name
         if secret_token is not None:
@@ -1202,7 +1390,7 @@ class MockMcpServer:
             )
 
     def _validate_schema_value(
-        self, value: Any, schema: Dict[str, Any], path: str = ""
+        self, value: Any, schema: Dict[str, Any], path: str = "", tool_name: str = ""
     ) -> Optional[str]:
         """Valide récursivement une valeur contre un sous-schéma JSON Schema."""
         expected_type = schema.get("type")
@@ -1223,7 +1411,7 @@ class MockMcpServer:
             for k, v in value.items():
                 if k in props:
                     sub_path = f"{path}.{k}" if path else k
-                    err = self._validate_schema_value(v, props[k], sub_path)
+                    err = self._validate_schema_value(v, props[k], sub_path, tool_name)
                     if err:
                         return err
             return None
@@ -1238,7 +1426,7 @@ class MockMcpServer:
             items_schema = schema.get("items")
             if isinstance(items_schema, dict):
                 for idx, item in enumerate(value):
-                    err = self._validate_schema_value(item, items_schema, f"{path}[{idx}]")
+                    err = self._validate_schema_value(item, items_schema, f"{path}[{idx}]", tool_name)
                     if err:
                         return err
             return None
@@ -1260,15 +1448,20 @@ class MockMcpServer:
         if expected_type == "string":
             if not isinstance(value, str):
                 return f"Type invalide pour '{path}' : attendu string, reçu {type(value).__name__}."
-            if "minLength" in schema and len(value) < schema["minLength"]:
+            norm_path = re.sub(r"\[\d+\]", "[]", path)
+            should_trim = (
+                self.server_name == "outils"
+                and norm_path in self._OUTILS_TRIMMED_PATHS.get(tool_name, set())
+            )
+            check_val = value.strip() if should_trim else value
+            if "minLength" in schema and len(check_val) < schema["minLength"]:
                 return f"Chaîne trop courte pour '{path}' (minimum {schema['minLength']} car.)."
-            if "maxLength" in schema and len(value) > schema["maxLength"]:
+            if "maxLength" in schema and len(check_val) > schema["maxLength"]:
                 return f"Chaîne trop longue pour '{path}' (maximum {schema['maxLength']} car.)."
             if "pattern" in schema:
-                target_s = value.strip() if path in ("amount", "currency") else value
-                if not re.match(schema["pattern"], target_s):
+                if not re.match(schema["pattern"], check_val):
                     return f"Format invalide pour '{path}' : '{value}'."
-            if "enum" in schema and value not in schema["enum"]:
+            if "enum" in schema and check_val not in schema["enum"]:
                 return f"Valeur invalide '{value}' pour '{path}' : attendu parmi {schema['enum']}."
             return None
 
@@ -1281,7 +1474,7 @@ class MockMcpServer:
         if not isinstance(args, dict):
             return "Les arguments doivent être un objet JSON."
 
-        schema_err = self._validate_schema_value(args, schema, "")
+        schema_err = self._validate_schema_value(args, schema, "", tool_name)
         if schema_err:
             return schema_err
 
@@ -1425,6 +1618,47 @@ class MockMcpServer:
                     return "La conversion avec amount requiert category='fx', date et currency."
             elif args.get("direction") is not None:
                 return "direction requiert amount."
+            if eff_cat == "fx":
+                if has_date:
+                    req_d = str(args["date"])
+                    if req_d < "2001-01-02":
+                        return f"Aucun taux de change disponible pour {code_u} au {req_d} (plage disponible sous ce régime : 2001-01-02 au 2017-04-28)."
+                    tail_days = (datetime.date.fromisoformat(req_d) - datetime.date(2026, 11, 24)).days
+                    if tail_days > 4:
+                        return f"La date demandée ({req_d}) dépasse la dernière observation vérifiée dans DB_ECONOMIE (2026-11-24) pour le régime moyenne quotidienne 16 h 30 HE (2017-05-01+). Aucune extrapolation n'est effectuée."
+                else:
+                    s_d = str(args["start_date"])
+                    e_d = str(args["end_date"])
+                    if e_d < "2001-01-02" or s_d > "2026-11-24":
+                        return f"Aucune observation de taux de change pour {code_u} entre {s_d} et {e_d}."
+            else:
+                target_sids = (
+                    ["V39079"] if eff_cat == "policy" else
+                    ["V122530"] if eff_cat == "bank" else
+                    ["V80691311"] if eff_cat == "prime" else
+                    ["V39079", "V122530", "V80691311"]
+                )
+                valid_any = False
+                for sid in target_sids:
+                    s_min, s_max, max_tail = self._BOC_SERIES_BOUNDS[sid]
+                    if has_date:
+                        req_d = str(args["date"])
+                        tail_days = (
+                            datetime.date.fromisoformat(req_d) - datetime.date.fromisoformat(s_max)
+                        ).days
+                        if req_d >= s_min and tail_days <= max_tail:
+                            valid_any = True
+                            break
+                    else:
+                        s_d = str(args["start_date"])
+                        e_d = str(args["end_date"])
+                        if not (e_d < s_min or s_d > s_max):
+                            valid_any = True
+                            break
+                if not valid_any:
+                    if has_date:
+                        return f"Aucun taux Banque du Canada disponible pour la date {args['date']} (hors instantané DB_ECONOMIE sans extrapolation)."
+                    return f"Aucune observation pour {', '.join(target_sids)} entre {args['start_date']} et {args['end_date']}."
 
         # Règles indice_ipc
         if tool_name == "indice_ipc":
@@ -1489,6 +1723,26 @@ class MockMcpServer:
                     return f"Plancher incohérent : floor_bps ({args['floor_bps']}) > cap_bps ({args['cap_bps']})."
             elif any(args.get(k) is not None for k in ("floor_bps", "cap_bps", "rounding")):
                 return "floor_bps, cap_bps et rounding requièrent amount."
+            eff_freq = next(iter(parsed_freqs.values()))[0]
+            start_bounds = self._cpi_series_bounds(eff_freq, geo, product, uom)
+            if start_bounds is None:
+                return f"Série IPC introuvable dans DB_ECONOMIE pour geo='{geo}', product='{product}', frequency='{eff_freq}', uom='{uom}'."
+            end_bounds = self._cpi_series_bounds(eff_freq, geo, product, end_uom)
+            if end_bounds is None:
+                return f"Série IPC de fin introuvable dans DB_ECONOMIE pour geo='{geo}', product='{product}', frequency='{eff_freq}', end_uom='{end_uom}'."
+            if has_per:
+                p_int = parsed_freqs["period"][1]
+                if p_int < start_bounds[0] or p_int > start_bounds[1]:
+                    return f"La période demandée ({args['period']}) est hors de l'instantané vérifié ({uom}). Aucune extrapolation n'est effectuée."
+            else:
+                s_int = parsed_freqs["start_period"][1]
+                e_int = parsed_freqs["end_period"][1]
+                if uom == end_uom:
+                    if s_int < start_bounds[0] or e_int > start_bounds[1]:
+                        return f"La plage demandée ({args['start_period']} à {args['end_period']}) déborde de l'instantané vérifié ({uom}). Aucune extrapolation n'est effectuée."
+                else:
+                    if s_int < start_bounds[0] or s_int > start_bounds[1] or e_int < end_bounds[0] or e_int > end_bounds[1]:
+                        return f"La plage demandée ({args['start_period']} à {args['end_period']}) déborde de l'instantané vérifié. Aucune extrapolation n'est effectuée."
 
         # Règles loyer_tal
         if tool_name == "loyer_tal":
@@ -1497,6 +1751,16 @@ class MockMcpServer:
                 tal_year = args.get("year")
                 if tal_year is not None and (int(tal_year) < 2015 or int(tal_year) > 2027):
                     return f"Année '{tal_year}' hors couverture des barèmes TAL embarqués (2015 à 2027)."
+            if tal_mode == "schl":
+                centres, cmhc_err = self._resolve_mock_cmhc(args.get("cmhc_geo"))
+                if cmhc_err or not centres:
+                    return cmhc_err or "Aucun centre urbain SCHL trouvé."
+                tal_year = args.get("year")
+                if tal_year is not None:
+                    yr_i = int(tal_year)
+                    for c in centres:
+                        if yr_i < c[7] or yr_i > c[8]:
+                            return f"Année {yr_i} hors plage SCHL pour {c[2]} (disponible : {c[7]} à {c[8]}). Aucune extrapolation n'est effectuée."
             if tal_mode == "calcul_2026":
                 if not args.get("lease_renewal_date") or args.get("current_rent_cents") is None:
                     return "Le mode 'calcul_2026' requiert lease_renewal_date et current_rent_cents."
@@ -2338,7 +2602,7 @@ class MockMcpServer:
             }
 
         elif tool_name == "greffe_parse_number":
-            num = args.get("court_file_number", "")
+            num = str(args.get("court_file_number", "")).strip()
             # Format standard québécois : 500-17-012345-211
             parts = num.split("-")
             greffe = parts[0] if len(parts) >= 1 else "500"
@@ -2561,7 +2825,7 @@ class MockMcpServer:
             }
 
         elif tool_name == "registre_search":
-            q = args.get("query", "")
+            q = str(args.get("query", "")).strip()
             jur = args.get("jurisdiction", "all")
             is_gleif = jur == "gleif" or bool(re.match(r"^[A-Za-z0-9]{20}$", q.strip()))
             is_ca = jur == "ca"
@@ -2964,7 +3228,7 @@ class MockMcpServer:
             }
 
         elif tool_name == "terminologie_lookup":
-            q = args.get("query", "mortgage")
+            q = str(args.get("query", "mortgage")).strip()
             src_lang = args.get("source_lang", "auto")
             return {
                 "content": [
@@ -3006,9 +3270,9 @@ class MockMcpServer:
             }
 
         elif tool_name == "termino_attestations":
-            term = args.get("term", "hypothec")
+            term = str(args.get("term", "hypothec")).strip()
             lang = args.get("lang", "en")
-            law_filter = args.get("law_filter")
+            law_filter = str(args["law_filter"]).strip() if args.get("law_filter") is not None else None
             return {
                 "content": [
                     {
@@ -3120,6 +3384,9 @@ class MockMcpServer:
             dt_req = datetime.date.fromisoformat(req_date)
             rollback_days = 2 if dt_req.weekday() == 6 else (1 if dt_req.weekday() == 5 else 0)
             eff_date = (dt_req - datetime.timedelta(days=rollback_days)).isoformat()
+            if cat == "fx" and not is_range and req_date > "2026-11-24":
+                eff_date = "2026-11-24"
+                rollback_days = (dt_req - datetime.date(2026, 11, 24)).days
             rolled_back = rollback_days > 0
             cad_per_foreign = _fmt_micros6(rate_micros)
             foreign_per_cad_micros = _round_half_away(1_000_000 * 1_000_000, rate_micros)
@@ -3157,14 +3424,32 @@ class MockMcpServer:
                     ["V39079", "V122530", "V80691311"]
                 )
                 for sid in target_sids:
+                    s_min, s_max, max_tail = self._BOC_SERIES_BOUNDS[sid]
+                    if is_range:
+                        s_d = str(args["start_date"])
+                        e_d = str(args["end_date"])
+                        if e_d < s_min or s_d > s_max:
+                            continue
+                        sid_eff = max(s_d, s_min)
+                        sid_rb = 0
+                    else:
+                        dt_smax = datetime.date.fromisoformat(s_max)
+                        if req_date < s_min or (dt_req - dt_smax).days > max_tail:
+                            continue
+                        if req_date > s_max:
+                            sid_eff = s_max
+                            sid_rb = (dt_req - dt_smax).days
+                        else:
+                            sid_eff = eff_date
+                            sid_rb = rollback_days
                     lbl_fr, bps_val = series_map[sid]
                     int_obs.append({
                         "series_id": sid,
                         "series_label_fr": lbl_fr,
                         "requested_date": None if is_range else req_date,
-                        "effective_observation_date": eff_date,
-                        "rolled_back": rolled_back,
-                        "rollback_days": rollback_days,
+                        "effective_observation_date": sid_eff,
+                        "rolled_back": sid_rb > 0,
+                        "rollback_days": sid_rb,
                         "rate_bps": bps_val,
                         "rate_percent": f"{bps_val / 100:.2f} %",
                     })
@@ -3413,7 +3698,12 @@ class MockMcpServer:
                     },
                 }
             if mode == "schl":
-                geo_label = args.get("cmhc_geo") or "Montréal"
+                centres, cmhc_err = self._resolve_mock_cmhc(args.get("cmhc_geo"))
+                if cmhc_err or not centres:
+                    return {
+                        "isError": True,
+                        "content": [{"type": "text", "text": cmhc_err or "Aucun centre urbain SCHL trouvé."}],
+                    }
                 struct_type = args.get("structure_type") or "row_and_apartment_3_plus"
                 unit_type = args.get("unit_type") or "all"
                 all_cells = [
@@ -3423,29 +3713,32 @@ class MockMcpServer:
                     {"unit_type": "three_bedroom", "unit_label_fr": "3 chambres", "rent_dollars": 1680, "suppressed": False},
                 ]
                 cells = all_cells if unit_type == "all" else [c for c in all_cells if c["unit_type"] == unit_type]
+                cmhc_results = [
+                    {
+                        "geo_member_id": c[0],
+                        "geo_key": c[1],
+                        "name_fr": c[2],
+                        "name_en": c[3],
+                        "province_code": c[5],
+                        "is_quebec": bool(c[6]),
+                        "year": args.get("year") or c[8],
+                        "structure_type": struct_type,
+                        "structure_label_fr": "Logements en bandes et immeubles d'appartements de 3 logements et plus",
+                        "uom": "Dollars",
+                        "cells": cells,
+                    }
+                    for c in centres
+                ]
+                geo_summary = ", ".join(c["name_fr"] for c in cmhc_results[:3])
                 return {
-                    "content": [{"type": "text", "text": f"Loyers moyens du marché SCHL pour {geo_label} (StatCan 34-10-0133-01)."}],
+                    "content": [{"type": "text", "text": f"Loyers moyens du marché SCHL pour {geo_summary} (StatCan 34-10-0133-01)."}],
                     "structuredContent": {
                         "mode": "schl",
                         "regime": "schl_marche",
                         "calculation": None,
                         "bareme_post_2026": [],
                         "bareme_pre_2026": [],
-                        "cmhc_results": [
-                            {
-                                "geo_member_id": 46,
-                                "geo_key": "montreal",
-                                "name_fr": geo_label,
-                                "name_en": geo_label,
-                                "province_code": "QC",
-                                "is_quebec": True,
-                                "year": args.get("year") or 2025,
-                                "structure_type": struct_type,
-                                "structure_label_fr": "Logements en bandes et immeubles d'appartements de 3 logements et plus",
-                                "uom": "Dollars",
-                                "cells": cells,
-                            }
-                        ],
+                        "cmhc_results": cmhc_results,
                         "provenance": {"source": "Statistique Canada / SCHL (34-10-0133-01)", "verified_at": "2025-12-17"},
                         "gardes": [{"code": "SCHL_LOYER_MOYEN_INDICATIF", "message": "Moyenne statistique indicative sans valeur de plafond légal ni preuve comparative au sens des art. 1896 et 1950 C.c.Q."}],
                     },
@@ -5469,6 +5762,16 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 ("registre_get_entity", {"bn_ne": "abc"}),
                 ("palais_get", {"greffe_number": "999"}),
                 ("palais_get", {"palais": "Atlantis"}),
+                ("registre_search", {"query": "   "}),
+                ("terminologie_lookup", {"query": "   "}),
+                ("greffe_parse_number", {"court_file_number": "   "}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "   "}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"label": "   ", "gross_amount_cents": 10000}]}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2030-01-01"}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2000-01-05"}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "Montréal", "year": 2027}),
+                ("loyer_tal", {"mode": "schl", "cmhc_geo": "Atlantis"}),
+                ("indice_ipc", {"geo": "quebec", "product": "all_items", "period": "2030-01"}),
             ]
             failed_probes = []
             for tname, targs in neg_probes:
