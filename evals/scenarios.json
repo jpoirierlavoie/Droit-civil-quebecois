@@ -1919,7 +1919,7 @@
       "criteres": [
         "Relever via lois.related_laws(rel_type='preseance-sur') que qccs-dist-mtl prime qccs-div-mtl (fonction='directive', unit='paragraphe', par./dir.).",
         "Distinguer le Règlement 45-106 (v-1.1-r.21, fonction='reglement') de l'Instruction générale amf-ig-45-106 (fonction='orientation', rel_type='interprete', indicative sans force de loi).",
-        "Signaler que les textes PDF Vague 1 (corpus de 110 textes) sont publiés en français seulement (langs: ['fr']) et que les directives de la Cour d'appel (QCCA) sont hors corpus."
+        "Signaler que les directives PDF (corpus de 110 textes) sont publiées en français seulement (langs: ['fr']) et qu'aucun recueil unifié de directives de la Cour d'appel (QCCA) n'existe au-delà de c-25.01-r.0.2.01 (avis du greffier à vérifier à la source)."
       ],
       "doit_contenir": [
         "qccs-dist-mtl",
@@ -2015,6 +2015,34 @@
       "enchainement_attendu": [
         "analyse-et-strategie:piece-reception-et-qualification"
       ],
+      "declencheur_negatif": false
+    },
+    {
+      "id": "RJ-08",
+      "competence": "recherche-juridique",
+      "palier": 2,
+      "titre": "Quarantaine par domaine (core par défaut, silos sectoriels, forum et radar other_domains)",
+      "prompt": "Lors d'une recherche via lois sur un avis de réclamation à une municipalité ou un recours en Cour fédérale, pourquoi find_relevant et search_text sans paramètre domains ne retournent-ils par défaut que 'core', et comment ouvrir les silos sans perdre les lectures directes ?",
+      "criteres": [
+        "Expliquer que list_laws, find_relevant et search_text (sans law) ciblent par défaut le domaine 'core' avec radar other_domains sur les 7 silos en quarantaine.",
+        "Passer explicitement domains=['core', 'municipal-environnement'] ou domains=['cours-federales'] (avec jurisdiction/forum au besoin) pour explorer les textes sectoriels.",
+        "Préciser que les outils directs (get_article, get_articles, resolve_reference, search_text(law=...)) demeurent ouverts à tout le corpus."
+      ],
+      "doit_contenir": [
+        "core",
+        "domains",
+        "other_domains",
+        "municipal-environnement|cours-federales",
+        "get_article|search_text"
+      ],
+      "ne_doit_pas_contenir": [
+        "sans filtre retourne déjà toutes les lois municipales et les Règles des Cours fédérales"
+      ],
+      "feuilles_attendues": [
+        "recherche-legislative",
+        "grille-prealables"
+      ],
+      "enchainement_attendu": [],
       "declencheur_negatif": false
     }
   ]

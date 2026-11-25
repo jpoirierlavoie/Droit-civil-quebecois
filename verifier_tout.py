@@ -345,12 +345,33 @@ class MockMcpServer:
         tools: Dict[str, Dict[str, Any]] = {}
 
         if self.server_name == "lois":
+            lois_domain_enum = [
+                "core",
+                "cours-federales",
+                "financier",
+                "construction-immobilier",
+                "municipal-environnement",
+                "travail",
+                "penal",
+                "propriete-intellectuelle",
+                "all",
+            ]
             tools["list_laws"] = {
                 "name": "list_laws",
                 "description": "Carte du corpus avec métadonnées et plans des grands codes.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
+                        "domains": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": lois_domain_enum},
+                            "description": "Domaines à inclure (défaut ['core'], ou ['all']).",
+                        },
+                        "jurisdiction": {
+                            "type": "string",
+                            "enum": ["qc", "ca"],
+                            "description": "Ordre de gouvernement : 'qc' ou 'ca'.",
+                        },
                         "fonction": {"type": "string"},
                         "forum": {"type": "string"},
                         "subject": {"type": "string"},
@@ -394,6 +415,20 @@ class MockMcpServer:
                     "type": "object",
                     "properties": {
                         "query": {"type": "string"},
+                        "domains": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": lois_domain_enum},
+                            "description": "Domaines à interroger (défaut ['core'], ou ['all']).",
+                        },
+                        "jurisdiction": {
+                            "type": "string",
+                            "enum": ["qc", "ca"],
+                            "description": "Restreindre à un ordre de gouvernement : 'qc' ou 'ca'.",
+                        },
+                        "forum": {
+                            "type": "string",
+                            "description": "Cibler un tribunal : conserve les lois générales et écarte les règles d'autres tribunaux.",
+                        },
                         "limit": {"type": "integer"},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
                     },
@@ -474,6 +509,20 @@ class MockMcpServer:
                     "properties": {
                         "query": {"type": "string"},
                         "law": {"type": "string"},
+                        "domains": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": lois_domain_enum},
+                            "description": "Domaines à interroger sans `law` (défaut ['core'], ou ['all']).",
+                        },
+                        "jurisdiction": {
+                            "type": "string",
+                            "enum": ["qc", "ca"],
+                            "description": "Restreindre à un ordre de gouvernement : 'qc' ou 'ca'.",
+                        },
+                        "forum": {
+                            "type": "string",
+                            "description": "Cibler un tribunal : conserve les lois générales et écarte les règles d'autres tribunaux.",
+                        },
                         "limit": {"type": "integer"},
                         "offset": {"type": "integer"},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
@@ -1894,17 +1943,43 @@ class MockMcpServer:
         """Exécute la logique métier de l'outil simulé avec des retours réalistes."""
         # --- Législation ---
         if tool_name == "list_laws":
+            all_domains = [
+                "core",
+                "cours-federales",
+                "financier",
+                "construction-immobilier",
+                "municipal-environnement",
+                "travail",
+                "penal",
+                "propriete-intellectuelle",
+            ]
+            req_domains = args.get("domains") or ["core"]
+            active_domains = all_domains if "all" in req_domains else [d for d in all_domains if d in req_domains]
+            if not active_domains:
+                active_domains = ["core"]
+            excluded_domains = [d for d in all_domains if d not in active_domains]
+            jur = args.get("jurisdiction")
+            mock_laws = [
+                {"id": "ccq", "code": "ccq", "titre": "Code civil du Québec", "chapitre": "CCQ-1991", "domain": "core", "jurisdiction": "qc"},
+                {"id": "cpc", "code": "cpc", "titre": "Code de procédure civile", "chapitre": "C-25.01", "domain": "core", "jurisdiction": "qc"},
+                {"id": "ca-f-7", "code": "ca-f-7", "titre": "Loi sur les Cours fédérales", "chapitre": "F-7", "domain": "cours-federales", "jurisdiction": "ca"},
+            ]
+            filtered = [
+                l for l in mock_laws
+                if l["domain"] in active_domains and (not jur or l["jurisdiction"] == jur)
+            ]
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps([
-                            {"code": "ccq", "titre": "Code civil du Québec", "chapitre": "CCQ-1991"},
-                            {"code": "cpc", "titre": "Code de procédure civile", "chapitre": "C-25.01"},
-                            {"code": "laf", "titre": "Loi sur l'administration fiscale", "chapitre": "A-6.002"},
-                        ], ensure_ascii=False),
+                        "text": json.dumps(filtered, ensure_ascii=False),
                     }
-                ]
+                ],
+                "structuredContent": {
+                    "domains_active": active_domains,
+                    "domains_excluded": excluded_domains,
+                    "laws": filtered,
+                },
             }
 
         elif tool_name == "list_subjects":
@@ -1932,8 +2007,25 @@ class MockMcpServer:
 
         elif tool_name == "find_relevant":
             query = args.get("query", "").lower()
+            req_domains = args.get("domains") or ["core"]
+            active_domains = (
+                [
+                    "core",
+                    "cours-federales",
+                    "financier",
+                    "construction-immobilier",
+                    "municipal-environnement",
+                    "travail",
+                    "penal",
+                    "propriete-intellectuelle",
+                ]
+                if "all" in req_domains
+                else req_domains
+            )
             results = []
-            if "vice" in query or "cach" in query or "infiltration" in query or "garantie" in query:
+            if "cours-federales" in active_domains and ("fédéral" in query or "federal" in query or "amicus" in query):
+                results.append({"law": "ca-f-7", "score": 0.90})
+            elif "vice" in query or "cach" in query or "infiltration" in query or "garantie" in query:
                 results.append({
                     "law": "ccq",
                     "article": "1726",
@@ -1942,7 +2034,14 @@ class MockMcpServer:
                 })
             else:
                 results.append({"law": "ccq", "article": "1457", "score": 0.70})
-            return {"content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}]}
+            return {
+                "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+                "structuredContent": {
+                    "domains_active": active_domains,
+                    "other_domains": [],
+                    "candidates": results,
+                },
+            }
 
         elif tool_name == "get_article":
             law = args.get("law", "").lower()
@@ -2036,6 +2135,21 @@ class MockMcpServer:
 
         elif tool_name == "search_text":
             query = args.get("query", "")
+            req_domains = args.get("domains") or ["core"]
+            active_domains = (
+                [
+                    "core",
+                    "cours-federales",
+                    "financier",
+                    "construction-immobilier",
+                    "municipal-environnement",
+                    "travail",
+                    "penal",
+                    "propriete-intellectuelle",
+                ]
+                if "all" in req_domains
+                else req_domains
+            )
             hits = []
             if "corporel" in query.lower():
                 hits.append({
@@ -2050,13 +2164,22 @@ class MockMcpServer:
                 "snippet": f"Correspondance avec '{query}' : action personnelle se prescrit par trois ans.",
                 "score": 0.88,
             })
+            sc_search: Dict[str, Any] = {
+                "hits": hits,
+                "total": len(hits),
+                "returned": len(hits),
+            }
+            if not args.get("law"):
+                sc_search["domains_active"] = active_domains
+                sc_search["other_domains"] = []
             return {
                 "content": [
                     {
                         "type": "text",
                         "text": json.dumps(hits, ensure_ascii=False),
                     }
-                ]
+                ],
+                "structuredContent": sc_search,
             }
 
         elif tool_name == "resolve_reference":
@@ -6711,15 +6834,45 @@ def run_tier_4_tests(client: UnifiedMcpClient) -> List[TestResult]:
         r3 = client.call_tool("lois", "related_laws", {"law": "cpc", "rel_type": "reglement-de"})
         txt3 = r3.get("content", [{}])[0].get("text", "")
 
-        ok = "2930" in txt1 and "prescription" in txt2.lower() and "cour supérieure" in txt3.lower()
+        # Étape 4 : Filtrage par domaine, juridiction et forum sur lois (Phase 0)
+        r4 = client.call_tool(
+            "lois",
+            "list_laws",
+            {"domains": ["cours-federales"], "jurisdiction": "ca", "structure": False},
+        )
+        sc4 = r4.get("structuredContent") or {}
+        r5 = client.call_tool(
+            "lois",
+            "find_relevant",
+            {"query": "appel cour supérieure", "domains": ["core"], "forum": "Cour supérieure"},
+        )
+        sc5 = r5.get("structuredContent") or {}
+        r6 = client.call_tool(
+            "lois",
+            "search_text",
+            {"query": "prescription", "domains": ["core", "municipal-environnement"], "limit": 2},
+        )
+        sc6 = r6.get("structuredContent") or {}
+
+        ok = (
+            "2930" in txt1
+            and "prescription" in txt2.lower()
+            and "cour supérieure" in txt3.lower()
+            and not r4.get("isError")
+            and sc4.get("domains_active") == ["cours-federales"]
+            and not r5.get("isError")
+            and sc5.get("domains_active") == ["core"]
+            and not r6.get("isError")
+            and "other_domains" in sc6
+        )
         elapsed = (time.perf_counter() - t0) * 1000
         add_result(
             "T4.4",
-            "Scénario 4 : Recherche textuelle et exploration réglementaire (C.c.Q. / C.p.c.)",
+            "Scénario 4 : Recherche textuelle, quarantaine par domaine et exploration réglementaire",
             "lois",
             ok,
             elapsed,
-            None if ok else "Échec dans le scénario 4 de recherche",
+            None if ok else f"Échec dans le scénario 4 de recherche (sc4={sc4}, sc5={sc5}, sc6={sc6})",
         )
     except ConnectionError:
         raise

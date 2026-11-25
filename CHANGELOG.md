@@ -4,6 +4,9 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [
 
 ## [Non publié]
 
+### Modifié
+- Alignement de `recherche-juridique` (`references/recherche-legislative.md`, `references/grille-prealables.md`, `SKILL.md`), de `verifier_tout.py` (`MockMcpServer` + `T4.4`) et de la suite `evals/` (`RJ-08`, précision QCCA sur `RJ-06`, 78 scénarios) sur la **quarantaine à 8 domaines** (`core` par défaut, `cours-federales`, `financier`, `construction-immobilier`, `municipal-environnement`, `travail`, `penal`, `propriete-intellectuelle`, paramètres `domains`, `jurisdiction`, `forum`, radar `other_domains` et note marginale fédérale pondérée) de `MCP-Legislation`.
+
 ---
 
 ## [3.1.0] — 2026-11-24

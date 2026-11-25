@@ -43,10 +43,11 @@ Lot recommandé (`cpc`) : `numbers=["33", "35", "41", "42", "51", "85", "166", "
 
 ## 3. Avis préalables et régimes exclusifs à instancier via `lois.search_text`
 
-Lorsqu'un litige touche une municipalité, un accident, un bâtiment, un emploi ou la consommation, ne jamais présumer le droit commun avant d'interroger `lois.find_relevant` et `lois.search_text` :
+Lorsqu'un litige touche une municipalité, un accident, un bâtiment, un emploi, des valeurs mobilières, les Cours fédérales ou la consommation, ne jamais présumer le droit commun : ouvrir explicitement le silo sectoriel correspondant sur `lois.find_relevant` et `lois.search_text` (p. ex. `domains=['core', 'municipal-environnement']`, `['core', 'construction-immobilier']`, `['core', 'travail']`, `['core', 'financier']`, `['cours-federales']` ou `['all']`) et vérifier le radar `other_domains`, sans quoi la portée par défaut `['core']` écartera ces textes sectoriels :
 
-| Piste | Mots-clés `lois.search_text` | Exemples de lois au corpus (`lois.list_laws`) |
+| Piste | Mots-clés `lois.search_text` et `domains` | Exemples de lois au corpus (`lois.list_laws`) |
 |---|---|---|
-| **Avis préalables** | `"avis préalable"`, `"à peine de déchéance"`, `"quinze jours"` | `c-19` (cités et villes), `c-27.1` (Code municipal), `b-1.1-r.8` |
-| **Régimes exclusifs** | `"recours exclusif"`, `"aucun recours"`, `"immunité"` | Lois sectorielles ou fédérales selon la matière |
+| **Avis préalables** | `"avis préalable"`, `"à peine de déchéance"`, `"quinze jours"` (`domains=['core', 'municipal-environnement']` ou `['core', 'construction-immobilier']`) | `c-19` (cités et villes), `c-27.1` (Code municipal), `b-1.1-r.8` |
+| **Régimes exclusifs** | `"recours exclusif"`, `"aucun recours"`, `"immunité"` (`domains=['core', '<silo>']` ou `['all']`) | Lois sectorielles ou fédérales selon la matière |
+| **Procédure Cours fédérales** | `domains=['cours-federales']` (ou `['core', 'cours-federales']`) | `ca-f-7` (*Loi sur les Cours fédérales*), `ca-dors-98-106` (*Règles des Cours fédérales*) |
 | **Délais de procédure & calcul d'échéance** | *Hors recherche substantielle* | Renvoyer la chaîne et le calcul à `gestion-du-mandat` (`outils.calendrier_deadlines` en régime `qc_prescription` pour la prescription `art. 2879 al. 2 C.c.Q.`, distinct de `qc_li` dont `rollover_saturday=false` par défaut hors `art. 52 al. 2 L.I.`, ou `calcul_delai.py --ans ... --regime prescription`) |

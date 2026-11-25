@@ -824,6 +824,22 @@ def auto_test() -> int:
         if not ok_rj06["reussi"] or bad_rj06["reussi"]:
             erreurs.append(f"Auto-test RJ-06 échoué : ok={ok_rj06}, bad={bad_rj06}")
 
+    sc_rj08 = next((s for s in scenarios if s["id"] == "RJ-08"), None)
+    if sc_rj08 is not None:
+        ok_rj08 = evaluer_reponse(
+            sc_rj08,
+            "Par défaut, lois.find_relevant et lois.search_text interrogent le domaine 'core' (avec radar other_domains) : "
+            "pour un recours visant une municipalité ou les Cours fédérales, passer domains=['core', 'municipal-environnement'] "
+            "ou domains=['cours-federales'] (avec jurisdiction/forum), tandis que get_article et search_text(law=...) "
+            "demeurent ouverts à tout le corpus.",
+        )
+        bad_rj08 = evaluer_reponse(
+            sc_rj08,
+            "Une recherche sans filtre retourne déjà toutes les lois municipales et les Règles des Cours fédérales sans passer domains.",
+        )
+        if not ok_rj08["reussi"] or bad_rj08["reussi"]:
+            erreurs.append(f"Auto-test RJ-08 échoué : ok={ok_rj08}, bad={bad_rj08}")
+
     sc_pc08 = next((s for s in scenarios if s["id"] == "PC-08"), None)
     if sc_pc08 is not None:
         ok_pc08 = evaluer_reponse(
