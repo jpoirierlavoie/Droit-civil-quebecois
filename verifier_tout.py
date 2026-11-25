@@ -838,6 +838,15 @@ class MockMcpServer:
                 },
             }
 
+            read_only_local_annotations = {
+                "readOnlyHint": True,
+                "destructiveHint": False,
+                "idempotentHint": True,
+                "openWorldHint": False,
+            }
+            for tool_def in tools.values():
+                tool_def["annotations"] = dict(read_only_local_annotations)
+
         return tools
 
     def handle_request(
@@ -1370,6 +1379,15 @@ class MockMcpServer:
             eff_cat = args.get("category") or (
                 "fx" if (args.get("currency") is not None or args.get("amount") is not None) else "all_rates"
             )
+            supported_fx_currencies = {
+                "AED", "ANG", "ARS", "ATS", "AUD", "BEF", "BRL", "BSD", "CHF", "CLP",
+                "CNY", "COP", "CZK", "DEM", "DKK", "ESP", "EUR", "FIM", "FJD", "FRF",
+                "GBP", "GHC", "GHS", "GTQ", "HKD", "HNL", "HRK", "HUF", "IDR", "IEP",
+                "ILS", "INR", "ISK", "ITL", "JMD", "JPY", "KRW", "LKR", "MAD", "MMK",
+                "MXN", "MYR", "NLG", "NOK", "NZD", "PAB", "PEN", "PHP", "PKR", "PLN",
+                "RON", "RSD", "RUB", "SAR", "SEK", "SGD", "SKK", "THB", "TND", "TRY",
+                "TTD", "TWD", "USD", "VEB", "VEF", "VND", "XAF", "XCD", "XPF", "ZAR",
+            }
             cur = args.get("currency")
             if cur is not None:
                 cur_u = cur.strip().upper()
@@ -1381,6 +1399,8 @@ class MockMcpServer:
                     return f"Code de devise invalide « {cur} »."
                 if eff_cat != "fx":
                     return "currency requiert category='fx'."
+                if code_u not in supported_fx_currencies:
+                    return f"Devise « {code_u} » introuvable dans l'instantané DB_ECONOMIE (Banque du Canada / StatCan 10-10-0008-01)."
             if eff_cat == "fx" and not (cur and cur.strip()):
                 return "Préciser 'currency' (p. ex. 'USD', 'EUR', 'GBP', 'JPY') pour consulter un taux de change."
             if args.get("amount") is not None:
@@ -1511,6 +1531,17 @@ class MockMcpServer:
                 return f"Date invalide '{ev_date}' : format attendu YYYY-MM-DD valide."
             if not args.get("deadlines"):
                 return "La liste des délais (deadlines) ne peut pas être vide."
+            for idx, dl in enumerate(args.get("deadlines") or []):
+                if isinstance(dl, dict) and dl.get("anchor_date") is not None:
+                    try:
+                        datetime.date.fromisoformat(str(dl["anchor_date"]))
+                    except ValueError:
+                        return f"Date d'ancrage invalide dans deadlines[{idx}].anchor_date : '{dl['anchor_date']}'."
+            for idx, extra_d in enumerate(args.get("extra_non_juridical_dates") or []):
+                try:
+                    datetime.date.fromisoformat(str(extra_d))
+                except ValueError:
+                    return f"Date invalide dans extra_non_juridical_dates[{idx}] : '{extra_d}'."
 
         return None
 
@@ -1917,24 +1948,71 @@ class MockMcpServer:
         # --- Outils ---
         elif tool_name == "calendrier_holidays":
             year = args.get("year", 2026)
-            holidays = [
-                {"date": f"{year}-01-01", "nom": "Jour de l'An", "basis": "art. 82 al. 1 C.p.c."},
-                {"date": f"{year}-04-03", "nom": "Vendredi saint", "basis": "art. 82 al. 2 C.p.c."},
-                {"date": f"{year}-04-06", "nom": "Lundi de Pâques", "basis": "art. 82 al. 2 C.p.c."},
-                {"date": f"{year}-05-18", "nom": "Journée nationale des patriotes", "basis": "art. 82 al. 3 C.p.c."},
-                {"date": f"{year}-06-24", "nom": "Fête nationale du Québec", "basis": "art. 82 al. 4 C.p.c."},
-                {"date": f"{year}-07-01", "nom": "Fête du Canada", "basis": "art. 82 al. 5 C.p.c."},
-                {"date": f"{year}-09-07", "nom": "Fête du Travail", "basis": "art. 82 al. 6 C.p.c."},
-                {"date": f"{year}-10-12", "nom": "Action de grâce", "basis": "art. 82 al. 7 C.p.c."},
-                {"date": f"{year}-12-25", "nom": "Noël", "basis": "art. 82 al. 8 C.p.c."},
+            regime = args.get("regime", "qc_cpc")
+            province = args.get("province")
+            regime_labels = {
+                "qc_cpc": "Québec — Code de procédure civile (art. 82 al. 1, 83 al. 3 C.p.c. et art. 61 par. 23° L.I.)",
+                "qc_prescription": "Québec — Prescription extinctive et acquisitive (art. 2879 al. 2 C.c.Q. et art. 61 par. 23° L.I.)",
+                "qc_li": "Québec — Loi d'interprétation générale (art. 61 par. 23° et art. 52 L.I., RLRQ c. I-16)",
+                "ca_li": "Canada — Loi d'interprétation fédérale (art. 35(1) L.I., L.R.C. 1985, c. I-21)",
+            }
+            weekdays_fr = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+            raw_holidays = [
+                (f"{year}-01-01", "Jour de l'An", "art. 61 par. 23° a) L.I.", False),
+                (f"{year}-04-03", "Vendredi saint", "art. 61 par. 23° b) L.I.", True),
+                (f"{year}-04-06", "Lundi de Pâques", "art. 61 par. 23° b) L.I.", True),
+                (f"{year}-05-18", "Journée nationale des patriotes", "art. 61 par. 23° c) L.I.", True),
+                (f"{year}-06-24", "Fête nationale du Québec", "art. 61 par. 23° d) L.I.", False),
+                (f"{year}-07-01", "Fête du Canada", "art. 61 par. 23° e) L.I.", False),
+                (f"{year}-09-07", "Fête du Travail", "art. 61 par. 23° f) L.I.", True),
+                (f"{year}-10-12", "Action de grâce", "art. 61 par. 23° g) L.I.", True),
+                (f"{year}-12-25", "Noël", "art. 61 par. 23° h) L.I.", False),
             ]
-            return {"content": [{"type": "text", "text": json.dumps(holidays, ensure_ascii=False)}]}
+            holidays = [
+                {
+                    "date": d_iso,
+                    "weekday_fr": weekdays_fr[datetime.date.fromisoformat(d_iso).weekday()],
+                    "name_fr": nom,
+                    "legal_basis": basis,
+                    "movable": mov,
+                }
+                for d_iso, nom, basis, mov in raw_holidays
+            ]
+            return {
+                "content": [{"type": "text", "text": json.dumps(holidays, ensure_ascii=False)}],
+                "structuredContent": {
+                    "year": year,
+                    "regime": regime,
+                    "province": province,
+                    "regime_label_fr": regime_labels.get(regime, regime_labels["qc_cpc"]),
+                    "weekly_non_juridical_days": ["saturday", "sunday"] if regime == "qc_cpc" else ["sunday"],
+                    "saturday_triggers_deadline_rollover": regime in ("qc_cpc", "qc_prescription"),
+                    "holidays": holidays,
+                    "count": len(holidays),
+                    "provenance": {"source": "C.p.c. / Loi d'interprétation (QC / CA)", "verified_at": "2026-11-19"},
+                    "gardes": [
+                        {"code": "JOURS_PROCLAMES_NON_PREVISIBLES", "message": "Le calendrier statutaire n'inclut pas les jours fériés proclamés ad hoc."},
+                    ],
+                },
+            }
 
         elif tool_name == "calendrier_deadlines":
             ev_date_str = args.get("event_date", "2026-07-03")
             d_date = datetime.date.fromisoformat(ev_date_str)
             mode = args.get("notification_mode", "none")
             ev_time = args.get("event_time", "")
+            regime = args.get("regime", "qc_cpc")
+            province = args.get("province")
+            rollover_saturday = args.get("rollover_saturday")
+            if rollover_saturday is None:
+                rollover_saturday = regime in ("qc_cpc", "qc_prescription")
+            regime_labels = {
+                "qc_cpc": "Québec — Code de procédure civile (art. 82 al. 1, 83 al. 3 C.p.c. et art. 61 par. 23° L.I.)",
+                "qc_prescription": "Québec — Prescription extinctive et acquisitive (art. 2879 al. 2 C.c.Q. et art. 61 par. 23° L.I.)",
+                "qc_li": "Québec — Loi d'interprétation générale (art. 61 par. 23° et art. 52 L.I., RLRQ c. I-16)",
+                "ca_li": "Canada — Loi d'interprétation fédérale (art. 35(1) L.I., L.R.C. 1985, c. I-21)",
+            }
+            weekdays_fr = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
             # Art. 111 al. 2 C.p.c. : notification techno après 17h00 strictly -> report au prochain jour ouvrable
             shifted_start = d_date
@@ -1952,20 +2030,53 @@ class MockMcpServer:
                     shifted_start += datetime.timedelta(days=1)
 
             results = []
+            gardes = [
+                {"code": "JOURS_PROCLAMES_NON_PREVISIBLES", "message": "Le calendrier statutaire n'inclut pas les jours fériés proclamés ad hoc."},
+                {"code": "DEPOT_GREFFE_HEURES_OUVERTURE", "message": "Prévoir le dépôt pendant les heures d'ouverture du dernier jour (art. 107 C.p.c.)."},
+            ]
+            if shifted_start != d_date:
+                gardes.append({"code": "NOTIFICATION_TECHNOLOGIQUE_APRES_17H", "message": "Notification technologique après 17 h 00 réputée faite le jour ouvrable suivant (art. 111 al. 2 C.p.c.)."})
+
             for idx, item in enumerate(args.get("deadlines", [])):
                 amt = item.get("amount", 15)
-                due = shifted_start + datetime.timedelta(days=amt)
+                unit = item.get("unit", "days")
+                direction = item.get("direction", "forward")
+                raw_due = shifted_start + datetime.timedelta(days=amt)
+                due = raw_due
+                hops = []
                 # Art. 83 C.p.c. : si samedi ou dimanche, reporte au lundi
                 while due.weekday() >= 5:
+                    hops.append({
+                        "date": due.isoformat(),
+                        "weekday_fr": weekdays_fr[due.weekday()],
+                        "reason": "Fin de semaine (art. 83 al. 3 C.p.c.)",
+                    })
                     due += datetime.timedelta(days=1)
+                in_non_sitting = (
+                    (due.month == 6 and due.day == 30)
+                    or due.month in (7, 8)
+                    or (due.month == 9 and due.day == 1)
+                )
                 results.append({
                     "index": idx,
                     "label": item.get("label", "Délai"),
+                    "direction": direction,
+                    "unit": unit,
                     "amount": amt,
                     "input_anchor_date": d_date.isoformat(),
                     "effective_anchor_date": shifted_start.isoformat(),
                     "anchor_shifted_art_111": shifted_start != d_date,
+                    "anchor_shift_reason": "Notification technologique après 17 h 00 (art. 111 al. 2 C.p.c.)" if shifted_start != d_date else None,
+                    "raw_date": raw_due.isoformat(),
+                    "raw_weekday_fr": weekdays_fr[raw_due.weekday()],
                     "effective_date": due.isoformat(),
+                    "effective_weekday_fr": weekdays_fr[due.weekday()],
+                    "preceding_business_day": None,
+                    "rolled_over": due != raw_due,
+                    "rollover_hops": hops,
+                    "in_non_sitting_period": in_non_sitting,
+                    "non_sitting_period_label": "du 30 juin au 1er septembre (art. 82 al. 2 C.p.c.)" if in_non_sitting else None,
+                    "formula_summary_fr": f"{shifted_start.isoformat()} + {amt} {unit} -> {due.isoformat()}",
                 })
 
             summary_lines = [
@@ -1975,31 +2086,127 @@ class MockMcpServer:
             return {
                 "content": [{"type": "text", "text": "\n".join(summary_lines)}],
                 "structuredContent": {
-                    "regime": args.get("regime", "qc_cpc"),
+                    "regime": regime,
+                    "province": province,
+                    "regime_label_fr": regime_labels.get(regime, regime_labels["qc_cpc"]),
+                    "rollover_saturday": rollover_saturday,
                     "results": results,
+                    "provenance": {"source": "C.p.c. (art. 82, 83, 111) / L.I.", "verified_at": "2026-11-19"},
+                    "gardes": gardes,
                 },
             }
 
         elif tool_name == "interets_1619":
+            def _fmt_cad2(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}"
+
+            def _fmt_cad6_from_cents(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}0000"
+
             tranches = args.get("tranches", [])
             mode = args.get("mode", "legal_plus_1619")
-            total_principal = sum(t.get("principal_cents", 0) for t in tranches)
+            global_end = str(args.get("end_date") or "2026-11-18")
+            total_principal = 0
             interet_legal_cents = 0
             indemnite_cents = 0
             contractual_cents = 0
-            if mode == "legal_plus_1619":
-                interet_legal_cents = int(total_principal * 0.05)
-                indemnite_cents = int(total_principal * 0.04)
-            elif mode == "legal_only":
-                interet_legal_cents = int(total_principal * 0.05)
-            elif mode == "contractual":
-                rate_bps = args.get("rate_bps", 800)
-                contractual_cents = int(total_principal * rate_bps / 10000)
-            elif mode == "prime_plus_margin":
-                prime_bps = 495
-                spread_bps = args.get("spread_bps", 0)
-                eff_bps = max(0, prime_bps + spread_bps)
-                contractual_cents = int(total_principal * eff_bps / 10000)
+            tranche_results = []
+
+            for idx, tr in enumerate(tranches):
+                p_cents = int(tr.get("principal_cents", 0))
+                st_d = str(tr.get("start_date", "2025-01-01"))
+                req_end = str(tr.get("end_date") or global_end)
+                acc_days = max(0, (datetime.date.fromisoformat(req_end) - datetime.date.fromisoformat(st_d)).days)
+                tr_label = str(tr.get("label") or f"Tranche #{idx + 1}")
+                tr_legal = 0
+                tr_add = 0
+                tr_contr = 0
+                laf_bps = None
+                prime_bps = None
+                spread_bps = None
+                legal_bps = 0
+                add_bps = 0
+                contr_bps = 0
+                eff_bps = 0
+                if mode == "legal_plus_1619":
+                    tr_legal = int(p_cents * 0.05)
+                    tr_add = int(p_cents * 0.04)
+                    laf_bps = 900
+                    legal_bps = 500
+                    add_bps = 400
+                    eff_bps = 900
+                elif mode == "legal_only":
+                    tr_legal = int(p_cents * 0.05)
+                    legal_bps = 500
+                    eff_bps = 500
+                elif mode == "contractual":
+                    rate_bps = int(tr.get("rate_bps") if tr.get("rate_bps") is not None else (args.get("rate_bps") or 800))
+                    tr_contr = int(p_cents * rate_bps / 10000)
+                    contr_bps = rate_bps
+                    eff_bps = rate_bps
+                elif mode == "prime_plus_margin":
+                    prime_bps = 495
+                    spread_bps = int(tr.get("spread_bps") if tr.get("spread_bps") is not None else (args.get("spread_bps") or 0))
+                    eff_bps = max(0, prime_bps + spread_bps)
+                    contr_bps = eff_bps
+                    tr_contr = int(p_cents * eff_bps / 10000)
+
+                tr_tot_int = tr_legal + tr_add + tr_contr
+                tr_tot_all = p_cents + tr_tot_int
+                total_principal += p_cents
+                interet_legal_cents += tr_legal
+                indemnite_cents += tr_add
+                contractual_cents += tr_contr
+
+                st_inc = (datetime.date.fromisoformat(st_d) + datetime.timedelta(days=1)).isoformat() if acc_days > 0 else st_d
+                yr_days = 366 if datetime.date.fromisoformat(req_end).year % 4 == 0 else 365
+                tranche_results.append({
+                    "index": idx,
+                    "label": tr_label,
+                    "principal_cents": p_cents,
+                    "principal_cad": _fmt_cad2(p_cents),
+                    "start_date_excluded": st_d,
+                    "requested_end_date": req_end,
+                    "effective_end_date": req_end,
+                    "truncated": False,
+                    "missing_quarter": None,
+                    "accrued_days": acc_days,
+                    "legal_interest_cents": tr_legal,
+                    "legal_interest_cad": _fmt_cad2(tr_legal),
+                    "additional_indemnity_cents": tr_add,
+                    "additional_indemnity_cad": _fmt_cad2(tr_add),
+                    "contractual_interest_cents": tr_contr,
+                    "contractual_interest_cad": _fmt_cad2(tr_contr),
+                    "total_interest_cents": tr_tot_int,
+                    "total_interest_cad": _fmt_cad2(tr_tot_int),
+                    "total_with_principal_cents": tr_tot_all,
+                    "total_with_principal_cad": _fmt_cad2(tr_tot_all),
+                    "periods": [
+                        {
+                            "period_label": f"{req_end[:4]}-Q{(datetime.date.fromisoformat(req_end).month - 1) // 3 + 1}",
+                            "start_date_included": st_inc,
+                            "end_date_included": req_end,
+                            "days": acc_days,
+                            "year_days": yr_days,
+                            "laf_rate_bps": laf_bps,
+                            "prime_rate_bps": prime_bps,
+                            "spread_bps": spread_bps,
+                            "overridden": False,
+                            "legal_rate_bps": legal_bps,
+                            "additional_rate_bps": add_bps,
+                            "contractual_rate_bps": contr_bps,
+                            "effective_rate_bps": eff_bps,
+                            "legal_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_legal),
+                            "additional_indemnity_cad_exact_6dec": _fmt_cad6_from_cents(tr_add),
+                            "contractual_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_contr),
+                            "total_interest_cad_exact_6dec": _fmt_cad6_from_cents(tr_tot_int),
+                        }
+                    ] if acc_days > 0 else [],
+                })
 
             total_interest_cents = interet_legal_cents + indemnite_cents + contractual_cents
             grand_total_cents = total_principal + total_interest_cents
@@ -2017,7 +2224,7 @@ class MockMcpServer:
                     {
                         "type": "text",
                         "text": (
-                            f"Calcul ({mode}) jusqu'au {args.get('end_date')} — "
+                            f"Calcul ({mode}) jusqu'au {global_end} — "
                             f"Capital : {total_principal} cents, Intérêt légal : {interet_legal_cents} cents, "
                             f"Indemnité additionnelle : {indemnite_cents} cents, "
                             f"Intérêt contractuel/préférentiel : {contractual_cents} cents, "
@@ -2027,17 +2234,23 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "mode": mode,
-                    "convention": "Exact/Exact (365/366), date de départ exclue / date de fin incluse",
+                    "convention": "Exact/Exact (365/366), start_excluded_end_included, simple",
                     "laf_table_last_quarter": "2026-Q4",
                     "prime_table_last_verified_date": "2026-11-18",
                     "truncated_any": False,
                     "total_principal_cents": total_principal,
+                    "total_principal_cad": _fmt_cad2(total_principal),
                     "total_legal_interest_cents": interet_legal_cents,
+                    "total_legal_interest_cad": _fmt_cad2(interet_legal_cents),
                     "total_additional_indemnity_cents": indemnite_cents,
+                    "total_additional_indemnity_cad": _fmt_cad2(indemnite_cents),
                     "total_contractual_interest_cents": contractual_cents,
+                    "total_contractual_interest_cad": _fmt_cad2(contractual_cents),
                     "total_interest_cents": total_interest_cents,
+                    "total_interest_cad": _fmt_cad2(total_interest_cents),
                     "grand_total_cents": grand_total_cents,
-                    "end_date": args.get("end_date"),
+                    "grand_total_cad": _fmt_cad2(grand_total_cents),
+                    "tranches": tranche_results,
                     "provenance": {"source": "Art. 28 L.A.F. (Revenu Québec) / BDC V80691311", "verified_at": "2026-11-18"},
                     "gardes": gardes,
                 },
@@ -2052,6 +2265,20 @@ class MockMcpServer:
             districts = {"500": "Montréal", "200": "Québec", "400": "Trois-Rivières"}
             district = districts.get(greffe, "District québécois")
             court = "Cour supérieure" if court_code == "17" else "Cour d'appel" if court_code == "09" else "Cour du Québec"
+            palais_key = "montreal" if greffe == "500" else "quebec"
+            palais_addr = {
+                "key": palais_key,
+                "name": district,
+                "location_type": "palais",
+                "street": "1, rue Notre-Dame Est" if greffe == "500" else "300, boulevard Jean-Lesage",
+                "unit": None,
+                "city": district,
+                "province": "Québec",
+                "postal_code": "H2Y 1B6" if greffe == "500" else "G1K 8K6",
+                "country": "Canada",
+                "mailing_address": None,
+                "contacts": [{"service": "Greffe civil", "tel": "514-393-2721", "courriel": None}],
+            }
             return {
                 "content": [
                     {
@@ -2060,16 +2287,63 @@ class MockMcpServer:
                     }
                 ],
                 "structuredContent": {
+                    "input": num,
                     "outcome": "judicial",
-                    "court_file_number": num,
+                    "is_administrative": False,
+                    "forum": None,
                     "greffe_number": greffe,
-                    "district": district,
-                    "court": court,
-                    "matter": "civil",
+                    "greffe": {
+                        "palais_de_justice": f"Palais de justice de {district}",
+                        "district_judiciaire": district,
+                        "palais_key": palais_key,
+                        "point_de_service": False,
+                        "localites_itinerantes": [],
+                        "adresse": palais_addr,
+                    },
+                    "juridiction_number": court_code,
+                    "juridiction": {
+                        "tribunal": court,
+                        "competence": "Civile" if court_code in ("17", "05", "09") else "Générale",
+                        "greffe_type": "GC",
+                        "greffe_type_label_fr": "Greffe civil",
+                    },
+                    "parse_error": None,
+                    "parse_warning": None,
+                    "provenance": {"source": "Ministère de la Justice du Québec — numéros des greffes et nomenclature judiciaire", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "DOSSIER_NOMENCLATURE_SEULEMENT", "message": "Décomposition purement syntaxique sans validation de somme de contrôle ni accès au plumitif."},
+                        {"code": "GREFFE_SANS_PLUMITIF", "message": "Cet outil n'interroge aucun plumitif et n'établit pas que le dossier existe ou est actif."},
+                    ],
                 },
             }
 
         elif tool_name == "palais_list":
+            palais_rows = [
+                {
+                    "key": "montreal",
+                    "name": "Montréal",
+                    "location_type": "palais",
+                    "street": "1, rue Notre-Dame Est",
+                    "unit": None,
+                    "city": "Montréal",
+                    "province": "Québec",
+                    "postal_code": "H2Y 1B6",
+                    "country": "Canada",
+                    "greffes": [{"numero": "500", "palais_de_justice": "Palais de justice de Montréal", "district_judiciaire": "Montréal", "point_de_service": False}],
+                },
+                {
+                    "key": "quebec",
+                    "name": "Québec",
+                    "location_type": "palais",
+                    "street": "300, boulevard Jean-Lesage",
+                    "unit": None,
+                    "city": "Québec",
+                    "province": "Québec",
+                    "postal_code": "G1K 8K6",
+                    "country": "Canada",
+                    "greffes": [{"numero": "200", "palais_de_justice": "Palais de justice de Québec", "district_judiciaire": "Québec", "point_de_service": False}],
+                },
+            ]
             return {
                 "content": [
                     {
@@ -2079,59 +2353,148 @@ class MockMcpServer:
                             {"palais": "Québec", "greffe_number": "200", "district": "Québec"},
                         ], ensure_ascii=False),
                     }
-                ]
+                ],
+                "structuredContent": {
+                    "filters": {
+                        "district": args.get("district"),
+                        "query": args.get("query"),
+                        "type": args.get("type"),
+                    },
+                    "count": len(palais_rows),
+                    "results": palais_rows,
+                    "known_districts": ["Montréal", "Québec"],
+                    "provenance": {"source": "Ministère de la Justice du Québec — répertoire des palais de justice et points de service", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "PALAIS_RELEVE_MJQ_DATE", "message": "Relevé local auprès du ministère de la Justice du Québec (2026-11-17)."},
+                    ],
+                },
             }
 
         elif tool_name == "palais_get":
             greffe = args.get("greffe_number")
             palais = args.get("palais")
-            if greffe == "500" or (palais and "montr" in palais.lower()):
-                info = {
-                    "name": "Montréal",
-                    "greffe_number": "500",
-                    "district": "Montréal",
-                    "street_address": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
-                }
+            is_mtl = greffe == "500" or (palais and "montr" in palais.lower())
+            if is_mtl:
+                g_num = "500"
+                p_name = "Montréal"
+                street = "1, rue Notre-Dame Est"
+                postal = "H2Y 1B6"
+                p_key = "montreal"
+                street_full = "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6"
             else:
-                info = {
-                    "name": "Québec",
-                    "greffe_number": "200",
-                    "district": "Québec",
-                    "street_address": "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6",
-                }
+                g_num = "200"
+                p_name = "Québec"
+                street = "300, boulevard Jean-Lesage"
+                postal = "G1K 8K6"
+                p_key = "quebec"
+                street_full = "300, boulevard Jean-Lesage, Québec (Québec) G1K 8K6"
+            info = {
+                "key": p_key,
+                "name": p_name,
+                "location_type": "palais",
+                "street": street,
+                "unit": None,
+                "city": p_name,
+                "province": "Québec",
+                "postal_code": postal,
+                "country": "Canada",
+                "mailing_address": None,
+                "contacts": [{"service": "Greffe civil", "tel": "514-393-2721" if is_mtl else "418-649-3400", "courriel": None}],
+            }
+            greffe_summary = {
+                "numero": g_num,
+                "palais_de_justice": f"Palais de justice de {p_name}",
+                "district_judiciaire": p_name,
+                "point_de_service": False,
+            }
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Palais de justice de {info['name']} (greffe {info['greffe_number']}) — {info['street_address']}.",
+                        "text": f"Palais de justice de {p_name} (greffe {g_num}) — {street_full}.",
                     }
                 ],
-                "structuredContent": {"palais": info},
+                "structuredContent": {
+                    "lookup_by": "greffe_number" if greffe else "palais",
+                    "greffe": {
+                        **greffe_summary,
+                        "localites_itinerantes": [],
+                        "siege_fixe_palais_key": None,
+                    },
+                    "palais": info,
+                    "greffes_at_palais": [greffe_summary],
+                    "provenance": {"source": "Ministère de la Justice du Québec — répertoire des palais de justice et points de service", "verified_at": "2026-11-17"},
+                    "gardes": [
+                        {"code": "PALAIS_RELEVE_MJQ_DATE", "message": "Relevé local auprès du ministère de la Justice du Québec (2026-11-17)."},
+                    ],
+                },
             }
 
         elif tool_name == "registre_search":
             q = args.get("query", "")
             jur = args.get("jurisdiction", "all")
             is_gleif = jur == "gleif" or bool(re.match(r"^[A-Za-z0-9]{20}$", q.strip()))
-            cand = {
-                "jurisdiction": "gleif" if is_gleif else "qc",
-                "neq": None if is_gleif else "1172345678",
-                "corporation_number": None,
-                "bn_ne": None,
-                "lei": "549300BOREALE0000001",
-                "has_lei": True,
-                "nom_officiel": "BANQUE BORÉALE DU CANADA" if is_gleif else "9123-4567 QUÉBEC INC.",
-                "autres_noms": [] if is_gleif else ["Construction Boréale"],
-                "forme_juridique": "Banque" if is_gleif else "Société par actions ou compagnie",
-                "statut": "ACTIVE" if is_gleif else "Immatriculée",
-                "is_active": True,
-                "faillite_declaree": False,
-                "date_constitution": "2018-04-12",
-                "ville": "Montréal",
-                "has_rbq_licence": not is_gleif,
-                "has_opc_permit": False,
-                "in_rena": False,
-            }
+            is_ca = jur == "ca"
+            if is_gleif:
+                cand = {
+                    "jurisdiction": "gleif",
+                    "neq": None,
+                    "corporation_number": None,
+                    "bn_ne": None,
+                    "lei": "549300BOREALE0000001",
+                    "has_lei": True,
+                    "nom_officiel": "BANQUE BORÉALE DU CANADA",
+                    "autres_noms": [],
+                    "forme_juridique": "Banque",
+                    "statut": "ACTIVE",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2018-04-12",
+                    "ville": "Montréal",
+                    "has_rbq_licence": False,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
+            elif is_ca:
+                cand = {
+                    "jurisdiction": "ca",
+                    "neq": None,
+                    "corporation_number": "8284083",
+                    "bn_ne": "123456789",
+                    "lei": "549300FEDBOREALE0002",
+                    "has_lei": True,
+                    "nom_officiel": "CORPORATION BORÉALE DU CANADA INC.",
+                    "autres_noms": [],
+                    "forme_juridique": "Société par actions de régime fédéral (L.C.S.A.)",
+                    "statut": "Active",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2015-06-01",
+                    "ville": "Montréal",
+                    "has_rbq_licence": False,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
+            else:
+                cand = {
+                    "jurisdiction": "qc",
+                    "neq": "1172345678",
+                    "corporation_number": None,
+                    "bn_ne": None,
+                    "lei": "549300BOREALE0000001",
+                    "has_lei": True,
+                    "nom_officiel": "9123-4567 QUÉBEC INC.",
+                    "autres_noms": ["Construction Boréale"],
+                    "forme_juridique": "Société par actions ou compagnie",
+                    "statut": "Immatriculée",
+                    "is_active": True,
+                    "faillite_declaree": False,
+                    "date_constitution": "2018-04-12",
+                    "ville": "Montréal",
+                    "has_rbq_licence": True,
+                    "has_opc_permit": False,
+                    "in_rena": False,
+                }
             return {
                 "content": [
                     {
@@ -2145,7 +2508,7 @@ class MockMcpServer:
                     "active_only": bool(args.get("active_only", False)),
                     "count": 1,
                     "exact_match_found": True,
-                    "snapshots": {"req": "2026-11-01", "gleif": "2026-11-18"},
+                    "snapshots": {"req": "2026-11-01", "corp_ca": "2026-11-01", "gleif": "2026-11-18"},
                     "entities": [cand],
                     "provenance": {"source": "Instantané REQ / Corporations Canada / GLEIF CC0", "verified_at": "2026-11-18"},
                     "gardes": [
@@ -2160,70 +2523,250 @@ class MockMcpServer:
             if args.get("lei"):
                 lookup_by = "lei"
                 lookup_val = str(args["lei"]).strip().upper()
-                neq = "1172345678"
+                quebec_obj = None
+                federal_obj = None
+                lei_val = lookup_val
+                gleif_name = "BANQUE BORÉALE DU CANADA"
+                matched_neq = None
+                matched_corp = None
+                ra_id = "RA000831"
+                ra_entity_id = None
             elif args.get("corporation_number"):
                 lookup_by = "corporation_number"
                 lookup_val = str(args["corporation_number"]).strip()
-                neq = None
+                quebec_obj = None
+                corp_num = lookup_val
+                bn_num = "123456789"
+                lei_val = "549300FEDBOREALE0002"
+                gleif_name = "CORPORATION BORÉALE DU CANADA INC."
+                matched_neq = None
+                matched_corp = corp_num
+                ra_id = "RA000072"
+                ra_entity_id = corp_num
+                federal_obj = {
+                    "corporation_number": corp_num,
+                    "bn_ne": bn_num,
+                    "nom_officiel": gleif_name,
+                    "autres_denominations": [],
+                    "is_active": True,
+                    "regime_legislatif": "Loi canadienne sur les sociétés par actions (L.C.S.A.)",
+                    "statut": "Active",
+                    "detail_statut": None,
+                    "dates": {
+                        "date_constitution_ou_anniversaire": "2015-06-01",
+                        "annee_dernier_depot_annuel": "2026",
+                        "date_derniere_assemblee": "2026-05-15",
+                    },
+                    "adresse_siege": {
+                        "rue": "1, rue Notre-Dame Est",
+                        "ville": "Montréal",
+                        "province": "QC",
+                        "pays": "CA",
+                        "code_postal": "H2Y 1B6",
+                    },
+                    "administrateurs": {"min": 1, "max": 10},
+                }
             elif args.get("bn_ne"):
                 lookup_by = "bn_ne"
                 lookup_val = str(args["bn_ne"]).strip()
-                neq = None
+                quebec_obj = None
+                corp_num = "8284083"
+                bn_num = lookup_val
+                lei_val = "549300FEDBOREALE0002"
+                gleif_name = "CORPORATION BORÉALE DU CANADA INC."
+                matched_neq = None
+                matched_corp = corp_num
+                ra_id = "RA000072"
+                ra_entity_id = corp_num
+                federal_obj = {
+                    "corporation_number": corp_num,
+                    "bn_ne": bn_num,
+                    "nom_officiel": gleif_name,
+                    "autres_denominations": [],
+                    "is_active": True,
+                    "regime_legislatif": "Loi canadienne sur les sociétés par actions (L.C.S.A.)",
+                    "statut": "Active",
+                    "detail_statut": None,
+                    "dates": {
+                        "date_constitution_ou_anniversaire": "2015-06-01",
+                        "annee_dernier_depot_annuel": "2026",
+                        "date_derniere_assemblee": "2026-05-15",
+                    },
+                    "adresse_siege": {
+                        "rue": "1, rue Notre-Dame Est",
+                        "ville": "Montréal",
+                        "province": "QC",
+                        "pays": "CA",
+                        "code_postal": "H2Y 1B6",
+                    },
+                    "administrateurs": {"min": 1, "max": 10},
+                }
             else:
                 lookup_by = "neq"
                 lookup_val = str(args.get("neq") or "1172345678").strip()
-                neq = lookup_val
-            lei_val = lookup_val if lookup_by == "lei" else "549300BOREALE0000001"
+                federal_obj = None
+                lei_val = "549300BOREALE0000001"
+                gleif_name = "9123-4567 QUÉBEC INC."
+                matched_neq = lookup_val
+                matched_corp = None
+                ra_id = "RA000842"
+                ra_entity_id = lookup_val
+                quebec_obj = {
+                    "neq": lookup_val,
+                    "nom_officiel": "9123-4567 QUÉBEC INC.",
+                    "is_active": True,
+                    "statut_immatriculation": {
+                        "code": "IM",
+                        "libelle": "Immatriculée",
+                        "date_statut": "2018-04-12",
+                    },
+                    "forme_juridique": {
+                        "code": "210",
+                        "libelle": "Société par actions ou compagnie",
+                    },
+                    "regime_juridique": {
+                        "code": "LSQ",
+                        "libelle": "Loi sur les sociétés par actions (RLRQ, c. S-31.1)",
+                    },
+                    "regime_constitutif": {
+                        "code": "LSQ",
+                        "libelle": "Loi sur les sociétés par actions (Québec)",
+                        "lieu_constitution": "Québec",
+                    },
+                    "dates": {
+                        "date_immatriculation": "2018-04-12",
+                        "date_constitution": "2018-04-12",
+                        "date_cessation_prevue": None,
+                        "annee_declaration_courante": "2026",
+                    },
+                    "indicateurs": {
+                        "faillite_declaree": False,
+                        "convention_unanime_actionnaires": False,
+                        "tranche_employes_quebec": "De 1 à 5",
+                    },
+                    "domicile_declare": {
+                        "dispense_adresse": False,
+                        "adresse": "1, rue Notre-Dame Est, Montréal (Québec)",
+                        "ville": "Montréal",
+                        "code_postal": "H2Y1B6",
+                    },
+                    "activites_economiques": [],
+                    "autres_noms": [],
+                    "etablissements": [],
+                    "fusions_scissions": [],
+                    "continuations_transformations": [],
+                    "rbq_licences": [],
+                    "opc_permis": [],
+                    "rena_inscriptions": [],
+                }
+
+            gleif_obj = {
+                "lei": lei_val,
+                "is_canadian": True,
+                "nom_legal": gleif_name,
+                "autres_noms": [],
+                "statut_entite": "ACTIVE",
+                "registration_status": "ISSUED",
+                "next_renewal_date": "2027-06-15",
+                "initial_registration_date": "2019-01-15",
+                "last_update_date": "2026-10-01",
+                "legal_jurisdiction": "CA-QC" if quebec_obj is not None else "CA",
+                "entity_category": "GENERAL",
+                "registration_authority_id": ra_id,
+                "registration_authority_entity_id": ra_entity_id,
+                "matched_neq": matched_neq,
+                "matched_corporation_number": matched_corp,
+                "adresse_legale": {
+                    "ville": "Montréal",
+                    "region": "CA-QC",
+                    "pays": "CA",
+                    "code_postal": "H2Y 1B6",
+                },
+                "parent_direct": {
+                    "lei": "549300PARENTDIRECT01",
+                    "nom_legal": "GROUPE BORÉAL LTÉE",
+                    "pays": "CA",
+                    "legal_jurisdiction": "CA",
+                    "statut_entite": "ACTIVE",
+                    "relationship_status": "ACTIVE",
+                    "accounting_standard": "IFRS",
+                    "quantifier_amount": None,
+                    "quantifier_units": None,
+                    "validation_sources": "FULLY_CORROBORATED",
+                    "in_canadian_snapshot": True,
+                    "matched_neq": None,
+                    "matched_corporation_number": None,
+                },
+                "parent_ultime": {
+                    "lei": "549300PARENTULTIME02",
+                    "nom_legal": "GROUPE BORÉAL LTÉE",
+                    "pays": "CA",
+                    "legal_jurisdiction": "CA",
+                    "statut_entite": "ACTIVE",
+                    "relationship_status": "ACTIVE",
+                    "accounting_standard": "IFRS",
+                    "quantifier_amount": None,
+                    "quantifier_units": None,
+                    "validation_sources": "FULLY_CORROBORATED",
+                    "in_canadian_snapshot": True,
+                    "matched_neq": None,
+                    "matched_corporation_number": None,
+                },
+                "exceptions_declaration": [],
+                "filiales_canadiennes": [],
+                "filiales_canadiennes_total": 0,
+            }
+
+            portails_officiels = {
+                "req": {
+                    "url": "https://www.registreentreprises.gouv.qc.ca/REQNA/GR/GR03/GR03A71.RechercheRegistre.MVC/GR03A71/RechercheParNeq",
+                    "portal_info_url": "https://www.quebec.ca/entreprises-et-travailleurs-autonomes/obtenir-renseignements-entreprise/recherche-registre-entreprises/acceder-registre-entreprises",
+                    "libelle_fr": "Registraire des entreprises du Québec (REQ) — Recherche par NEQ",
+                    "objet_fr": f"Consulter l'état des informations en direct (valeur probante L.P.L.E.), les administrateurs, dirigeants, actionnaires principaux et bénéficiaires ultimes pour le NEQ {quebec_obj['neq']}.",
+                } if quebec_obj is not None else None,
+                "corporations_canada": {
+                    "url": f"https://ised-isde.canada.ca/cc/lgcy/fdrlCrpDtls.html?corpId={federal_obj['corporation_number']}&lang=fra",
+                    "search_url": "https://ised-isde.canada.ca/cc/lgcy/fdrlCrpSrch.html?lang=fra",
+                    "libelle_fr": "Corporations Canada — Fiche officielle de société fédérale",
+                    "objet_fr": f"Consulter les administrateurs actuels, le siège social et les dépôts annuels de la société fédérale n° {federal_obj['corporation_number']}.",
+                } if federal_obj is not None else None,
+                "isc_pisc": {
+                    "url": "https://ised-isde.canada.ca/site/corporations-canada/fr/particuliers-ayant-controle-important",
+                    "libelle_fr": "Corporations Canada — Particuliers ayant un contrôle important (PCI / ISC)",
+                    "objet_fr": "Consulter le registre fédéral des particuliers ayant un contrôle important (bénéficiaires ultimes L.C.S.A.) et les règles de divulgation applicables.",
+                } if federal_obj is not None else None,
+                "gleif": {
+                    "url": f"https://search.gleif.org/#/record/{gleif_obj['lei']}",
+                    "libelle_fr": "GLEIF — Fiche publique officielle du LEI",
+                    "objet_fr": f"Vérifier en direct le statut d'enregistrement ({gleif_obj['registration_status']}), la date de renouvellement et les déclarations Level 2 du LEI {gleif_obj['lei']}.",
+                } if gleif_obj is not None else None,
+            }
+
+            gardes = [
+                {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
+            ]
+            if quebec_obj is not None:
+                gardes.append({"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."})
+            if gleif_obj is not None:
+                gardes.append({"code": "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION", "message": "Les liens GLEIF Level 2 reflètent la consolidation comptable déclarée et n'établissent ni contrôle juridique ni bénéficiaire ultime."})
+
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Fiche entreprise ({lookup_by}={lookup_val}) — 9123-4567 QUÉBEC INC. / LEI {lei_val}.",
+                        "text": f"Fiche entreprise ({lookup_by}={lookup_val}) — {gleif_name} / LEI {lei_val}.",
                     }
                 ],
                 "structuredContent": {
                     "lookup_by": lookup_by,
                     "lookup_value": lookup_val,
-                    "snapshots": {"req": "2026-11-01", "gleif": "2026-11-18"},
-                    "quebec": {
-                        "neq": neq or "1172345678",
-                        "nom_officiel": "9123-4567 QUÉBEC INC.",
-                        "is_active": True,
-                        "domicile_declare": {
-                            "dispense_adresse": False,
-                            "adresse": "1, rue Notre-Dame Est, Montréal (Québec)",
-                            "ville": "Montréal",
-                            "code_postal": "H2Y1B6",
-                        },
-                    } if neq else None,
-                    "federal": None if neq else {"corporation_number": lookup_val, "nom_officiel": "CORPORATION BORÉALE INC."},
-                    "gleif": {
-                        "lei": lei_val,
-                        "is_canadian": True,
-                        "nom_legal": "9123-4567 QUÉBEC INC.",
-                        "statut_entite": "ACTIVE",
-                        "registration_status": "ISSUED",
-                        "next_renewal_date": "2027-06-15",
-                        "matched_neq": neq or "1172345678",
-                        "matched_corporation_number": None,
-                        "parent_direct": {"lei": "549300PARENTDIRECT01", "nom_legal": "GROUPE BORÉAL LTÉE", "pays": "CA"},
-                        "parent_ultime": {"lei": "549300PARENTULTIME02", "nom_legal": "GROUPE BORÉAL LTÉE", "pays": "CA"},
-                        "exceptions_declaration": [],
-                        "filiales_canadiennes": [],
-                        "filiales_canadiennes_total": 0,
-                    },
-                    "portails_officiels": {
-                        "req": "https://www.registreentreprises.gouv.qc.ca/REQNA/GR/GR03/GR03A71.RechercheRegistre.MVC/GR03A71",
-                        "corporations_canada": "https://ised-isde.canada.ca/cc/lgcy/fdrlCrpSrch.html?locale=fr",
-                        "isc_pisc": "https://ised-isde.canada.ca/site/corporations-canada/fr/particuliers-ayant-controle-important",
-                        "gleif": f"https://search.gleif.org/#/record/{lei_val}",
-                    },
-                    "provenance": {"source": "Instantané REQ / GLEIF CC0", "verified_at": "2026-11-18"},
-                    "gardes": [
-                        {"code": "REGISTRE_ABSENCE_PERSONNES_PHYSIQUES", "message": "Les administrateurs et actionnaires personnes physiques sont exclus du jeu ouvert."},
-                        {"code": "REGISTRE_FRAICHEUR_ET_OPPOSABILITE_LPLE", "message": "Données issues d'instantanés périodiques sans valeur d'attestation LPLE."},
-                        {"code": "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION", "message": "Les liens GLEIF Level 2 reflètent la consolidation comptable déclarée et n'établissent ni contrôle juridique ni bénéficiaire ultime."},
-                    ],
+                    "snapshots": {"req": "2026-11-01", "corp_ca": "2026-11-01", "gleif": "2026-11-18"},
+                    "quebec": quebec_obj,
+                    "federal": federal_obj,
+                    "gleif": gleif_obj,
+                    "portails_officiels": portails_officiels,
+                    "provenance": {"source": "Instantané REQ / Corporations Canada / GLEIF CC0", "verified_at": "2026-11-18"},
+                    "gardes": gardes,
                 },
             }
 
@@ -2245,14 +2788,40 @@ class MockMcpServer:
                     "corrections_appliquees": [],
                     "candidates": [
                         {
+                            "id_adresse": 100001,
+                            "seqodo": "0660230001",
                             "adresse_normalisee": "1, rue Notre-Dame Est, Montréal (Québec) H2Y 1B6",
+                            "composantes": {
+                                "numero_municipal": 1,
+                                "suffixe": None,
+                                "unite": None,
+                                "type_unite": None,
+                                "generique_odonyme": "rue",
+                                "particule_odonyme": None,
+                                "specifique_odonyme": "Notre-Dame",
+                                "point_cardinal": "Est",
+                                "odonyme_complet": "rue Notre-Dame Est",
+                                "code_municipalite": "66023",
+                                "municipalite": "Montréal",
+                                "mrc": "Montréal",
+                                "region_administrative": "Montréal",
+                                "province": "Québec",
+                                "code_postal": "H2Y 1B6",
+                            },
                             "etat_rqa": "Certifiée",
+                            "categorie_rqa": "Principal",
+                            "plage_civique_rue": {"min": 1, "max": 500},
+                            "district_judiciaire_probable": {
+                                "district": "Montréal",
+                                "greffes": ["500"],
+                                "reserve": "Rattachement purement indicatif par nom de municipalité au relevé MJQ des lieux de séance (RLRQ, c. D-11).",
+                            },
                             "lots_cadastraux": lots,
                             "matricule_evaluation": mat,
                             "lot_source": "rqa_unite",
                             "repli_immeuble_parent": False,
                             "ambiguites_cadastrales": [],
-                            "district_judiciaire_probable": {"district": "Montréal", "greffes": ["500"]},
+                            "coordonnees": {"latitude": 45.5067, "longitude": -73.5546},
                         }
                     ],
                     "provenance": {"source": "Référentiel québécois des adresses (RQA, MRNF)", "verified_at": "2026-11-01"},
@@ -2265,6 +2834,7 @@ class MockMcpServer:
 
         elif tool_name == "terminologie_lookup":
             q = args.get("query", "mortgage")
+            src_lang = args.get("source_lang", "auto")
             return {
                 "content": [
                     {
@@ -2274,14 +2844,27 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "query": q,
+                    "source_lang": src_lang,
                     "count": 1,
                     "fiches": [
                         {
+                            "id": 1,
                             "rang_source": 1,
+                            "source_nom": "Glossaire bijuridique québécois",
+                            "licence_source": "CC BY 4.0",
                             "terme_fr": "hypothèque",
+                            "synonymes_fr": [],
                             "terme_en": "hypothec",
+                            "synonymes_en": [],
+                            "termes_deconseilles": [
+                                {"terme": "mortgage", "langue": "en", "origine": "common_law", "motif": "Faux ami de common law en droit civil québécois."}
+                            ],
                             "systeme_juridique": "droit_civil_qc",
+                            "domaine": "sûretés",
+                            "note_ou_definition": "Droit réel sur un bien meuble ou immeuble affecté à l'exécution d'une obligation.",
                             "base_legale": "art. 2660 C.c.Q.",
+                            "url_fiche": None,
+                            "date_verification": "2026-11-15",
                         }
                     ],
                     "provenance": {"source": "Glossaire bijuridique québécois", "verified_at": "2026-11-15"},
@@ -2294,6 +2877,7 @@ class MockMcpServer:
         elif tool_name == "termino_attestations":
             term = args.get("term", "hypothec")
             lang = args.get("lang", "en")
+            law_filter = args.get("law_filter")
             return {
                 "content": [
                     {
@@ -2304,8 +2888,28 @@ class MockMcpServer:
                 "structuredContent": {
                     "term": term,
                     "lang": lang,
+                    "law_filter": law_filter,
                     "total_matching_articles": 142,
-                    "by_law": [{"law_id": "ccq", "official_cite": "RLRQ, c. CCQ-1991", "article_count": 142}],
+                    "by_law": [
+                        {
+                            "law_id": "ccq",
+                            "official_cite": "RLRQ, c. CCQ-1991",
+                            "law_title_fr": "Code civil du Québec",
+                            "law_title_en": "Civil Code of Québec",
+                            "jurisdiction": "QC",
+                            "article_count": 142,
+                        }
+                    ],
+                    "attestations": [
+                        {
+                            "law_id": "ccq",
+                            "official_cite": "RLRQ, c. CCQ-1991",
+                            "article_number": "2660",
+                            "snippet_fr": "L'hypothèque est un droit réel sur un bien, meuble ou immeuble, affecté à l'exécution d'une obligation.",
+                            "snippet_en": "A hypothec is a real right on a movable or immovable property made liable for the performance of an obligation.",
+                            "consol_date": "2026-11-01",
+                        }
+                    ],
                     "provenance": {"source": "Concordancier législatif bilingue", "verified_at": "2026-11-15"},
                     "gardes": [
                         {"code": "TERMINOLOGIE_AIDE_REDACTION_NON_NORMATIVE", "message": "Outil d'aide à la rédaction, seul le texte législatif officiel fait foi."},
@@ -2316,13 +2920,25 @@ class MockMcpServer:
         elif tool_name == "terminologie_scan":
             txt = args.get("text", "")
             lang = args.get("lang", "fr")
+            ctx_sys = args.get("context_system", "droit_civil_qc")
             occurrences = []
-            if "mortgage" in txt.lower() or "assignation" in txt.lower():
-                occurrences.append({
-                    "matched_text": "mortgage" if "mortgage" in txt.lower() else "assignation",
-                    "risk_category": "anglicisme_ou_common_law" if "mortgage" in txt.lower() else "francisme_france",
-                    "suggested_replacement": "hypothec" if "mortgage" in txt.lower() else "demande introductive d'instance",
-                })
+            lower_txt = txt.lower()
+            for needle, cat, repl, reason, basis in (
+                ("mortgage", "anglicisme_ou_common_law", "hypothec", "Faux ami de common law : employer « hypothec » en droit civil québécois.", "art. 2660 C.c.Q."),
+                ("assignation", "francisme_france", "demande introductive d'instance", "Francisme de procédure française : employer « demande introductive d'instance » au Québec.", "art. 141 C.p.c."),
+            ):
+                pos = lower_txt.find(needle)
+                if pos != -1:
+                    occurrences.append({
+                        "offset_start": pos,
+                        "offset_end": pos + len(needle),
+                        "matched_text": txt[pos:pos + len(needle)],
+                        "snippet": txt[max(0, pos - 20):min(len(txt), pos + len(needle) + 20)],
+                        "risk_category": cat,
+                        "reason_fr": reason,
+                        "suggested_replacement": repl,
+                        "legal_basis": basis,
+                    })
             return {
                 "content": [
                     {
@@ -2332,6 +2948,7 @@ class MockMcpServer:
                 ],
                 "structuredContent": {
                     "lang": lang,
+                    "context_system": ctx_sys,
                     "scanned_length": len(txt),
                     "flagged_count": len(occurrences),
                     "occurrences": occurrences,
@@ -5310,6 +5927,25 @@ def run_tier_3_tests(
             )
             lei_sc = lei_res.get("structuredContent") or {}
             lei_gardes = {g.get("code") for g in (lei_sc.get("gardes") or [])}
+            lei_portails = lei_sc.get("portails_officiels") or {}
+
+            ca_search = client.call_tool(
+                "outils",
+                "registre_search",
+                {"jurisdiction": "ca", "query": "Canada"},
+            )
+            ca_search_sc = ca_search.get("structuredContent") or {}
+            discovered_corp = next(
+                (e.get("corporation_number") for e in (ca_search_sc.get("entities") or []) if e.get("corporation_number")),
+                None,
+            )
+            ca_res = (
+                client.call_tool("outils", "registre_get_entity", {"corporation_number": discovered_corp})
+                if discovered_corp
+                else {}
+            )
+            ca_sc = ca_res.get("structuredContent") or {}
+            ca_portails = ca_sc.get("portails_officiels") or {}
 
             addr_fwd = client.call_tool(
                 "outils",
@@ -5328,12 +5964,31 @@ def run_tier_3_tests(
             lot_sc = lot_res.get("structuredContent") or {}
             lot_gardes = {g.get("code") for g in (lot_sc.get("gardes") or [])}
             first_cand = (lot_sc.get("candidates") or [{}])[0]
+            gleif_portail_ok = (
+                isinstance(lei_portails.get("gleif"), dict)
+                and bool((lei_portails.get("gleif") or {}).get("url"))
+                and (
+                    (isinstance(lei_portails.get("isc_pisc"), dict) and bool((lei_portails.get("isc_pisc") or {}).get("url")))
+                    if lei_sc.get("federal") is not None
+                    else (lei_portails.get("isc_pisc") is None and lei_portails.get("corporations_canada") is None)
+                )
+            )
+            ca_portail_ok = (
+                bool(discovered_corp)
+                and ca_sc.get("lookup_by") == "corporation_number"
+                and isinstance(ca_sc.get("federal"), dict)
+                and isinstance(ca_portails.get("corporations_canada"), dict)
+                and bool((ca_portails.get("corporations_canada") or {}).get("url"))
+                and isinstance(ca_portails.get("isc_pisc"), dict)
+                and bool((ca_portails.get("isc_pisc") or {}).get("url"))
+            )
             ok = (
                 bool(discovered_lei)
                 and bool(re.match(r"^[A-Z0-9]{20}$", str(discovered_lei)))
                 and lei_sc.get("lookup_by") == "lei"
                 and isinstance(lei_sc.get("gleif"), dict)
-                and bool((lei_sc.get("portails_officiels") or {}).get("isc_pisc"))
+                and gleif_portail_ok
+                and ca_portail_ok
                 and "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION" in lei_gardes
                 and bool(discovered_lot)
                 and first_cand.get("lot_source") in ("rqa_unite", "rqa_immeuble_parent", "absent")
@@ -5347,7 +6002,7 @@ def run_tier_3_tests(
                 "outils",
                 ok,
                 elapsed,
-                None if ok else f"lei_search={gleif_search_sc}, lei={lei_sc}, fwd={addr_fwd_sc}, lot={lot_sc}",
+                None if ok else f"lei_search={gleif_search_sc}, lei={lei_sc}, ca={ca_sc}, fwd={addr_fwd_sc}, lot={lot_sc}",
             )
         except ConnectionError:
             raise
