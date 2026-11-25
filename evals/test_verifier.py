@@ -566,6 +566,17 @@ class VerifierV3Tests(unittest.TestCase):
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertEqual(errs, [])
 
+    def test_pytest_cache_ignored_by_verifier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+            cache_dir = root / ".pytest_cache" / "v" / "cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            (root / ".pytest_cache" / "CACHEDIR.TAG").write_bytes(b"Signature: 8a477f597d28d172789f06886806bc55\r\n")
+            (cache_dir / "nodeids").write_bytes(b"[]\r\n")
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertEqual(errs, [])
+
     def test_oauth_manifests_reject_residual_headers_and_eager(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
