@@ -238,8 +238,8 @@ EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
         "browse_legislation",
         "get_legislation",
         "parse_citation",
-        "list_exempt_authorities",
-        "check_exempt_authority",
+        "list_exempt_cases",
+        "check_exempt_cases",
     ),
     "outils": (
         "calendrier_holidays",

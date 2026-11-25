@@ -30,4 +30,4 @@ Ordre civiliste hiérarchisé dans chaque section juridique :
 
 1. Vérifier chaque citation neutre via `juris.verify_citations` en fournissant `expected_title` et `expected_year`.
 2. Vérifier chaque renvoi `[par. X]` contre le texte complet lu en session ou maintenir `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`.
-3. Synchroniser la liste exacte des citations avec le cahier des sources (`production-et-conformite` / `cahier-des-sources.md`).
+3. Synchroniser la liste exacte des citations avec le cahier des sources (`production-et-conformite` / `cahier-des-sources.md`), en contrôlant les dispenses de reproduction du tribunal visé (`juris.check_exempt_cases`).

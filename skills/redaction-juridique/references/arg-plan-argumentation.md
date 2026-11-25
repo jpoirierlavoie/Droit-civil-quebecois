@@ -36,7 +36,7 @@ Appliquer strictement les règles de `arg-citations.md` :
 
 ## Contrôle
 
-1. Correspondance 1:1 entre les autorités du plan et l'index du cahier des sources (`production-et-conformite` / `cahier-des-sources.md`).
+1. Correspondance 1:1 entre les autorités du plan et l'index du cahier des sources (`production-et-conformite` / `cahier-des-sources.md`), en contrôlant les dispenses de reproduction du tribunal (`juris.check_exempt_cases`).
 2. Continuité stricte de numérotation (aucun doublon `8., 8.` ni saut), concordance titre/tribunal/date avec l'acte de procédure, formule exacte `POUR CES MOTIFS, PLAISE AU TRIBUNAL :` s'il comporte des conclusions, et unilinguisme strict (zéro bascule FR/EN en milieu de document ni discordance corps/endos).
 3. Zéro citation décisive sous `Lue (intégrale) [par. X]` au Palier 3 sans marqueur `[RATIO / PAR. X ...]`.
 4. Zéro copie des blocs F (faiblesses) ou H (plancher de règlement) de la théorie de la cause.

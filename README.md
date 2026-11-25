@@ -93,8 +93,8 @@ Le greffon réunit trois couches complémentaires :
 | `get_division` | `browse_legislation` | `registre_get_entity` |
 | `search_text` | `get_legislation` | `adresse_verify` |
 | `resolve_reference` | `parse_citation` | `terminologie_lookup` |
-| — | `list_exempt_authorities` | `termino_attestations` |
-| — | `check_exempt_authority` | `terminologie_scan` |
+| — | `list_exempt_cases` | `termino_attestations` |
+| — | `check_exempt_cases` | `terminologie_scan` |
 | — | — | `taux_boc_rates` |
 | — | — | `indice_ipc` |
 | — | — | `loyer_tal` |
@@ -108,7 +108,7 @@ L'accès aux serveurs authentifiés (`lois` et `juris`) est réservé gratuiteme
 1. **Demande d'admission (`/demande`) :**
    - Soumettre votre numéro de membre du Barreau du Québec, votre adresse courriel professionnelle et votre **clé API CanLII personnelle** (vérifiée auprès de CanLII dès l'envoi).
    - Confirmer votre courriel via le lien reçu de `noreply@acces.poirierlavoie.ca` (valable 30 minutes), puis attendre la vérification manuelle au *Bottin des avocats*.
-   - Votre clé CanLII est conservée sous forme chiffrée et n'est déchiffrée en mémoire que lors d'un appel sortant vers CanLII (spécifications techniques sur `/conformite`). Sans clé active, les 9 outils CanLII de `juris` refusent l'appel (`[CLEF_ABSENTE]` / `[CLEF_REFUSEE]`) sans consulter le cache partagé.
+   - Votre clé CanLII est conservée sous forme chiffrée et n'est déchiffrée en mémoire que lors d'un appel sortant vers CanLII (spécifications techniques sur `/conformite`). Sans clé active, les 10 outils de `juris` pouvant interroger CanLII refusent l'appel (`[CLEF_ABSENTE]` / `[CLEF_REFUSEE]`) sans consulter le cache partagé (`parse_citation`, `list_exempt_cases` et `check_exempt_cases` avec `resolve_canlii=false` demeurent accessibles hors ligne).
 2. **Connexion OAuth 2.1 et espace libre-service (`/moi`) :**
    - **Connexion par navigateur OAuth 2.1 (par défaut) :** après approbation, connectez directement `lois` et `juris` dans votre client MCP (`/mcp auth` ou *Connect*) via `acces.poirierlavoie.ca`, sans clé à recopier dans vos fichiers.
    - **Jeton individuel pour CLI ou API sans navigateur :** un jeton personnel (affiché une seule fois à la création dans `/moi`) peut être créé pour l'en-tête `Authorization: Bearer` sur `/mcp`.
@@ -234,7 +234,7 @@ Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement, aucune dé
 PYTHONUTF8=1 python3 verifier.py                                  # Contrôle statique strict (muet, code 0)
 PYTHONUTF8=1 python3 verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
 PYTHONUTF8=1 python3 verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
-PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 78 scénarios, 4 scripts locaux et test_verifier.py
+PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 79 scénarios, 4 scripts locaux et test_verifier.py
 PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT

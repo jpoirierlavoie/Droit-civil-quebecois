@@ -42,7 +42,7 @@ Charger au plus une ou deux feuilles locales selon la tâche (jamais de renvoi v
 |---|---|---|
 | Vérifier prescription, déchéance, compétence, avis préalables, régimes exclusifs ou DIP | `references/grille-prealables.md` | `lois` (`get_articles`, `search_text`), `outils` (`greffe_parse_number`) |
 | Interroger `lois` efficacement (110 textes, quarantaine 8 domaines, `forum`, directives PDF, AMF) | `references/recherche-legislative.md` | `lois` (`find_relevant`, `search_text`, `list_laws`, `get_structure`, `get_articles`, `related_laws`) |
-| Vérifier des citations, mener la boule de neige CanLII ou lire des PDF fournis | `references/recherche-jurisprudentielle.md` | `juris` (`parse_citation`, `verify_citations`, `get_case`, `citator`) |
+| Vérifier des citations, consulter les dispenses de reproduction ou mener la boule de neige CanLII | `references/recherche-jurisprudentielle.md` | `juris` (`parse_citation`, `verify_citations`, `get_case`, `citator`, `list_exempt_cases`, `check_exempt_cases`) |
 | Chercher de la doctrine web (liste blanche) et filtrer les sources étrangères `.fr` | `references/recherche-doctrinale.md` | Recherche web, `outils` (`terminologie_lookup`, `termino_attestations`) |
 | Extraire structure, moyens et issues de procédures/jugements d'autres dossiers fournis | `references/recherche-precedents-internes.md` | `lois` (`get_articles`), `juris` (`verify_citations`) |
 | Calibrer le statut de lecture et choisir le gabarit de livraison (ponctuel, fiche, note) | `references/recherche-livrables.md` | `lois`, `juris` |
