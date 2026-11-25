@@ -1,6 +1,6 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement) et 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) branchés sur « lois », « juris » et « outils ».",
   "author": {
     "name": "Jason Poirier Lavoie",

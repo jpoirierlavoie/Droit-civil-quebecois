@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.1.0).
+"""Contrôle statique du dépôt « Droit civil québécois » (v3.1.1).
 
 Exécuter depuis la racine du dépôt :
 
@@ -238,6 +238,8 @@ EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
         "browse_legislation",
         "get_legislation",
         "parse_citation",
+        "list_exempt_authorities",
+        "check_exempt_authority",
     ),
     "outils": (
         "calendrier_holidays",

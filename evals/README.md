@@ -1,6 +1,6 @@
 # Suite d'évaluation comportementale (`evals/`)
 
-Suite de régression de **Droit civil québécois (`v3.1.0`)** couvrant les **10 compétences** (5 orchestrateurs de phase + 5 compétences de service), les **4 scripts locaux** (`calcul_delai.py`, `inspecter_piece.py`, `controler_document.py`, `verifier_cotes.py`), le corpus PDF Vague 1 (`110` textes), le protocole BYOK / OAuth 2.1 (`acces.poirierlavoie.ca`), la dégradation gracieuse nuage, les portes bloquantes de phase, l'honnêteté perceptuelle, les précédents internes dé-identifiés et les **10 déclencheurs négatifs hors champ**.
+Suite de régression de **Droit civil québécois (`v3.1.1`)** couvrant les **10 compétences** (5 orchestrateurs de phase + 5 compétences de service), les **4 scripts locaux** (`calcul_delai.py`, `inspecter_piece.py`, `controler_document.py`, `verifier_cotes.py`), la quarantaine par domaine et le corpus PDF Vague 1 (`110` textes), le protocole BYOK / OAuth 2.1 (`acces.poirierlavoie.ca`), la dégradation gracieuse nuage, les portes bloquantes de phase, l'honnêteté perceptuelle, les précédents internes dé-identifiés et les **10 déclencheurs négatifs hors champ**.
 
 ## Fichiers
 

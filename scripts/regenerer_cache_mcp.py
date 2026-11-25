@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 regenerer_cache_mcp.py (script mainteneur uniquement)
-Regénère de façon déterministe les 35 fichiers JSON de schémas d'outils et les 3 instructions.md
+Regénère de façon déterministe les 37 fichiers JSON de schémas d'outils et les 3 instructions.md
 dans ~/.gemini/antigravity/mcp/ à partir des descripteurs TypeScript faisant autorité.
 Prérequis : clones locaux frères de MCP-Legislation, MCP-Jurisprudence et MCP-Outils + Node.js (`npx tsx`).
 Usage:
@@ -134,7 +134,7 @@ ALL_CACHE_FOLDERS = {
     "droit-civil-quebecois_juris",
     "droit-civil-quebecois_outils",
 }
-EXPECTED_COUNTS = {"lois": 10, "juris": 10, "outils": 15, "all": 35}
+EXPECTED_COUNTS = {"lois": 10, "juris": 12, "outils": 15, "all": 37}
 
 
 def main():

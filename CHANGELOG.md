@@ -2,7 +2,16 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
-## [Non publié]
+## [3.1.1] — 2026-11-25
+
+### Ajouté
+- Synchronisation complète avec **`MCP-Outils` `v2.2.0`** (`15` outils sur `outils` sur `6` familles : `taux_boc_rates`, `indice_ipc`, `loyer_tal`, hiérarchies GLEIF L1/L2/REPEX, lots RQA et `prime_plus_margin` sur `interets_1619`).
+- Synchronisation complète avec **`MCP-Jurisprudence` `v2.2.2`** (`12` outils sur `juris`, portant le catalogue total du greffon à **`37` outils MCP** sous le plafond strict `<= 64` caractères) : ajout de `list_exempt_authorities` (`64` car. sous Claude Code) et `check_exempt_authority` (`63` car. sous Claude Code ; contrôle de dispense de reproduction sur les `27` listes compilées, `QCCA`/`QCCS`/`QCCQ`/`TAT`/`TDP`/`TP`/`TMF`/`CF`/`COMC`) dans `production-et-conformite` (`cahier-des-sources.md`), `verifier.py`, `verifier_tout.py` et `scripts/regenerer_cache_mcp.py`.
+- Alignement de `recherche-juridique` (`references/recherche-legislative.md`, `references/grille-prealables.md`, `SKILL.md`), de `verifier_tout.py` (`MockMcpServer` + `T4.4`) et de la suite `evals/` (`RJ-08`, précision QCCA sur `RJ-06`, 78 scénarios) sur la **quarantaine à 8 domaines** (`core` par défaut, `cours-federales`, `financier`, `construction-immobilier`, `municipal-environnement`, `travail`, `penal`, `propriete-intellectuelle`, paramètres `domains`, `jurisdiction`, `forum`, radar `other_domains` et note marginale fédérale pondérée) de `MCP-Legislation`.
+
+### Modifié
+- Remplacement de `assets/logo.svg` par une fleur de lys royale bleue (`#003DA5`) originale publiée sous licence `Apache-2.0`, et mise à jour correspondante de [`NOTICE`](NOTICE) et [`README.md`](README.md).
+- Polissage des manifestes : `"authentication": "ON_USE"` dans `.agents/plugins/marketplace.json`, description v3 à `37` outils dans `gemini-extension.json`, confirmation documentée de la préséance multi-outils de `.antigravity-plugin/plugin.json` sur `plugin.json` racine et mise à niveau semver `3.1.1` sur l'ensemble des manifestes et `evals/scenarios.json`.
 
 ---
 
