@@ -477,15 +477,16 @@ class MockMcpServer:
             }
 
         elif self.server_name == "outils":
+            provinces_enum = ["QC", "ON", "BC", "AB", "SK", "MB", "NB", "NS", "PE", "NL", "YT", "NT", "NU"]
             tools["calendrier_holidays"] = {
                 "name": "calendrier_holidays",
                 "description": "Calendrier des jours fériés et non juridiques (QC / CA).",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "year": {"type": "integer"},
+                        "year": {"type": "integer", "minimum": 1900, "maximum": 2300},
                         "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
-                        "province": {"type": "string"},
+                        "province": {"type": "string", "enum": provinces_enum},
                     },
                     "required": ["year"],
                     "additionalProperties": False,
@@ -497,14 +498,37 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "event_date": {"type": "string"},
-                        "deadlines": {"type": "array"},
-                        "event_time": {"type": "string"},
+                        "event_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "deadlines": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 25,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "amount": {"type": "integer", "minimum": 1, "maximum": 36500},
+                                    "unit": {"type": "string", "enum": ["days", "months", "years"]},
+                                    "direction": {"type": "string", "enum": ["forward", "backward"]},
+                                    "anchor_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "anchor_time": {"type": "string", "pattern": r"^\d{2}:\d{2}(?::\d{2})?$"},
+                                    "notification_mode": {"type": "string", "enum": ["none", "technological", "physical"]},
+                                    "depends_on_index": {"type": "integer", "minimum": 0, "maximum": 24},
+                                },
+                                "required": ["amount"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "event_time": {"type": "string", "pattern": r"^\d{2}:\d{2}(?::\d{2})?$"},
                         "notification_mode": {"type": "string", "enum": ["none", "technological", "physical"]},
                         "regime": {"type": "string", "enum": ["qc_cpc", "qc_prescription", "qc_li", "ca_li"]},
-                        "province": {"type": "string"},
+                        "province": {"type": "string", "enum": provinces_enum},
                         "rollover_saturday": {"type": "boolean"},
-                        "extra_non_juridical_dates": {"type": "array", "items": {"type": "string"}},
+                        "extra_non_juridical_dates": {
+                            "type": "array",
+                            "maxItems": 50,
+                            "items": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        },
                     },
                     "required": ["event_date", "deadlines"],
                     "additionalProperties": False,
@@ -517,16 +541,17 @@ class MockMcpServer:
                     "type": "object",
                     "properties": {
                         "mode": {"type": "string", "enum": ["legal_plus_1619", "legal_only", "contractual", "prime_plus_margin"]},
-                        "end_date": {"type": "string"},
-                        "rate_bps": {"type": "integer"},
-                        "spread_bps": {"type": "integer"},
+                        "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
+                        "spread_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
                         "rate_overrides": {
                             "type": "array",
+                            "maxItems": 40,
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "quarter": {"type": "string"},
-                                    "laf_rate_bps": {"type": "integer"},
+                                    "quarter": {"type": "string", "pattern": r"^\d{4}-Q[1-4]$"},
+                                    "laf_rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
                                 },
                                 "required": ["quarter", "laf_rate_bps"],
                                 "additionalProperties": False,
@@ -534,15 +559,17 @@ class MockMcpServer:
                         },
                         "tranches": {
                             "type": "array",
+                            "minItems": 1,
+                            "maxItems": 50,
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "label": {"type": "string"},
-                                    "principal_cents": {"type": "integer"},
-                                    "start_date": {"type": "string"},
-                                    "end_date": {"type": "string"},
-                                    "rate_bps": {"type": "integer"},
-                                    "spread_bps": {"type": "integer"},
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "principal_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000000},
+                                    "start_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                                    "rate_bps": {"type": "integer", "minimum": 0, "maximum": 50000},
+                                    "spread_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
                                 },
                                 "required": ["principal_cents", "start_date"],
                                 "additionalProperties": False,
@@ -559,7 +586,7 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "court_file_number": {"type": "string"},
+                        "court_file_number": {"type": "string", "minLength": 1, "maxLength": 40},
                     },
                     "required": ["court_file_number"],
                     "additionalProperties": False,
@@ -571,8 +598,8 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "district": {"type": "string"},
-                        "query": {"type": "string"},
+                        "district": {"type": "string", "maxLength": 60},
+                        "query": {"type": "string", "maxLength": 60},
                         "type": {"type": "string", "enum": ["palais", "point_de_service"]},
                     },
                     "additionalProperties": False,
@@ -584,8 +611,8 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "greffe_number": {"type": "string"},
-                        "palais": {"type": "string"},
+                        "greffe_number": {"type": "string", "minLength": 1, "maxLength": 3},
+                        "palais": {"type": "string", "minLength": 1, "maxLength": 60},
                     },
                     "additionalProperties": False,
                 },
@@ -596,10 +623,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string"},
+                        "query": {"type": "string", "minLength": 2, "maxLength": 200},
                         "jurisdiction": {"type": "string", "enum": ["qc", "ca", "gleif", "all"]},
                         "active_only": {"type": "boolean"},
-                        "limit": {"type": "integer"},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 25},
                     },
                     "required": ["query"],
                     "additionalProperties": False,
@@ -611,10 +638,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "neq": {"type": "string"},
-                        "corporation_number": {"type": "string"},
-                        "bn_ne": {"type": "string"},
-                        "lei": {"type": "string"},
+                        "neq": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "corporation_number": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "bn_ne": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "lei": {"type": "string", "minLength": 1, "maxLength": 40},
                     },
                     "additionalProperties": False,
                 },
@@ -625,15 +652,15 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "address": {"type": "string"},
-                        "civic_number": {"type": "string"},
-                        "street": {"type": "string"},
-                        "unit": {"type": "string"},
-                        "municipality": {"type": "string"},
-                        "postal_code": {"type": "string"},
-                        "lot_number": {"type": "string"},
-                        "matricule": {"type": "string"},
-                        "max_candidates": {"type": "integer"},
+                        "address": {"type": "string", "minLength": 2, "maxLength": 300},
+                        "civic_number": {"type": "string", "minLength": 1, "maxLength": 20},
+                        "street": {"type": "string", "minLength": 1, "maxLength": 160},
+                        "unit": {"type": "string", "minLength": 1, "maxLength": 40},
+                        "municipality": {"type": "string", "minLength": 1, "maxLength": 120},
+                        "postal_code": {"type": "string", "minLength": 3, "maxLength": 10},
+                        "lot_number": {"type": "string", "minLength": 1, "maxLength": 30},
+                        "matricule": {"type": "string", "minLength": 4, "maxLength": 30},
+                        "max_candidates": {"type": "integer", "minimum": 1, "maximum": 10},
                     },
                     "additionalProperties": False,
                 },
@@ -644,10 +671,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string"},
+                        "query": {"type": "string", "minLength": 1, "maxLength": 200},
                         "source_lang": {"type": "string", "enum": ["fr", "en", "auto"]},
-                        "domain_filter": {"type": "string"},
-                        "limit": {"type": "integer"},
+                        "domain_filter": {"type": "string", "minLength": 1, "maxLength": 100},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 25},
                     },
                     "required": ["query"],
                     "additionalProperties": False,
@@ -659,10 +686,10 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "term": {"type": "string"},
+                        "term": {"type": "string", "minLength": 2, "maxLength": 160},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
-                        "law_filter": {"type": "string"},
-                        "limit": {"type": "integer"},
+                        "law_filter": {"type": "string", "minLength": 1, "maxLength": 80},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 20},
                     },
                     "required": ["term", "lang"],
                     "additionalProperties": False,
@@ -674,7 +701,7 @@ class MockMcpServer:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "text": {"type": "string"},
+                        "text": {"type": "string", "minLength": 1, "maxLength": 32000},
                         "lang": {"type": "string", "enum": ["fr", "en"]},
                         "context_system": {"type": "string", "enum": ["droit_civil_qc", "bijuridique_federal"]},
                     },
@@ -689,13 +716,13 @@ class MockMcpServer:
                     "type": "object",
                     "properties": {
                         "category": {"type": "string", "enum": ["fx", "policy", "bank", "prime", "all_rates"]},
-                        "currency": {"type": "string"},
-                        "date": {"type": "string"},
-                        "start_date": {"type": "string"},
-                        "end_date": {"type": "string"},
-                        "amount": {"type": "string"},
+                        "currency": {"type": "string", "minLength": 3, "maxLength": 16},
+                        "date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "start_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "end_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "amount": {"type": "string", "pattern": r"^\d+(?:\.\d{1,6})?$"},
                         "direction": {"type": "string", "enum": ["foreign_to_cad", "cad_to_foreign"]},
-                        "limit": {"type": "integer"},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500},
                     },
                     "additionalProperties": False,
                 },
@@ -711,14 +738,14 @@ class MockMcpServer:
                         "frequency": {"type": "string", "enum": ["monthly", "annual"]},
                         "uom": {"type": "string", "enum": ["2002=100", "1992=100"]},
                         "end_uom": {"type": "string", "enum": ["2002=100", "1992=100"]},
-                        "period": {"type": "string"},
-                        "start_period": {"type": "string"},
-                        "end_period": {"type": "string"},
-                        "amount": {"type": "string"},
-                        "floor_bps": {"type": "integer"},
-                        "cap_bps": {"type": "integer"},
+                        "period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "start_period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "end_period": {"type": "string", "pattern": r"^\d{4}(?:-\d{2})?$"},
+                        "amount": {"type": "string", "pattern": r"^\d+(?:\.\d{1,6})?$"},
+                        "floor_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
+                        "cap_bps": {"type": "integer", "minimum": -5000, "maximum": 50000},
                         "rounding": {"type": "string", "enum": ["half_away_from_zero", "half_up"]},
-                        "limit": {"type": "integer"},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 500},
                     },
                     "additionalProperties": False,
                 },
@@ -730,38 +757,39 @@ class MockMcpServer:
                     "type": "object",
                     "properties": {
                         "mode": {"type": "string", "enum": ["calcul_2026", "bareme", "schl"]},
-                        "year": {"type": "integer"},
-                        "notice_date": {"type": "string"},
-                        "lease_renewal_date": {"type": "string"},
+                        "year": {"type": "integer", "minimum": 1987, "maximum": 2027},
+                        "notice_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+                        "lease_renewal_date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
                         "section_f_exemption_5_ans": {"type": "boolean"},
-                        "current_rent_cents": {"type": "integer"},
+                        "current_rent_cents": {"type": "integer", "minimum": 1, "maximum": 100000000},
                         "is_rpa": {"type": "boolean"},
-                        "rpa_personal_services_cents": {"type": "integer"},
-                        "building_residential_rents_cents": {"type": "integer"},
-                        "building_non_residential_rents_cents": {"type": "integer"},
-                        "other_annual_revenue_cents": {"type": "integer"},
-                        "municipal_taxes_prev_cents": {"type": "integer"},
-                        "municipal_taxes_curr_cents": {"type": "integer"},
-                        "school_taxes_prev_cents": {"type": "integer"},
-                        "school_taxes_curr_cents": {"type": "integer"},
-                        "insurance_prev_cents": {"type": "integer"},
-                        "insurance_curr_cents": {"type": "integer"},
-                        "snow_removal_prev_cents": {"type": "integer"},
-                        "snow_removal_curr_cents": {"type": "integer"},
+                        "rpa_personal_services_cents": {"type": "integer", "minimum": 0, "maximum": 100000000},
+                        "building_residential_rents_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+                        "building_non_residential_rents_cents": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+                        "other_annual_revenue_cents": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+                        "municipal_taxes_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "municipal_taxes_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "school_taxes_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "school_taxes_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "insurance_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "insurance_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "snow_removal_prev_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                        "snow_removal_curr_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
                         "capital_works": {
                             "type": "array",
+                            "maxItems": 30,
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "label": {"type": "string"},
-                                    "gross_amount_cents": {"type": "integer"},
-                                    "grant_cents": {"type": "integer"},
-                                    "third_party_indemnity_cents": {"type": "integer"},
-                                    "reduced_interest_loan_cents": {"type": "integer"},
-                                    "annual_loan_repayment_cents": {"type": "integer"},
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "gross_amount_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "grant_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "third_party_indemnity_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "reduced_interest_loan_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "annual_loan_repayment_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
                                     "target_unit_benefits": {"type": "boolean"},
                                     "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
-                                    "beneficiary_rents_monthly_cents": {"type": "integer"},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
                                 },
                                 "required": ["gross_amount_cents"],
                                 "additionalProperties": False,
@@ -769,15 +797,16 @@ class MockMcpServer:
                         },
                         "new_expenses": {
                             "type": "array",
+                            "maxItems": 30,
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "label": {"type": "string"},
-                                    "annual_amount_cents": {"type": "integer"},
-                                    "grant_cents": {"type": "integer"},
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "annual_amount_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "grant_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
                                     "target_unit_benefits": {"type": "boolean"},
                                     "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
-                                    "beneficiary_rents_monthly_cents": {"type": "integer"},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
                                 },
                                 "required": ["annual_amount_cents"],
                                 "additionalProperties": False,
@@ -785,21 +814,22 @@ class MockMcpServer:
                         },
                         "aid_variations": {
                             "type": "array",
+                            "maxItems": 30,
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "label": {"type": "string"},
-                                    "previous_annual_aid_cents": {"type": "integer"},
-                                    "current_annual_aid_cents": {"type": "integer"},
+                                    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                                    "previous_annual_aid_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+                                    "current_annual_aid_cents": {"type": "integer", "minimum": 0, "maximum": 10000000000},
                                     "target_unit_benefits": {"type": "boolean"},
                                     "beneficiary_scope": {"type": "string", "enum": ["all_units", "residential_only", "target_unit_only"]},
-                                    "beneficiary_rents_monthly_cents": {"type": "integer"},
+                                    "beneficiary_rents_monthly_cents": {"type": "integer", "minimum": 1, "maximum": 1000000000},
                                 },
                                 "required": ["previous_annual_aid_cents", "current_annual_aid_cents"],
                                 "additionalProperties": False,
                             },
                         },
-                        "cmhc_geo": {"type": "string"},
+                        "cmhc_geo": {"type": "string", "minLength": 2, "maxLength": 120},
                         "structure_type": {"type": "string", "enum": ["row_and_apartment_3_plus", "apartment_3_plus", "apartment_6_plus", "row_3_plus"]},
                         "unit_type": {"type": "string", "enum": ["all", "bachelor", "one_bedroom", "two_bedroom", "three_bedroom"]},
                     },
@@ -1161,6 +1191,79 @@ class MockMcpServer:
                 }).encode("utf-8"),
             )
 
+    def _validate_schema_value(
+        self, value: Any, schema: Dict[str, Any], path: str = ""
+    ) -> Optional[str]:
+        """Valide récursivement une valeur contre un sous-schéma JSON Schema."""
+        expected_type = schema.get("type")
+        if expected_type == "object":
+            if not isinstance(value, dict):
+                label = path or "arguments"
+                return f"Type invalide pour '{label}' : attendu object, reçu {type(value).__name__}."
+            props = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                for key in value:
+                    if key not in props:
+                        prefix = f"{path}." if path else ""
+                        return f"Propriété non autorisée '{prefix}{key}' détectée (additionalProperties: false)."
+            for req_key in schema.get("required", []):
+                if req_key not in value or value[req_key] is None:
+                    prefix = f"{path}." if path else ""
+                    return f"Paramètre requis manquant : '{prefix}{req_key}'."
+            for k, v in value.items():
+                if k in props:
+                    sub_path = f"{path}.{k}" if path else k
+                    err = self._validate_schema_value(v, props[k], sub_path)
+                    if err:
+                        return err
+            return None
+
+        if expected_type == "array":
+            if not isinstance(value, list):
+                return f"Type invalide pour '{path}' : attendu array, reçu {type(value).__name__}."
+            if "minItems" in schema and len(value) < schema["minItems"]:
+                return f"Tableau '{path}' doit contenir au moins {schema['minItems']} élément(s)."
+            if "maxItems" in schema and len(value) > schema["maxItems"]:
+                return f"Tableau '{path}' dépasse le maximum de {schema['maxItems']} élément(s)."
+            items_schema = schema.get("items")
+            if isinstance(items_schema, dict):
+                for idx, item in enumerate(value):
+                    err = self._validate_schema_value(item, items_schema, f"{path}[{idx}]")
+                    if err:
+                        return err
+            return None
+
+        if expected_type == "integer":
+            if not isinstance(value, int) or isinstance(value, bool):
+                return f"Type invalide pour '{path}' : attendu integer, reçu {type(value).__name__}."
+            if "minimum" in schema and value < schema["minimum"]:
+                return f"Valeur hors borne pour '{path}' : {value} < minimum {schema['minimum']}."
+            if "maximum" in schema and value > schema["maximum"]:
+                return f"Valeur hors borne pour '{path}' : {value} > maximum {schema['maximum']}."
+            return None
+
+        if expected_type == "boolean":
+            if not isinstance(value, bool):
+                return f"Type invalide pour '{path}' : attendu boolean, reçu {type(value).__name__}."
+            return None
+
+        if expected_type == "string":
+            if not isinstance(value, str):
+                return f"Type invalide pour '{path}' : attendu string, reçu {type(value).__name__}."
+            if "minLength" in schema and len(value) < schema["minLength"]:
+                return f"Chaîne trop courte pour '{path}' (minimum {schema['minLength']} car.)."
+            if "maxLength" in schema and len(value) > schema["maxLength"]:
+                return f"Chaîne trop longue pour '{path}' (maximum {schema['maxLength']} car.)."
+            if "pattern" in schema:
+                target_s = value.strip() if path in ("amount", "currency") else value
+                if not re.match(schema["pattern"], target_s):
+                    return f"Format invalide pour '{path}' : '{value}'."
+            if "enum" in schema and value not in schema["enum"]:
+                return f"Valeur invalide '{value}' pour '{path}' : attendu parmi {schema['enum']}."
+            return None
+
+        return None
+
     def _validate_args(
         self, tool_name: str, args: Dict[str, Any], schema: Dict[str, Any]
     ) -> Optional[str]:
@@ -1168,33 +1271,9 @@ class MockMcpServer:
         if not isinstance(args, dict):
             return "Les arguments doivent être un objet JSON."
 
-        # Vérification des propriétés inattendues (additionalProperties: false)
-        allowed_props = set(schema.get("properties", {}).keys())
-        for key in args:
-            if key not in allowed_props:
-                return f"Propriété non autorisée '{key}' détectée (additionalProperties: false)."
-
-        # Vérification des paramètres requis
-        required = schema.get("required", [])
-        for req_key in required:
-            if req_key not in args or args[req_key] is None:
-                return f"Paramètre requis manquant : '{req_key}'."
-
-        # Contrôles de types fondamentaux
-        props = schema.get("properties", {})
-        for k, v in args.items():
-            if k in props:
-                expected_type = props[k].get("type")
-                if expected_type == "integer" and (not isinstance(v, int) or isinstance(v, bool)):
-                    return f"Type invalide pour '{k}' : attendu integer, reçu {type(v).__name__}."
-                if expected_type == "boolean" and not isinstance(v, bool):
-                    return f"Type invalide pour '{k}' : attendu boolean, reçu {type(v).__name__}."
-                if expected_type == "string" and not isinstance(v, str):
-                    return f"Type invalide pour '{k}' : attendu string, reçu {type(v).__name__}."
-                if expected_type == "array" and not isinstance(v, list):
-                    return f"Type invalide pour '{k}' : attendu array, reçu {type(v).__name__}."
-                if "enum" in props[k] and v not in props[k]["enum"]:
-                    return f"Valeur invalide '{v}' pour '{k}' : attendu parmi {props[k]['enum']}."
+        schema_err = self._validate_schema_value(args, schema, "")
+        if schema_err:
+            return schema_err
 
         # Règle XOR pour palais_get
         if tool_name == "palais_get":
@@ -1230,7 +1309,7 @@ class MockMcpServer:
             if not (has_lot or has_mat) and not any(bool(str(args.get(k, "")).strip()) for k in ("address", "street", "postal_code")):
                 return "Paramètre requis manquant : fournir address, street, postal_code, lot_number ou matricule."
 
-        # Règles interets_1619 (prime_plus_margin, spread_bps, rate_overrides)
+        # Règles interets_1619 (prime_plus_margin, spread_bps, rate_overrides, contractual)
         if tool_name == "interets_1619":
             end_d = str(args.get("end_date", ""))
             try:
@@ -1256,46 +1335,104 @@ class MockMcpServer:
                 or any(isinstance(t, dict) and t.get("rate_bps") is not None for t in tranches)
             ):
                 return "rate_bps est réservé au mode 'contractual'."
+            for idx, t in enumerate(tranches):
+                st_d = str(t.get("start_date", ""))
+                tr_end = str(t.get("end_date") or end_d)
+                try:
+                    datetime.date.fromisoformat(st_d)
+                    datetime.date.fromisoformat(tr_end)
+                except ValueError as err:
+                    return f"Tranche #{idx + 1} : date invalide ({err})."
+                if tr_end < st_d:
+                    return f"Tranche #{idx + 1} : end_date ({tr_end}) précède start_date ({st_d})."
+                if mode == "contractual" and t.get("rate_bps") is None and args.get("rate_bps") is None:
+                    return f"Tranche #{idx + 1} : rate_bps est requis (par tranche ou globalement) en mode 'contractual'."
 
         # Règles taux_boc_rates
         if tool_name == "taux_boc_rates":
-            has_date = bool(args.get("date"))
-            has_start = bool(args.get("start_date"))
-            has_end = bool(args.get("end_date"))
+            has_date = args.get("date") is not None
+            has_start = args.get("start_date") is not None
+            has_end = args.get("end_date") is not None
             if has_date and (has_start or has_end):
                 return "date est exclusif avec start_date et end_date."
             if has_start != has_end:
                 return "start_date et end_date doivent être fournis ensemble."
+            if not has_date and not (has_start and has_end):
+                return "Préciser soit 'date', soit la paire complète 'start_date' et 'end_date'."
             for dk in ("date", "start_date", "end_date"):
                 if args.get(dk):
                     try:
                         datetime.date.fromisoformat(str(args[dk]))
                     except ValueError:
                         return f"Date invalide pour {dk} : '{args[dk]}'."
+            if has_start and has_end and str(args["start_date"]) > str(args["end_date"]):
+                return f"start_date ({args['start_date']}) ne peut pas être postérieure à end_date ({args['end_date']})."
+            eff_cat = args.get("category") or (
+                "fx" if (args.get("currency") is not None or args.get("amount") is not None) else "all_rates"
+            )
             cur = args.get("currency")
             if cur is not None:
                 cur_u = cur.strip().upper()
-                if cur_u in ("CAD", "FXCADCAD"):
+                m_valet = re.match(r"^FX([A-Z]{3})CAD$", cur_u)
+                code_u = m_valet.group(1) if m_valet else cur_u
+                if code_u == "CAD":
                     return "Ne pas passer 'CAD' pour currency : tous les taux BdC sont déjà exprimés face au CAD."
-                if args.get("category") and args.get("category") != "fx":
+                if not re.match(r"^[A-Z]{3}$", code_u):
+                    return f"Code de devise invalide « {cur} »."
+                if eff_cat != "fx":
                     return "currency requiert category='fx'."
+            if eff_cat == "fx" and not (cur and cur.strip()):
+                return "Préciser 'currency' (p. ex. 'USD', 'EUR', 'GBP', 'JPY') pour consulter un taux de change."
             if args.get("amount") is not None:
-                if args.get("category") and args.get("category") != "fx":
-                    return "La conversion avec amount requiert category='fx'."
-                if not has_date or not cur:
-                    return "La conversion avec amount requiert date et currency."
+                amt_s = str(args["amount"]).strip()
+                if not re.match(r"^\d+(?:\.\d{1,6})?$", amt_s):
+                    return f"Format de montant invalide pour 'amount' : '{args['amount']}'."
+                whole, _, frac = amt_s.partition(".")
+                if int(whole) == 0 and (not frac or int(frac) == 0):
+                    return "Le montant 'amount' doit être strictement supérieur à zéro."
+                if eff_cat != "fx" or not has_date or not cur:
+                    return "La conversion avec amount requiert category='fx', date et currency."
             elif args.get("direction") is not None:
                 return "direction requiert amount."
 
         # Règles indice_ipc
         if tool_name == "indice_ipc":
-            has_per = bool(args.get("period"))
-            has_start = bool(args.get("start_period"))
-            has_end = bool(args.get("end_period"))
+            has_per = args.get("period") is not None
+            has_start = args.get("start_period") is not None
+            has_end = args.get("end_period") is not None
             if has_per and (has_start or has_end):
                 return "period est exclusif avec start_period et end_period."
             if has_start != has_end:
                 return "start_period et end_period doivent être fournis ensemble."
+            if not has_per and not (has_start and has_end):
+                return "Préciser soit 'period', soit la paire complète 'start_period' et 'end_period'."
+            if has_per and args.get("end_uom") is not None:
+                return "Le paramètre 'end_uom' s'applique uniquement avec 'start_period' et 'end_period'."
+            parsed_freqs: Dict[str, Tuple[str, int]] = {}
+            for pk in ("period", "start_period", "end_period"):
+                pval = args.get(pk)
+                if pval is not None:
+                    m_p = re.match(r"^(\d{4})(?:-(\d{2}))?$", pval.strip())
+                    if not m_p:
+                        return f"Période IPC invalide '{pval}'."
+                    yr = int(m_p.group(1))
+                    if yr < 1914:
+                        return f"Année IPC hors plage ({yr}) : >= 1914 requis."
+                    if m_p.group(2) is not None:
+                        mo = int(m_p.group(2))
+                        if mo < 1 or mo > 12:
+                            return f"Mois IPC invalide dans '{pval}' (01..12)."
+                        pf = ("monthly", yr * 100 + mo)
+                    else:
+                        pf = ("annual", yr)
+                    if args.get("frequency") and args["frequency"] != pf[0]:
+                        return f"Incohérence entre frequency='{args['frequency']}' et {pk}='{pval}'."
+                    parsed_freqs[pk] = pf
+            if has_start and has_end:
+                if parsed_freqs["start_period"][0] != parsed_freqs["end_period"][0]:
+                    return "start_period et end_period doivent avoir la même fréquence ('YYYY-MM' ou 'YYYY')."
+                if parsed_freqs["start_period"][1] > parsed_freqs["end_period"][1]:
+                    return "start_period ne peut pas être postérieure à end_period."
             geo = args.get("geo", "quebec")
             product = args.get("product", "all_items")
             if geo in ("montreal_rmr", "quebec_rmr") and product in ("rent", "health_care_services"):
@@ -1303,10 +1440,22 @@ class MockMcpServer:
             uom = args.get("uom", "2002=100")
             end_uom = args.get("end_uom", uom)
             if args.get("amount") is not None:
+                amt_s = str(args["amount"]).strip()
+                if not re.match(r"^\d+(?:\.\d{1,6})?$", amt_s):
+                    return f"Format de montant invalide pour 'amount' : '{args['amount']}'."
+                whole, _, frac = amt_s.partition(".")
+                if int(whole) == 0 and (not frac or int(frac) == 0):
+                    return "Le montant 'amount' doit être strictement supérieur à zéro."
                 if not (has_start and has_end):
                     return "L'indexation contractuelle avec amount requiert start_period et end_period."
                 if uom != end_uom:
                     return f"Divergence d'année de base ({uom} vs {end_uom}) : indexation bloquée sans facteur de raccordement officiel StatCan."
+                if (
+                    args.get("floor_bps") is not None
+                    and args.get("cap_bps") is not None
+                    and args["floor_bps"] > args["cap_bps"]
+                ):
+                    return f"Plancher incohérent : floor_bps ({args['floor_bps']}) > cap_bps ({args['cap_bps']})."
             elif any(args.get(k) is not None for k in ("floor_bps", "cap_bps", "rounding")):
                 return "floor_bps, cap_bps et rounding requièrent amount."
 
@@ -1321,6 +1470,16 @@ class MockMcpServer:
                         datetime.date.fromisoformat(str(args["notice_date"]))
                 except ValueError as err:
                     return f"Date invalide dans loyer_tal : {err}"
+                for pair_label, k_prev, k_curr in (
+                    ("taxes municipales", "municipal_taxes_prev_cents", "municipal_taxes_curr_cents"),
+                    ("taxes scolaires", "school_taxes_prev_cents", "school_taxes_curr_cents"),
+                    ("assurances", "insurance_prev_cents", "insurance_curr_cents"),
+                    ("déneigement", "snow_removal_prev_cents", "snow_removal_curr_cents"),
+                ):
+                    if (args.get(k_prev) is not None) != (args.get(k_curr) is not None):
+                        return f"Paramètre incomplet pour {pair_label} : fournir simultanément précédent et courant."
+                if (args.get("rpa_personal_services_cents") or 0) > 0 and not args.get("is_rpa"):
+                    return "rpa_personal_services_cents > 0 requiert is_rpa=true."
                 notice_d = args.get("notice_date")
                 if str(args["lease_renewal_date"]) < "2026-01-01" and not (notice_d and str(notice_d) < "2026-01-01"):
                     return "En mode 'calcul_2026', lease_renewal_date doit être >= 2026-01-01 (sauf avis < 2026-01-01)."
@@ -1959,7 +2118,7 @@ class MockMcpServer:
                 "neq": None if is_gleif else "1172345678",
                 "corporation_number": None,
                 "bn_ne": None,
-                "lei": "5493001KJTIIGC8Y1R12",
+                "lei": "549300BOREALE0000001",
                 "has_lei": True,
                 "nom_officiel": "BANQUE BORÉALE DU CANADA" if is_gleif else "9123-4567 QUÉBEC INC.",
                 "autres_noms": [] if is_gleif else ["Construction Boréale"],
@@ -2014,7 +2173,7 @@ class MockMcpServer:
                 lookup_by = "neq"
                 lookup_val = str(args.get("neq") or "1172345678").strip()
                 neq = lookup_val
-            lei_val = lookup_val if lookup_by == "lei" else "5493001KJTIIGC8Y1R12"
+            lei_val = lookup_val if lookup_by == "lei" else "549300BOREALE0000001"
             return {
                 "content": [
                     {
@@ -2071,7 +2230,7 @@ class MockMcpServer:
         elif tool_name == "adresse_verify":
             lot_arg = str(args.get("lot_number", "")).strip()
             mat_arg = str(args.get("matricule", "")).strip()
-            lots = [lot_arg] if lot_arg else ["1 181 642"]
+            lots = [lot_arg] if lot_arg else ["2359285"]
             mat = mat_arg if mat_arg else "9891-44-1234"
             return {
                 "content": [
@@ -2184,57 +2343,117 @@ class MockMcpServer:
             }
 
         elif tool_name == "taux_boc_rates":
+            def _round_half_away(num: int, den: int) -> int:
+                neg = num < 0
+                abs_n = -num if neg else num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 >= den else q
+                return -res_v if neg else res_v
+
+            def _fmt_micros6(micros: int) -> str:
+                neg = micros < 0
+                abs_m = -micros if neg else micros
+                return f"{'-' if neg else ''}{abs_m // 1_000_000}.{abs_m % 1_000_000:06d}"
+
+            def _fmt_cents(cents: int) -> str:
+                neg = cents < 0
+                abs_c = -cents if neg else cents
+                return f"{'-' if neg else ''}{abs_c // 100}.{abs_c % 100:02d}"
+
             cat = args.get("category") or ("fx" if (args.get("currency") or args.get("amount")) else "all_rates")
+            is_range = bool(args.get("start_date") and args.get("end_date"))
             req_date = args.get("date") or args.get("start_date") or "2026-11-18"
-            cur = (args.get("currency") or "USD").upper().replace("FX", "").replace("CAD", "") or "USD"
+            raw_cur = (args.get("currency") or "USD").strip().upper()
+            m_valet = re.match(r"^FX([A-Z]{3})CAD$", raw_cur)
+            cur = m_valet.group(1) if m_valet else raw_cur
             is_pre_2017 = req_date < "2017-05-01"
             methodology = "noon_spot_pre_2017_05_01" if is_pre_2017 else "daily_average_1630_et"
-            rate_micros = 1395000
+            rate_micros = 1291400 if (is_pre_2017 and cur == "USD") else 1395000
             dt_req = datetime.date.fromisoformat(req_date)
             rollback_days = 2 if dt_req.weekday() == 6 else (1 if dt_req.weekday() == 5 else 0)
             eff_date = (dt_req - datetime.timedelta(days=rollback_days)).isoformat()
             rolled_back = rollback_days > 0
+            cad_per_foreign = _fmt_micros6(rate_micros)
+            foreign_per_cad_micros = _round_half_away(1_000_000 * 1_000_000, rate_micros)
             fx_obs = []
             int_obs = []
+            currency_summary = None
             if cat == "fx":
+                currency_summary = {
+                    "code": cur,
+                    "name_fr": "Dollar américain" if cur == "USD" else cur,
+                    "name_en": "US Dollar" if cur == "USD" else cur,
+                    "active_daily": True,
+                }
                 fx_obs.append({
-                    "series_id": f"FX{cur}CAD",
-                    "currency": cur,
-                    "requested_date": req_date,
+                    "currency_code": cur,
+                    "requested_date": None if is_range else req_date,
                     "effective_observation_date": eff_date,
                     "rolled_back": rolled_back,
                     "rollback_days": rollback_days,
                     "rate_methodology": methodology,
-                    "cad_per_foreign_unit": "1.3950",
+                    "cad_per_foreign_unit": cad_per_foreign,
+                    "foreign_per_cad_approx": _fmt_micros6(foreign_per_cad_micros),
                     "rate_micros": rate_micros,
                 })
             else:
-                int_obs.append({
-                    "series_id": "V80691311" if cat in ("prime", "all_rates") else ("V39079" if cat == "policy" else "V122530"),
-                    "requested_date": req_date,
-                    "effective_observation_date": eff_date,
-                    "rolled_back": rolled_back,
-                    "rate_bps": 495,
-                    "rate_percent": "4.95",
-                })
+                series_map = {
+                    "V39079": ("Taux cible du financement à un jour (taux directeur, V39079)", 375),
+                    "V122530": ("Taux officiel d'escompte mensuel (V122530)", 400),
+                    "V80691311": ("Taux préférentiel hebdomadaire des banques à charte (V80691311)", 495),
+                }
+                target_sids = (
+                    ["V39079"] if cat == "policy" else
+                    ["V122530"] if cat == "bank" else
+                    ["V80691311"] if cat == "prime" else
+                    ["V39079", "V122530", "V80691311"]
+                )
+                for sid in target_sids:
+                    lbl_fr, bps_val = series_map[sid]
+                    int_obs.append({
+                        "series_id": sid,
+                        "series_label_fr": lbl_fr,
+                        "requested_date": None if is_range else req_date,
+                        "effective_observation_date": eff_date,
+                        "rolled_back": rolled_back,
+                        "rollback_days": rollback_days,
+                        "rate_bps": bps_val,
+                        "rate_percent": f"{bps_val / 100:.2f} %",
+                    })
             conv = None
             if args.get("amount"):
-                amt_dec = float(args["amount"])
+                amt_s = args["amount"].strip()
+                if "." in amt_s:
+                    w_p, f_p = amt_s.split(".", 1)
+                    amt_num = int(f"{w_p}{f_p}")
+                    amt_scale = 10 ** len(f_p)
+                else:
+                    amt_num = int(amt_s)
+                    amt_scale = 1
                 direction = args.get("direction", "foreign_to_cad")
-                rate_val = rate_micros / 1_000_000.0
-                converted = amt_dec * rate_val if direction == "foreign_to_cad" else amt_dec / rate_val
+                if direction == "foreign_to_cad":
+                    raw_cents = _round_half_away(amt_num * rate_micros * 100, amt_scale * 1_000_000)
+                    raw_micros = _round_half_away(amt_num * rate_micros * 1_000_000, amt_scale * 1_000_000)
+                else:
+                    raw_cents = _round_half_away(amt_num * 1_000_000 * 100, amt_scale * rate_micros)
+                    raw_micros = _round_half_away(amt_num * 1_000_000 * 1_000_000, amt_scale * rate_micros)
                 conv = {
                     "direction": direction,
-                    "input_amount": args["amount"],
-                    "converted_cents": int(round(converted * 100)),
-                    "converted_amount_2dec": f"{converted:.2f}",
-                    "converted_amount_exact_6dec": f"{converted:.6f}",
+                    "foreign_currency": cur,
+                    "input_amount": amt_s,
+                    "effective_observation_date": eff_date,
+                    "rate_methodology": methodology,
+                    "cad_per_foreign_unit": cad_per_foreign,
+                    "converted_currency": "CAD" if direction == "foreign_to_cad" else cur,
+                    "converted_cents": raw_cents,
+                    "converted_amount_2dec": _fmt_cents(raw_cents),
+                    "converted_amount_exact_6dec": _fmt_micros6(raw_micros),
                     "legal_basis": "Loi sur la monnaie (L.R.C. 1985, c. C-52, art. 12); art. 1561 et 3161 C.c.Q.",
                 }
             gardes = [
                 {"code": "TAUX_BOC_INSTANTANE_HORS_LIGNE", "message": "Données issues d'un instantané local Banque du Canada / StatCan (aucun appel réseau sortant)."},
             ]
-            if is_pre_2017:
+            if is_pre_2017 and cat == "fx":
                 gardes.append({"code": "TAUX_BOC_NOON_HISTORIQUE_PRE_2017", "message": "Taux au comptant de midi HE antérieur au 2017-05-01."})
             if rolled_back:
                 gardes.append({"code": "TAUX_BOC_REPORT_JOUR_OUVRABLE_PRECEDENT", "message": "Date demandée non ouvrable : report au jour ouvrable précédent."})
@@ -2244,11 +2463,11 @@ class MockMcpServer:
                 "content": [{"type": "text", "text": f"Taux BdC ({cat}) pour {req_date} (effectif {eff_date})."}],
                 "structuredContent": {
                     "category": cat,
-                    "mode": "range" if args.get("start_date") else "single_date",
+                    "mode": "range" if is_range else "single_date",
                     "requested_date": args.get("date"),
                     "start_date": args.get("start_date"),
                     "end_date": args.get("end_date"),
-                    "currency": cur if cat == "fx" else None,
+                    "currency": currency_summary,
                     "count": len(fx_obs) + len(int_obs),
                     "fx_observations": fx_obs,
                     "interest_observations": int_obs,
@@ -2259,36 +2478,106 @@ class MockMcpServer:
             }
 
         elif tool_name == "indice_ipc":
+            def _ipc_round_half_away(num: int, den: int) -> int:
+                neg = num < 0
+                abs_n = -num if neg else num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 >= den else q
+                return -res_v if neg else res_v
+
+            def _ipc_round_half_up(num: int, den: int) -> int:
+                if num >= 0:
+                    return (num * 2 + den) // (2 * den)
+                abs_n = -num
+                q, r = divmod(abs_n, den)
+                res_v = q + 1 if r * 2 > den else q
+                return 0 if res_v == 0 else -res_v
+
+            def _fmt_milli(m: int) -> str:
+                whole, rem = divmod(m, 1000)
+                if rem % 100 == 0:
+                    return f"{whole}.{rem // 100}"
+                if rem % 10 == 0:
+                    return f"{whole}.{rem // 10:02d}"
+                return f"{whole}.{rem:03d}"
+
+            def _fmt_signed_bps(bps: int) -> str:
+                abs_b = abs(bps)
+                sign = "+" if bps > 0 else ("-" if bps < 0 else "")
+                return f"{sign}{abs_b // 100}.{abs_b % 100:02d} %"
+
             geo = args.get("geo", "quebec")
             product = args.get("product", "all_items")
             uom = args.get("uom", "2002=100")
             is_range = bool(args.get("start_period") and args.get("end_period"))
-            freq = args.get("frequency") or ("annual" if (args.get("period") or args.get("start_period") or "2025-01").isdigit() else "monthly")
+            start_p = args.get("start_period") or args.get("period") or "2025-01"
+            end_p = args.get("end_period") or start_p
+            freq = args.get("frequency") or ("annual" if start_p.isdigit() else "monthly")
+
+            known_qc_cpi = {
+                "2023-01": 149900,
+                "2024-01": 154800,
+                "2025-01": 157600,
+                "2026-01": 162300,
+            }
+            start_milli = known_qc_cpi.get(start_p, 159400)
+            end_milli = known_qc_cpi.get(end_p, 163200 if start_p != end_p else start_milli)
             obs = [
-                {"period": args.get("start_period") or args.get("period") or "2025-01", "value_decimal": "159.4", "value_milli": 159400, "uom": uom, "yoy_bps": 210, "yoy_percent": "2.10"},
+                {"period": start_p, "value_decimal": _fmt_milli(start_milli), "value_milli": start_milli, "uom": uom, "yoy_bps": 210, "yoy_percent": "+2.10 %"},
             ]
+            raw_bps = None
             if is_range:
-                obs.append({"period": args["end_period"], "value_decimal": "163.2", "value_milli": 163200, "uom": uom, "yoy_bps": 238, "yoy_percent": "2.38"})
+                raw_bps = _ipc_round_half_away((end_milli - start_milli) * 10_000, start_milli) if start_p != end_p else 0
+                obs.append({"period": end_p, "value_decimal": _fmt_milli(end_milli), "value_milli": end_milli, "uom": uom, "yoy_bps": raw_bps, "yoy_percent": _fmt_signed_bps(raw_bps)})
             escalation = None
             if args.get("amount"):
-                raw_bps = 238
-                eff_bps = raw_bps
+                amt_s = args["amount"].strip()
+                if "." in amt_s:
+                    w_p, f_p = amt_s.split(".", 1)
+                    amt_num = int(f"{w_p}{f_p}")
+                    amt_scale = 10 ** len(f_p)
+                else:
+                    amt_num = int(amt_s)
+                    amt_scale = 1
+                assert raw_bps is not None
+                below_floor = args.get("floor_bps") is not None and (end_milli - start_milli) * 10_000 < args["floor_bps"] * start_milli
+                above_cap = args.get("cap_bps") is not None and (end_milli - start_milli) * 10_000 > args["cap_bps"] * start_milli
+                eff_num, eff_den = end_milli, start_milli
                 bound = "none"
-                if args.get("floor_bps") is not None and eff_bps < args["floor_bps"]:
+                eff_bps = raw_bps
+                if below_floor:
                     eff_bps = args["floor_bps"]
+                    eff_num, eff_den = 10_000 + eff_bps, 10_000
                     bound = "floor"
-                if args.get("cap_bps") is not None and eff_bps > args["cap_bps"]:
+                elif above_cap:
                     eff_bps = args["cap_bps"]
+                    eff_num, eff_den = 10_000 + eff_bps, 10_000
                     bound = "cap"
-                amt = float(args["amount"])
-                esc = amt * (1.0 + eff_bps / 10000.0)
+                rounding_mode = args.get("rounding") or "half_away_from_zero"
+                round_fn = _ipc_round_half_up if rounding_mode == "half_up" else _ipc_round_half_away
+                esc_cents = round_fn(amt_num * eff_num * 100, amt_scale * eff_den)
+                esc_micros = round_fn(amt_num * eff_num * 1_000_000, amt_scale * eff_den)
+                ratio_micros = _ipc_round_half_away(end_milli * 1_000_000, start_milli)
                 escalation = {
+                    "input_amount": amt_s,
+                    "start_period": start_p,
+                    "end_period": end_p,
+                    "start_index_decimal": _fmt_milli(start_milli),
+                    "end_index_decimal": _fmt_milli(end_milli),
+                    "start_uom": uom,
+                    "end_uom": uom,
+                    "raw_ratio_decimal": f"{ratio_micros // 1_000_000}.{ratio_micros % 1_000_000:06d}",
                     "raw_change_bps": raw_bps,
+                    "raw_change_percent": _fmt_signed_bps(raw_bps),
+                    "floor_bps": args.get("floor_bps"),
+                    "cap_bps": args.get("cap_bps"),
                     "applied_bound": bound,
                     "effective_change_bps": eff_bps,
-                    "escalated_cents": int(round(esc * 100)),
-                    "escalated_amount_2dec": f"{esc:.2f}",
-                    "escalated_amount_exact_6dec": f"{esc:.6f}",
+                    "effective_change_percent": _fmt_signed_bps(eff_bps),
+                    "rounding": rounding_mode,
+                    "escalated_cents": esc_cents,
+                    "escalated_amount_2dec": f"{esc_cents // 100}.{esc_cents % 100:02d}",
+                    "escalated_amount_exact_6dec": f"{esc_micros // 1_000_000}.{esc_micros % 1_000_000:06d}",
                 }
             gardes = [
                 {"code": "IPC_INSTANTANE_HORS_LIGNE", "message": "Données StatCan 18-10-0004-01 / 18-10-0005-01 hors ligne sans extrapolation."},
@@ -2316,7 +2605,7 @@ class MockMcpServer:
                     "count": len(obs),
                     "total_observations": len(obs),
                     "observations_truncated": False,
-                    "cumulative_change_bps": 238 if is_range else None,
+                    "cumulative_change_bps": raw_bps if is_range else None,
                     "observations": obs,
                     "escalation": escalation,
                     "provenance": {"source": "Statistique Canada (18-10-0004-01 / 18-10-0005-01)", "verified_at": "2026-11-18"},
@@ -2325,6 +2614,38 @@ class MockMcpServer:
             }
 
         elif tool_name == "loyer_tal":
+            post_2026_entries = [
+                {
+                    "reference_year": 2024,
+                    "lease_renewal_start": "2026-01-01",
+                    "lease_renewal_end": "2026-04-01",
+                    "base_rent_bps": 450,
+                    "rpa_personal_services_bps": 600,
+                    "capital_expenditures_bps": 500,
+                    "official_ref": "TAL Simulateurdecalcul-2025-n.asp (avis >= 2026-01-01, baux se terminant du 1er janv. au 31 mars 2026)",
+                },
+                {
+                    "reference_year": 2025,
+                    "lease_renewal_start": "2026-04-02",
+                    "lease_renewal_end": "2027-04-01",
+                    "base_rent_bps": 310,
+                    "rpa_personal_services_bps": 670,
+                    "capital_expenditures_bps": 500,
+                    "official_ref": "(2026) 158 G.O. 1, 146 ; TAL Simulateurdecalcul.asp",
+                },
+            ]
+            pre_2025_entry = {
+                "year": 2025,
+                "electricity_bps": 290,
+                "gas_bps": -580,
+                "oil_other_bps": -290,
+                "maintenance_bps": 690,
+                "services_bps": 450,
+                "rpa_personal_services_bps": 590,
+                "management_bps": 820,
+                "net_income_bps": 690,
+                "capital_expenditures_bps": 470,
+            }
             mode = args["mode"]
             if mode == "bareme":
                 return {
@@ -2333,25 +2654,51 @@ class MockMcpServer:
                         "mode": "bareme",
                         "regime": "bareme_officiel",
                         "calculation": None,
-                        "bareme_post_2026": {"2026-04-02_2027-04-01": {"ipc_base_bps": 310, "rpa_services_bps": 670, "immobilisations_bps": 500}},
-                        "bareme_pre_2026": {"2025": {"non_chauffe_bps": 590}},
-                        "cmhc_results": None,
-                        "provenance": {"source": "TAL / LégisQuébec RLRQ, c. T-15.01, r. 2", "verified_at": "2026-11-18"},
-                        "gardes": [{"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation (RLRQ, c. T-15.01, r. 2)."}],
+                        "bareme_post_2026": post_2026_entries,
+                        "bareme_pre_2026": [pre_2025_entry],
+                        "cmhc_results": [],
+                        "provenance": {"source": "TAL / LégisQuébec RLRQ, c. T-15.01, r. 2", "verified_at": "2026-11-25"},
+                        "gardes": [
+                            {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation (RLRQ, c. T-15.01, r. 2)."},
+                            {"code": "TAL_REGIME_TRANSITOIRE_PRE_2026", "message": "Les avis donnés avant le 1er janvier 2026 demeurent régis par l'ancien règlement (art. 6 Décret 1455-2025)."},
+                        ],
                     },
                 }
             if mode == "schl":
                 geo_label = args.get("cmhc_geo") or "Montréal"
+                struct_type = args.get("structure_type") or "row_and_apartment_3_plus"
+                unit_type = args.get("unit_type") or "all"
+                all_cells = [
+                    {"unit_type": "bachelor", "unit_label_fr": "Studio", "rent_dollars": 1085, "suppressed": False},
+                    {"unit_type": "one_bedroom", "unit_label_fr": "1 chambre", "rent_dollars": 1245, "suppressed": False},
+                    {"unit_type": "two_bedroom", "unit_label_fr": "2 chambres", "rent_dollars": 1425, "suppressed": False},
+                    {"unit_type": "three_bedroom", "unit_label_fr": "3 chambres", "rent_dollars": 1680, "suppressed": False},
+                ]
+                cells = all_cells if unit_type == "all" else [c for c in all_cells if c["unit_type"] == unit_type]
                 return {
                     "content": [{"type": "text", "text": f"Loyers moyens du marché SCHL pour {geo_label} (StatCan 34-10-0133-01)."}],
                     "structuredContent": {
                         "mode": "schl",
                         "regime": "schl_marche",
                         "calculation": None,
-                        "bareme_post_2026": None,
-                        "bareme_pre_2026": None,
-                        "cmhc_results": [{"geo_name": geo_label, "year": args.get("year") or 2025, "structure_type": args.get("structure_type") or "row_and_apartment_3_plus", "unit_type": args.get("unit_type") or "all", "rent_dollars": 1425, "suppressed": False}],
-                        "provenance": {"source": "Statistique Canada / SCHL (34-10-0133-01)", "verified_at": "2026-11-18"},
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [],
+                        "cmhc_results": [
+                            {
+                                "geo_member_id": 46,
+                                "geo_key": "montreal",
+                                "name_fr": geo_label,
+                                "name_en": geo_label,
+                                "province_code": "QC",
+                                "is_quebec": True,
+                                "year": args.get("year") or 2025,
+                                "structure_type": struct_type,
+                                "structure_label_fr": "Logements en bandes et immeubles d'appartements de 3 logements et plus",
+                                "uom": "Dollars",
+                                "cells": cells,
+                            }
+                        ],
+                        "provenance": {"source": "Statistique Canada / SCHL (34-10-0133-01)", "verified_at": "2025-12-17"},
                         "gardes": [{"code": "SCHL_LOYER_MOYEN_INDICATIF", "message": "Moyenne statistique indicative sans valeur de plafond légal ni preuve comparative au sens des art. 1896 et 1950 C.c.Q."}],
                     },
                 }
@@ -2363,10 +2710,10 @@ class MockMcpServer:
                         "mode": "calcul_2026",
                         "regime": "pre_2026_transitoire",
                         "calculation": None,
-                        "bareme_post_2026": None,
-                        "bareme_pre_2026": {"2025": {"non_chauffe_bps": 590}},
-                        "cmhc_results": None,
-                        "provenance": {"source": "TAL / Décret 1455-2025 art. 6", "verified_at": "2026-11-18"},
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [pre_2025_entry],
+                        "cmhc_results": [],
+                        "provenance": {"source": "TAL / Décret 1455-2025 art. 6", "verified_at": "2026-11-25"},
                         "gardes": [
                             {"code": "TAL_REGIME_TRANSITOIRE_PRE_2026", "message": "Avis donné avant le 1er janvier 2026 : l'ancien règlement s'applique (art. 6 Décret 1455-2025)."},
                             {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation."},
@@ -2380,10 +2727,10 @@ class MockMcpServer:
                         "mode": "calcul_2026",
                         "regime": "exemption_art_1955_ccq",
                         "calculation": None,
-                        "bareme_post_2026": None,
-                        "bareme_pre_2026": None,
-                        "cmhc_results": None,
-                        "provenance": {"source": "Art. 1955 C.c.Q. / Section F", "verified_at": "2026-11-18"},
+                        "bareme_post_2026": [],
+                        "bareme_pre_2026": [],
+                        "cmhc_results": [],
+                        "provenance": {"source": "Art. 1955 C.c.Q. / Section F", "verified_at": "2026-11-25"},
                         "gardes": [
                             {"code": "TAL_EXEMPTION_CINQ_ANS_ART_1955_CCQ", "message": "Immeuble visé par l'exemption de 5 ans (art. 1955 C.c.Q.) si mentionné à la Section F du bail."},
                             {"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation."},
@@ -2391,24 +2738,52 @@ class MockMcpServer:
                     },
                 }
             cur_rent = int(args["current_rent_cents"])
-            base_bps = 310 if str(args["lease_renewal_date"]) >= "2026-04-02" else 450
-            adj_cents = int(round(cur_rent * base_bps / 10000.0))
-            new_rent = cur_rent + adj_cents
+            renewal_iso = str(args["lease_renewal_date"])
+            lease_term_date = (datetime.date.fromisoformat(renewal_iso) - datetime.timedelta(days=1)).isoformat()
+            regime_entry = post_2026_entries[1] if renewal_iso >= "2026-04-02" else post_2026_entries[0]
+            base_bps = regime_entry["base_rent_bps"]
+            adj_cents = (cur_rent * base_bps * 2 + 10_000) // (2 * 10_000)
+            unrounded_new_rent = cur_rent + adj_cents
+            new_rent = ((unrounded_new_rent * 2 + 100) // 200) * 100
+            eff_inc_bps = ((new_rent - cur_rent) * 10_000 * 2 + cur_rent) // (2 * cur_rent)
             return {
                 "content": [{"type": "text", "text": f"Fixation TAL post-2026 : loyer {cur_rent} -> {new_rent} cents (base {base_bps} bps)."}],
                 "structuredContent": {
                     "mode": "calcul_2026",
                     "regime": "post_2026_calcul",
                     "calculation": {
+                        "lease_term_date": lease_term_date,
+                        "lease_renewal_date": renewal_iso,
+                        "reference_year": regime_entry["reference_year"],
+                        "base_rent_bps": base_bps,
+                        "rpa_personal_services_bps": regime_entry["rpa_personal_services_bps"],
+                        "capital_expenditures_bps": regime_entry["capital_expenditures_bps"],
                         "current_rent_cents": cur_rent,
-                        "base_cpi_bps": base_bps,
-                        "monthly_adjustment_cents": adj_cents,
+                        "current_rent_cad": f"{cur_rent // 100}.{cur_rent % 100:02d}",
+                        "adj_base_cents": adj_cents,
+                        "adj_base_normal_cents": adj_cents,
+                        "adj_base_rpa_cents": 0,
+                        "adj_municipal_taxes_cents": 0,
+                        "adj_school_taxes_cents": 0,
+                        "adj_insurance_cents": 0,
+                        "adj_taxes_and_insurance_cents": 0,
+                        "adj_capital_works_cents": 0,
+                        "adj_new_expenses_cents": 0,
+                        "adj_aid_variations_cents": 0,
+                        "adj_snow_removal_cents": 0,
+                        "total_adjustment_cents": adj_cents,
+                        "total_adjustment_cad": f"{adj_cents // 100}.{adj_cents % 100:02d}",
+                        "unrounded_new_rent_cents": unrounded_new_rent,
+                        "unrounded_new_rent_cad": f"{unrounded_new_rent // 100}.{unrounded_new_rent % 100:02d}",
                         "new_rent_cents": new_rent,
+                        "new_rent_dollars": new_rent // 100,
+                        "new_rent_cad": f"{new_rent // 100}.{new_rent % 100:02d}",
+                        "effective_increase_bps": eff_inc_bps,
                     },
-                    "bareme_post_2026": {"ipc_base_bps": base_bps},
-                    "bareme_pre_2026": None,
-                    "cmhc_results": None,
-                    "provenance": {"source": "RLRQ, c. T-15.01, r. 2 (Décret 1455-2025)", "verified_at": "2026-11-18"},
+                    "bareme_post_2026": [regime_entry],
+                    "bareme_pre_2026": [],
+                    "cmhc_results": [],
+                    "provenance": {"source": "RLRQ, c. T-15.01, r. 2 (Décret 1455-2025)", "verified_at": "2026-11-25"},
                     "gardes": [{"code": "TAL_POUVOIR_DISCRETIONNAIRE_FIXATION", "message": "Le TAL conserve un pouvoir discrétionnaire d'appréciation (art. 6, 7, 8–9, 11–12, 13 et 15)."}],
                 },
             }
@@ -4320,6 +4695,42 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             elapsed = (time.perf_counter() - t0) * 1000
             add_result("T2.4.15", "Validation loyer_tal / interets_1619", "outils", False, elapsed, str(ex))
 
+    # T2.4.16 : Validation imbriquée (items), bornes numériques et format amount (taux_boc_rates, indice_ipc, interets_1619, loyer_tal)
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
+            neg_probes = [
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2026-11-18", "amount": "abc"}),
+                ("taux_boc_rates", {"category": "fx", "currency": "USD", "date": "2026-11-18", "amount": "-50.00"}),
+                ("indice_ipc", {"geo": "quebec", "product": "all_items", "start_period": "2024-01", "end_period": "2025-01", "amount": "abc"}),
+                ("interets_1619", {"mode": "prime_plus_margin", "spread_bps": -5001, "end_date": "2026-11-18", "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}]}),
+                ("interets_1619", {"mode": "legal_plus_1619", "end_date": "2026-11-18", "tranches": [{}]}),
+                ("interets_1619", {"mode": "contractual", "end_date": "2026-11-18", "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}]}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": -100}),
+                ("loyer_tal", {"mode": "bareme", "year": 1800}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"gross_amount_cents": 500000, "bogus": True}]}),
+            ]
+            failed_probes = []
+            for tname, targs in neg_probes:
+                r_probe = client.call_rpc("outils", "tools/call", {"name": tname, "arguments": targs})
+                if not ("error" in r_probe or r_probe.get("result", {}).get("isError") is True):
+                    failed_probes.append(f"{tname}({targs}) -> {r_probe}")
+            ok = len(failed_probes) == 0
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T2.4.16",
+                "Rejet bornes numériques, objets imbriqués (items) et formats amount sur outils économie/calcul",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else "; ".join(failed_probes[:3]),
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T2.4.16", "Bornes et items imbriqués", "outils", False, elapsed, str(ex))
+
     return results
 
 
@@ -4794,16 +5205,21 @@ def run_tier_3_tests(
             ipc_res = client.call_tool(
                 "outils",
                 "indice_ipc",
-                {"geo": "quebec", "product": "all_items", "start_period": "2024-01", "end_period": "2025-01", "amount": "2000.00", "cap_bps": 200},
+                {"geo": "quebec", "product": "all_items", "start_period": "2024-01", "end_period": "2025-01", "amount": "2000.00", "cap_bps": 150},
             )
             ipc_sc = ipc_res.get("structuredContent") or {}
+            fx_obs_0 = (fx_sc.get("fx_observations") or [{}])[0]
             ok = (
                 "TAUX_BOC_NOON_HISTORIQUE_PRE_2017" in fx_gardes
                 and "TAUX_BOC_CONVERSION_LOI_MONNAIE" in fx_gardes
+                and isinstance(fx_sc.get("currency"), dict)
+                and fx_sc["currency"].get("code") == "USD"
+                and fx_obs_0.get("currency_code") == "USD"
                 and (fx_sc.get("conversion") or {}).get("converted_cents", 0) > 0
                 and "TAUX_BOC_PRIME_INDICATIF_BANCAIRE" in prime_gardes
                 and prime_sc.get("total_contractual_interest_cents", 0) > 0
                 and (ipc_sc.get("escalation") or {}).get("applied_bound") == "cap"
+                and (ipc_sc.get("escalation") or {}).get("escalated_cents") == 203000
             )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -4844,12 +5260,19 @@ def run_tier_3_tests(
             )
             schl_sc = schl_res.get("structuredContent") or {}
             schl_gardes = {g.get("code") for g in (schl_sc.get("gardes") or [])}
+            schl_first = (schl_sc.get("cmhc_results") or [{}])[0]
             ok = (
                 tal_2026_sc.get("regime") == "post_2026_calcul"
                 and (tal_2026_sc.get("calculation") or {}).get("new_rent_cents", 0) > 100000
+                and (tal_2026_sc.get("calculation") or {}).get("base_rent_bps", 0) > 0
+                and isinstance(tal_2026_sc.get("bareme_post_2026"), list)
+                and isinstance(tal_2026_sc.get("bareme_pre_2026"), list)
+                and isinstance(tal_2026_sc.get("cmhc_results"), list)
                 and tal_pre_sc.get("regime") == "pre_2026_transitoire"
                 and "TAL_REGIME_TRANSITOIRE_PRE_2026" in tal_pre_gardes
                 and "SCHL_LOYER_MOYEN_INDICATIF" in schl_gardes
+                and isinstance(schl_first.get("cells"), list)
+                and len(schl_first.get("cells") or []) >= 1
             )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -4866,30 +5289,56 @@ def run_tier_3_tests(
             elapsed = (time.perf_counter() - t0) * 1000
             add_result("T3.3.7", "Contrat loyer_tal", "outils", False, elapsed, str(ex))
 
-    # T3.3.8 : Contrat GLEIF LEI + Recherche inversée lot cadastral RQA
+    # T3.3.8 : Contrat GLEIF LEI + Recherche inversée lot cadastral RQA (découverte dynamique)
     if target_server in ("all", "outils"):
         t0 = time.perf_counter()
         try:
-            lei_res = client.call_tool(
+            gleif_search = client.call_tool(
                 "outils",
-                "registre_get_entity",
-                {"lei": "5493001KJTIIGC8Y1R12"},
+                "registre_search",
+                {"jurisdiction": "gleif", "query": "Banque"},
+            )
+            gleif_search_sc = gleif_search.get("structuredContent") or {}
+            discovered_lei = next(
+                (e.get("lei") for e in (gleif_search_sc.get("entities") or []) if e.get("lei")),
+                None,
+            )
+            lei_res = (
+                client.call_tool("outils", "registre_get_entity", {"lei": discovered_lei})
+                if discovered_lei
+                else {}
             )
             lei_sc = lei_res.get("structuredContent") or {}
             lei_gardes = {g.get("code") for g in (lei_sc.get("gardes") or [])}
-            lot_res = client.call_tool(
+
+            addr_fwd = client.call_tool(
                 "outils",
                 "adresse_verify",
-                {"lot_number": "1 181 642"},
+                {"address": "1, rue Notre-Dame Est, Montréal"},
+            )
+            addr_fwd_sc = addr_fwd.get("structuredContent") or {}
+            fwd_cand = (addr_fwd_sc.get("candidates") or [{}])[0]
+            discovered_lot = ((fwd_cand.get("lots_cadastraux") or [None])[0])
+
+            lot_res = (
+                client.call_tool("outils", "adresse_verify", {"lot_number": discovered_lot})
+                if discovered_lot
+                else {}
             )
             lot_sc = lot_res.get("structuredContent") or {}
+            lot_gardes = {g.get("code") for g in (lot_sc.get("gardes") or [])}
             first_cand = (lot_sc.get("candidates") or [{}])[0]
             ok = (
-                lei_sc.get("lookup_by") == "lei"
+                bool(discovered_lei)
+                and bool(re.match(r"^[A-Z0-9]{20}$", str(discovered_lei)))
+                and lei_sc.get("lookup_by") == "lei"
+                and isinstance(lei_sc.get("gleif"), dict)
                 and bool((lei_sc.get("portails_officiels") or {}).get("isc_pisc"))
                 and "REGISTRE_GLEIF_DECLARATIF_CONSOLIDATION" in lei_gardes
+                and bool(discovered_lot)
                 and first_cand.get("lot_source") in ("rqa_unite", "rqa_immeuble_parent", "absent")
                 and bool(first_cand.get("lots_cadastraux"))
+                and "ADRESSE_LOT_ET_MATRICULE_SANS_VALEUR_LEGALE" in lot_gardes
             )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -4898,7 +5347,7 @@ def run_tier_3_tests(
                 "outils",
                 ok,
                 elapsed,
-                None if ok else f"lei={lei_sc}, lot={lot_sc}",
+                None if ok else f"lei_search={gleif_search_sc}, lei={lei_sc}, fwd={addr_fwd_sc}, lot={lot_sc}",
             )
         except ConnectionError:
             raise
