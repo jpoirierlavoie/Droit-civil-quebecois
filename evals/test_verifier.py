@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock
 import zipfile
 import zlib
 from pathlib import Path
@@ -796,7 +796,7 @@ class VerifierV3Tests(unittest.TestCase):
                     "<w:body><w:p><w:r><w:t>" + ("D" * 512) + "</w:t></w:r></w:p></w:body></w:document>",
                 )
 
-            with mock.patch.object(insp, "_MAX_PNG_TEXT_BYTES", 128), mock.patch.object(
+            with unittest.mock.patch.object(insp, "_MAX_PNG_TEXT_BYTES", 128), unittest.mock.patch.object(
                 insp, "_MAX_ZLIB_STREAM_BYTES", 128
             ):
                 png_res = insp.inspecter_fichier(png_path)
@@ -807,12 +807,12 @@ class VerifierV3Tests(unittest.TestCase):
                 self.assertEqual(pdf_res["statut"], "ok")
                 self.assertEqual(pdf_res["details"]["flux_texte_detectes"], 0)
 
-            with mock.patch.object(ctrl, "_MAX_ZLIB_STREAM_BYTES", 128):
+            with unittest.mock.patch.object(ctrl, "_MAX_ZLIB_STREAM_BYTES", 128):
                 ctrl_res = ctrl.controler_fichier(pdf_path)
                 self.assertEqual(ctrl_res["statut"], "ok")
                 self.assertEqual(ctrl_res["details"]["flux_texte_detectes"], 0)
 
-            with mock.patch.object(cotes, "_MAX_DOCX_XML_BYTES", 128):
+            with unittest.mock.patch.object(cotes, "_MAX_DOCX_XML_BYTES", 128):
                 with self.assertRaises(ValueError):
                     cotes._lire_texte_document(docx_path)
 
