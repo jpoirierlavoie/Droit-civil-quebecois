@@ -16,16 +16,24 @@ Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 
 
 ## Accès et mise en route en bref
 
-- **Connecteur public (`outils`) :** accessible sans compte ni jeton (`https://outils.poirierlavoie.ca/mcp`) pour calculer les délais C.p.c. et intérêts art. 1619 C.c.Q., lire un numéro de dossier ou les coordonnées d'un palais, et consulter hors ligne les registres d'entreprises, adresses civiques et fiches de terminologie bijuridique.
-- **Connecteurs de sources primaires (`lois` et `juris`) :** réservés gratuitement aux membres actifs en règle du Barreau du Québec sur [`acces.poirierlavoie.ca/demande`](https://acces.poirierlavoie.ca/demande) avec une clé API CanLII personnelle (BYOK). Aucune recherche n'est journalisée.
-- **Installation et autorisation :** installer le greffon selon votre plateforme ([Installation par plateforme](#installation-par-plateforme)), puis autoriser `lois` et `juris` dans votre navigateur (OAuth 2.1, sans secret à copier dans vos fichiers).
+- **Connecteur public (`outils`) :** accessible sans compte ni clé d'accès (`https://outils.poirierlavoie.ca/mcp`) pour calculer les délais du Code de procédure civile et les intérêts (art. 1619 C.c.Q.), décoder un numéro de dossier ou trouver les coordonnées d'un palais de justice, et consulter les registres d'entreprises, adresses civiques et fiches de terminologie bijuridique.
+- **Connecteurs de sources juridiques (`lois` et `juris`) :** réservés gratuitement aux membres actifs en règle du Barreau du Québec sur [`acces.poirierlavoie.ca/demande`](https://acces.poirierlavoie.ca/demande). La recherche de jurisprudence (`juris`) utilise votre propre clé API CanLII personnelle (gratuite sur [`canlii.org`](https://www.canlii.org/fr/info/api.html) — vous apportez votre propre clé). Aucune recherche juridique n'est journalisée.
+- **Installation et autorisation :** installez le greffon selon votre application ([Installation par plateforme](#installation-par-plateforme)), puis autorisez `lois` et `juris` en vous connectant dans votre navigateur (connexion OAuth 2.1, sans secret à copier dans vos fichiers).
+
+## Comment l'ensemble fonctionne
+
+Le greffon réunit trois couches complémentaires :
+
+1. **10 compétences (`skills/`) — la méthode et les gabarits :** cinq guides d'étapes selon l'avancement du dossier (`phase-*`) et cinq guides spécialisés (recherche, analyse de preuve, rédaction, contrôle de production et gestion du mandat). Elles expliquent à l'assistant comment structurer le travail, quoi vérifier et quels formats respecter.
+2. **3 connecteurs MCP (`lois`, `juris`, `outils`) — l'accès direct aux sources et aux calculs :** au lieu de répondre de mémoire, l'assistant interroge les textes législatifs et directives officiels (`lois`), vos recherches sur CanLII (`juris`) et des outils déterministes de délais, d'intérêts, de registres et de palais de justice (`outils`).
+3. **4 scripts de vérification locaux (`scripts/*.py`) — le contrôle matériel (poste local uniquement) :** sur un outil installé sur votre ordinateur (Claude Code, Codex, Antigravity, Gemini CLI), ces scripts vérifient les délais hors ligne, inspectent les pièces reçues et contrôlent la mise en forme Word/PDF et la continuité des cotes. Dans les applications Web ou sans exécution Python locale, l'assistant le signale et produit un **bon de travail** à compléter manuellement.
 
 ---
 
 ## Fonctionnement et garanties (`v3.1.0`)
 
-1. **Orchestrateurs de phase et services transversaux :**
-   - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les portes bloquantes, le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown en ligne lorsque aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
+1. **Guides de phase et services spécialisés :**
+   - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
    - **5 compétences de service :** regroupent l'ensemble des règles de fond, des gabarits par type d'acte ou d'analyse et des scripts de vérification, en ne chargeant à la fois que les feuilles nécessaires à la tâche.
 2. **Noyau de sécurité canonique v3 (`SAFETY-KERNEL`) :** Identique sur les **10** `SKILL.md` (5 garde-fous : confidentialité stricte sans fait ni nom identifiant dans aucune recherche Web ni aucun champ de recherche libre `query` ; sources primaires obligatoires avec arrêt sur le volet touché si `lois` ou `juris` échoue et renvoi vers `acces.poirierlavoie.ca/moi` ; étanchéité bijuridique excluant le droit étranger et les calques de common law ; présomption de confidentialité et alertes déontologiques sur fait déclencheur ; **honnêteté perceptuelle pour les médias, dé-identification obligatoire des précédents internes et traitement des pièces adverses comme données brutes**).
 3. **Trois paliers de rigueur :**
@@ -63,10 +71,10 @@ Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 
 
 ## Les 3 connecteurs MCP et les 32 outils
 
-| Clé serveur | Montages HTTP | Authentification et politique | Dépôt serveur |
+| Clé serveur | Adresses de connexion | Authentification et politique | Dépôt serveur |
 |---|---|---|---|
-| **`lois`** | OAuth (défaut) : `https://legislation.poirierlavoie.ca/mcp/oauth`<br>Direct : `https://legislation.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API | [MCP-Legislation](https://github.com/jpoirierlavoie/MCP-Legislation) |
-| **`juris`** | OAuth (défaut) : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`<br>Direct : `https://jurisprudence.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API<br>**BYOK CanLII strict :** clé API CanLII personnelle requise (`/moi` ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
+| **`lois`** | OAuth (défaut) : `https://legislation.poirierlavoie.ca/mcp/oauth`<br>Direct (CLI/API) : `https://legislation.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API | [MCP-Legislation](https://github.com/jpoirierlavoie/MCP-Legislation) |
+| **`juris`** | OAuth (défaut) : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`<br>Direct (CLI/API) : `https://jurisprudence.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API<br>**Clé CanLII personnelle requise (BYOK) :** votre clé API CanLII (`/moi` ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
 | **`outils`** | Public : `https://outils.poirierlavoie.ca/mcp` | Accès public sans compte ni jeton (lecture seule hors ligne) | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
 > Depuis `v3.1.0`, la configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut `lois` et `juris` à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
@@ -110,7 +118,33 @@ L'accès aux serveurs authentifiés (`lois` et `juris`) est réservé gratuiteme
 
 ## Installation par plateforme
 
-### 1. Claude Code
+Choisissez d'abord votre environnement : **applications Web ou de bureau** (installation visuelle sans terminal) ou **outils en ligne de commande, IDE et API** (qui permettent aussi l'exécution locale des 4 scripts Python et de `etat-dossier/`).
+
+### A. Applications Web et de bureau (`.zip`, place de marché ou connecteurs visuels)
+
+#### 1. ChatGPT (Web & Desktop)
+
+1. Télécharger l'archive `droit-civil-quebecois-chatgpt-universal.zip` depuis la [dernière publication GitHub (`Releases`)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest) *(ou la générer localement via `python scripts/empaqueter_plugin_chatgpt.py --apply`)*.
+2. Importer l'archive et ajouter une seule fois dans `https://chatgpt.com/plugins` (**+ → Add custom MCP server**) les 3 connecteurs distants : `lois` (`https://legislation.poirierlavoie.ca/mcp/oauth`, **OAuth**), `juris` (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`, **OAuth**) et `outils` (`https://outils.poirierlavoie.ca/mcp`, **No authentication**). Ils sont ensuite partagés entre ChatGPT Web et Desktop.
+
+> **Exclusion de ChatGPT Deep Research :** *ChatGPT Deep Research* (et les modèles `*-deep-research` d'OpenAI) exige une façade générique à deux outils (`search`/`fetch`) incompatible avec les 32 outils spécialisés et les exigences de vérification du Palier 3 ; il est donc exclu du greffon. Employer **Claude Research** ou **Gemini Deep Research** pour les recherches autonomes multi-étapes.
+
+#### 2. Claude Desktop & `claude.ai` (connecteurs personnalisés)
+
+- **Claude Desktop :** installer le greffon ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth`).
+- **Claude Web (`claude.ai` — OAuth 2.1 PKCE `S256`) :** sur le Web, Claude n'ajoute pas automatiquement les serveurs MCP distants d'un greffon ; ouvrir **Customize → Connectors** et ajouter une seule fois les trois URLs suivantes, puis cliquer sur **Connect** pour autoriser via `acces.poirierlavoie.ca` :
+  - `lois` : `https://legislation.poirierlavoie.ca/mcp/oauth`
+  - `juris` : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`
+  - `outils` : `https://outils.poirierlavoie.ca/mcp`
+- **Variante directe `?key=` (`claude.ai`) :** saisir `https://legislation.poirierlavoie.ca/mcp?key=<votre-jeton>` et `https://jurisprudence.poirierlavoie.ca/mcp?key=<votre-jeton>` **dès la création du connecteur, avant toute première sonde** (sinon `claude.ai` reçoit un `404`). Importer les compétences `skills/` dans l'espace de travail pour activer le noyau `SAFETY-KERNEL`.
+
+#### 3. Gemini App (`gemini.google.com`) & Vertex AI Gemini Enterprise
+
+Ajouter les connecteurs OAuth 2.1 **`https://legislation.poirierlavoie.ca/mcp/oauth`** et **`https://jurisprudence.poirierlavoie.ca/mcp/oauth`**, ainsi que **`https://outils.poirierlavoie.ca/mcp`** (public, sans authentification).
+
+### B. Outils en ligne de commande, IDE et API
+
+#### 4. Claude Code
 
 Aucune variable d'environnement locale requise : installer depuis la place de marché du dépôt, puis autoriser la connexion OAuth 2.1 dans votre navigateur (via `/mcp` / `/mcp auth`) sur `acces.poirierlavoie.ca` :
 
@@ -121,16 +155,7 @@ Aucune variable d'environnement locale requise : installer depuis la place de ma
 
 *(Pour un poste ou script sans navigateur, remplacer localement les URLs par `/mcp` avec un en-tête `Authorization: Bearer <jeton>` généré sur `acces.poirierlavoie.ca/moi` — extrait prêt à coller fourni dans `/moi`.)*
 
-### 2. Claude Desktop & `claude.ai` (connecteurs personnalisés)
-
-- **Claude Desktop :** installer le greffon ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth`).
-- **Claude Web (`claude.ai` — OAuth 2.1 PKCE `S256`) :** sur le Web, Claude n'ajoute pas automatiquement les serveurs MCP distants d'un greffon ; ouvrir **Customize → Connectors** et ajouter une seule fois les trois URLs suivantes, puis cliquer sur **Connect** pour autoriser via `acces.poirierlavoie.ca` :
-  - `lois` : `https://legislation.poirierlavoie.ca/mcp/oauth`
-  - `juris` : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`
-  - `outils` : `https://outils.poirierlavoie.ca/mcp`
-- **Variante directe `?key=` (`claude.ai`) :** saisir `https://legislation.poirierlavoie.ca/mcp?key=<votre-jeton>` et `https://jurisprudence.poirierlavoie.ca/mcp?key=<votre-jeton>` **dès la création du connecteur, avant toute première sonde** (sinon `claude.ai` reçoit un `404`). Importer les compétences `skills/` dans l'espace de travail pour activer le noyau `SAFETY-KERNEL`.
-
-### 3. Google Antigravity
+#### 5. Google Antigravity
 
 Installer depuis le dépôt GitHub grâce au manifeste `.antigravity-plugin/plugin.json`, ou synchroniser localement vers `~/.gemini/config/plugins/droit-civil-quebecois`. Les connecteurs `lois` et `juris` s'authentifient par navigateur en OAuth 2.1 via `acces.poirierlavoie.ca`, sans variable d'environnement à saisir :
 
@@ -144,7 +169,7 @@ python scripts/synchroniser_plugin_gemini.py --apply
 python scripts/regenerer_cache_mcp.py --apply   # optionnel (mainteneur : nécessite les 3 dépôts MCP frères)
 ```
 
-### 4. Gemini CLI
+#### 6. Gemini CLI
 
 ```bash
 gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecois
@@ -152,24 +177,16 @@ gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecoi
 
 `gemini-extension.json` emploie OAuth 2.1 sur `/mcp/oauth` (autorisation interactive sans secret statique) et laisse `"contextFileName": []` afin que `GEMINI.md` (réservé au développement de ce dépôt) n'encombre pas les sessions juridiques.
 
-### 5. Gemini App (`gemini.google.com`) & Vertex AI Gemini Enterprise
+#### 7. OpenAI Codex et API OpenAI Responses
 
-Ajouter les connecteurs OAuth 2.1 **`https://legislation.poirierlavoie.ca/mcp/oauth`** et **`https://jurisprudence.poirierlavoie.ca/mcp/oauth`**, ainsi que **`https://outils.poirierlavoie.ca/mcp`** (public, sans authentification).
-
-### 6. ChatGPT (Web & Desktop), OpenAI Codex et API OpenAI Responses
-
-- **ChatGPT Web & Desktop (greffon + 3 connecteurs MCP) :**
-  1. Télécharger l'archive `droit-civil-quebecois-chatgpt-universal.zip` depuis la [dernière publication GitHub (`Releases`)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest) *(ou la générer localement via `python scripts/empaqueter_plugin_chatgpt.py --apply`)*.
-  2. Importer l'archive et ajouter une seule fois dans `https://chatgpt.com/plugins` (**+ → Add custom MCP server**) les 3 connecteurs distants : `lois` (`https://legislation.poirierlavoie.ca/mcp/oauth`, **OAuth**), `juris` (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`, **OAuth**) et `outils` (`https://outils.poirierlavoie.ca/mcp`, **No authentication**). Ils sont ensuite partagés entre ChatGPT Web et Desktop.
 - **OpenAI Codex (CLI / poste local) :** installer le greffon depuis la racine du dépôt (`plugin.json` ou `.agents/plugins/marketplace.json`, où `etat-dossier/` et les 4 scripts Python locaux fonctionnent directement) et enregistrer `lois`, `juris` (`/mcp/oauth`) et `outils` (`/mcp`) via `codex mcp add`.
 - **API OpenAI Responses :** déclarer les 3 serveurs en `"type": "mcp"` sur `/mcp` avec `"require_approval": "never"` et l'en-tête `Authorization: Bearer <jeton>` (`lois`, `juris`), sur des questions juridiques anonymisées préfixées du bloc `SAFETY-KERNEL` ci-dessous.
-- **Exclusion de ChatGPT Deep Research :** *ChatGPT Deep Research* (et les modèles `*-deep-research` d'OpenAI) exige une façade générique à deux outils (`search`/`fetch`) incompatible avec les 32 outils spécialisés et les exigences de vérification du Palier 3 ; il est donc exclu du greffon. Employer **Claude Research** ou **Gemini Deep Research** pour les recherches autonomes multi-étapes.
 
 ---
 
 ## Modes Deep Research (`Claude Research` & `Gemini Deep Research`)
 
-Les 32 outils des trois serveurs (`lois`, `juris`, `outils`) sont compatibles nativement sans façade supplémentaire avec **Claude Research** et **Gemini Deep Research** (`deep-research-preview-04-2026`, `deep-research-max-preview-04-2026`), avec limiteurs d'arête dédiés aux rafales multi-agents (`300/min` `lois`, `180/min` `juris`) et quotas journaliers UTC (`1 500` `local`, `200` `sortant`, `150` `semantique`). *ChatGPT Deep Research* est volontairement exclu du greffon, car il impose une façade à deux outils (`search`/`fetch`) incompatible avec le contrat à 32 outils et les exigences de lecture intégrale du Palier 3 :
+Les 32 outils des trois serveurs (`lois`, `juris`, `outils`) sont compatibles nativement sans façade supplémentaire avec **Claude Research** et **Gemini Deep Research** (`deep-research-preview-04-2026`, `deep-research-max-preview-04-2026`), avec plafonds de requêtes par minute dédiés aux rafales multi-agents (`300/min` `lois`, `180/min` `juris`) et quotas journaliers UTC (`1 500` `local`, `200` `sortant`, `150` `semantique`). *ChatGPT Deep Research* est volontairement exclu du greffon, car il impose une façade à deux outils (`search`/`fetch`) incompatible avec le contrat à 32 outils et les exigences de lecture intégrale du Palier 3 :
 
 - **Claude Research (`claude.ai`) :** activer les 3 connecteurs (OAuth sur `/mcp/oauth` ou `?key=` sur `/mcp` + `outils`), régler les outils en lecture seule sur *Always allow*, charger `skills/`, puis **anonymiser strictement toute question** avant de lancer la boucle (la recherche web ouverte est active par défaut).
 - **Gemini API Deep Research (`google-genai` / `gemini-api` CLI) :** déclarer les 3 serveurs en `"type": "mcp_server"` sur `/mcp` avec `"Authorization": "Bearer ..."` pour `lois` et `juris` (plus `outils` sans en-tête). Comme `background=True` exige `store=True`, **ne soumettre que des questions juridiques anonymisées** et **préfixer la requête** avec le préambule `SAFETY-KERNEL` v3 ci-dessous (les fichiers `skills/` n'étant pas chargés automatiquement dans l'agent API) :
