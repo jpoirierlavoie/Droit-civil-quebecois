@@ -814,8 +814,8 @@ def auto_test() -> int:
     if sc_rj06 is not None:
         ok_rj06 = evaluer_reponse(
             sc_rj06,
-            "Dans le corpus de 110 textes, qccs-dist-mtl a preseance-sur qccs-div-mtl (fr-only). "
-            "L'orientation amf-ig-45-106 interprete v-1.1-r.21 sans force de loi ; les directives QCCA restent hors Vague 1.",
+            "Dans le corpus de 134 textes, qccs-dist-mtl a preseance-sur qccs-div-mtl (fr-only). "
+            "L'orientation amf-ig-45-106 interprete v-1.1-r.21 sans force de loi ; les directives QCCA restent hors corpus.",
         )
         bad_rj06 = evaluer_reponse(
             sc_rj06,

@@ -2,6 +2,11 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [Non publié / Unreleased]
+
+### Modifié
+- **Synchronisation avec `MCP-Legislation` Vagues 1 à 3 (`134` textes, `50` matières) :** mise à jour de `skills/recherche-juridique/references/recherche-legislative.md`, `skills/recherche-juridique/SKILL.md`, `skills/production-et-conformite/references/controle-acte-de-procedure.md`, `skills/redaction-juridique/references/arg-memoire-et-expose-appel.md`, `README.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` et `evals/` pour refléter l'ajout des *Lois constitutionnelles de 1867 et de 1982* (`ca-const-1867`, `ca-const-1982`), des textes sectoriels de Vague 2 et du silo criminel/pénal fédéral de Vague 3 (`ca-c-46` *Code criminel*, `ca-c-38.8` *LRCDAS*, `ca-y-1.5` *LSJPA*, confinés hors de `core` dans le domaine `penal` ; *Loi de l'impôt sur le revenu* exclue).
+
 ## [3.2.0] — 2026-11-25
 
 ### Ajouté

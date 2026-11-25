@@ -6,7 +6,7 @@ Encadre la rédaction du mémoire d'appel (`372–373 C.p.c.`) et de l'exposé (
 
 **Appeler `lois.get_articles` avant toute rédaction :**
 * `law="cpc"`, `numbers=["372", "373", "374", "376"]`
-* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : inspecter la structure (`get_structure`) pour charger les exigences exactes de format, typographie, nombre de pages maximal, marges, pagination et confection des annexes *(les directives et avis de la Cour d'appel `QCCA` sont hors corpus Vague 1 de `110` textes et doivent être vérifiés directement à la source)*.
+* `law="c-25.01-r.0.2.01"` (*Règlement de la Cour d'appel du Québec en matière civile*) : inspecter la structure (`get_structure`) pour charger les exigences exactes de format, typographie, nombre de pages maximal, marges, pagination et confection des annexes *(les directives et avis de la Cour d'appel `QCCA` sont hors corpus de `134` textes et doivent être vérifiés directement à la source)*.
 
 ## Structure
 
