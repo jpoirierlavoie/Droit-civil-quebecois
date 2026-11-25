@@ -27,6 +27,7 @@ import socket
 import sys
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -1286,8 +1287,8 @@ class MockMcpServer:
 
         # Règle XOR pour palais_get
         if tool_name == "palais_get":
-            has_greffe = bool(args.get("greffe_number"))
-            has_palais = bool(args.get("palais"))
+            has_greffe = bool(str(args.get("greffe_number") or "").strip())
+            has_palais = bool(str(args.get("palais") or "").strip())
             if has_greffe and has_palais:
                 return "Exclusion mutuelle (XOR) violée : fournir soit greffe_number soit palais, pas les deux."
             if not has_greffe and not has_palais:
@@ -1295,13 +1296,23 @@ class MockMcpServer:
 
         # Règle XOR pour registre_get_entity (exactement l'un de neq, corporation_number, bn_ne, lei)
         if tool_name == "registre_get_entity":
-            provided = [k for k in ("neq", "corporation_number", "bn_ne", "lei") if bool(str(args.get(k, "")).strip())]
+            provided = [k for k in ("neq", "corporation_number", "bn_ne", "lei") if bool(str(args.get(k) or "").strip())]
             if len(provided) != 1:
                 return "Exclusion mutuelle (XOR) violée : fournir exactement l'un des identifiants neq, corporation_number, bn_ne ou lei."
-            if "lei" in provided:
-                lei_clean = str(args["lei"]).strip().upper()
+            id_key = provided[0]
+            raw_val = str(args[id_key]).strip()
+            if id_key == "neq":
+                clean_digits = re.sub(r"[\s-]", "", raw_val)
+                if not re.match(r"^\d{10}$", clean_digits):
+                    return f"Format de NEQ invalide (« {raw_val} ») : un numéro d'entreprise du Québec comporte exactement 10 chiffres."
+            elif id_key == "bn_ne":
+                clean_digits = re.sub(r"[\s-]", "", raw_val)
+                if not re.match(r"^\d{9}$", clean_digits):
+                    return f"Format de NE/BN invalide (« {raw_val} ») : le numéro d'entreprise fédéral comporte exactement 9 chiffres."
+            elif id_key == "lei":
+                lei_clean = re.sub(r"[\s-]+", "", raw_val).upper()
                 if not re.match(r"^[A-Z0-9]{20}$", lei_clean):
-                    return "LEI invalide : 20 caractères alphanumériques ISO 17442 attendus."
+                    return f"Format de LEI invalide (« {raw_val} ») : un identifiant d'entité juridique (LEI ISO 17442) comporte exactement 20 caractères alphanumériques (A–Z, 0–9)."
 
         # Règles directe vs recherche inversée (lot_number / matricule) pour adresse_verify
         if tool_name == "adresse_verify":
@@ -1481,7 +1492,12 @@ class MockMcpServer:
 
         # Règles loyer_tal
         if tool_name == "loyer_tal":
-            if args.get("mode") == "calcul_2026":
+            tal_mode = args.get("mode")
+            if tal_mode == "bareme":
+                tal_year = args.get("year")
+                if tal_year is not None and (int(tal_year) < 2015 or int(tal_year) > 2027):
+                    return f"Année '{tal_year}' hors couverture des barèmes TAL embarqués (2015 à 2027)."
+            if tal_mode == "calcul_2026":
                 if not args.get("lease_renewal_date") or args.get("current_rent_cents") is None:
                     return "Le mode 'calcul_2026' requiert lease_renewal_date et current_rent_cents."
                 try:
@@ -1501,8 +1517,47 @@ class MockMcpServer:
                 if (args.get("rpa_personal_services_cents") or 0) > 0 and not args.get("is_rpa"):
                     return "rpa_personal_services_cents > 0 requiert is_rpa=true."
                 notice_d = args.get("notice_date")
-                if str(args["lease_renewal_date"]) < "2026-01-01" and not (notice_d and str(notice_d) < "2026-01-01"):
-                    return "En mode 'calcul_2026', lease_renewal_date doit être >= 2026-01-01 (sauf avis < 2026-01-01)."
+                is_pre_2026_notice = bool(notice_d and str(notice_d) < "2026-01-01")
+                is_sec_f = bool(args.get("section_f_exemption_5_ans"))
+                if not is_pre_2026_notice and not is_sec_f:
+                    renewal_iso = str(args["lease_renewal_date"])
+                    if renewal_iso < "2026-01-01":
+                        return f"Date de renouvellement ({renewal_iso}) antérieure au 2026-01-01 : relève du régime pré-2026 (utiliser mode='bareme' ou fournir notice_date < 2026-01-01)."
+                    if renewal_iso > "2027-04-01":
+                        return f"Aucun pourcentage TAL publié/vérifié dans tal_criteres.json pour le renouvellement {renewal_iso} (couvert jusqu'au 2027-04-01). Aucune extrapolation n'est effectuée."
+                    cur_rent = int(args["current_rent_cents"])
+                    if args.get("is_rpa") and (args.get("rpa_personal_services_cents") or 0) > cur_rent:
+                        return "La part des services personnels RPA ne peut pas excéder le loyer total."
+                    if args.get("building_residential_rents_cents") is not None and int(args["building_residential_rents_cents"]) < cur_rent:
+                        return "Les loyers résidentiels de l'immeuble ne peuvent pas être inférieurs au loyer du logement visé."
+                    for zero_label, k_prev, k_curr in (
+                        ("Taxes municipales", "municipal_taxes_prev_cents", "municipal_taxes_curr_cents"),
+                        ("Taxes scolaires", "school_taxes_prev_cents", "school_taxes_curr_cents"),
+                        ("Prime d'assurance", "insurance_prev_cents", "insurance_curr_cents"),
+                    ):
+                        if (args.get(k_prev) or 0) == 0 and (args.get(k_curr) or 0) > 0:
+                            return f"{zero_label} précédente(s) nulle(s) alors que le montant courant est > 0 : variation en pourcentage indéfinie (art. 4)."
+                    for item in args.get("capital_works") or []:
+                        if isinstance(item, dict) and item.get("target_unit_benefits", True) is not False:
+                            if item.get("beneficiary_rents_monthly_cents") is not None and int(item["beneficiary_rents_monthly_cents"]) < cur_rent:
+                                return "La somme des loyers bénéficiaires ne peut pas être inférieure au loyer du logement visé."
+                            net_amt = max(
+                                0,
+                                int(item.get("gross_amount_cents", 0))
+                                - int(item.get("grant_cents") or 0)
+                                - int(item.get("third_party_indemnity_cents") or 0),
+                            )
+                            loan_amt = int(item.get("reduced_interest_loan_cents") or 0)
+                            if loan_amt > 0:
+                                if loan_amt > net_amt:
+                                    return "Prêt à intérêt réduit supérieur à la dépense nette."
+                                if item.get("annual_loan_repayment_cents") is None:
+                                    return "annual_loan_repayment_cents requis lorsqu'un prêt à intérêt réduit est déclaré."
+                    for list_key in ("new_expenses", "aid_variations"):
+                        for item in args.get(list_key) or []:
+                            if isinstance(item, dict) and item.get("target_unit_benefits", True) is not False:
+                                if item.get("beneficiary_rents_monthly_cents") is not None and int(item["beneficiary_rents_monthly_cents"]) < cur_rent:
+                                    return "La somme des loyers bénéficiaires ne peut pas être inférieure au loyer du logement visé."
 
         # Règle XOR pour get_case, citator et subsequent_history
         if tool_name in ("get_case", "citator", "subsequent_history"):
@@ -1522,21 +1577,47 @@ class MockMcpServer:
             if not args.get("citation", "").strip():
                 return "La citation ne peut pas être vide."
 
-        # Contrôle de date pour calendrier
+        # Contrôle de date et cohérence pour calendrier
         if tool_name == "calendrier_deadlines":
             ev_date = args.get("event_date", "")
             try:
                 datetime.date.fromisoformat(ev_date)
             except ValueError:
                 return f"Date invalide '{ev_date}' : format attendu YYYY-MM-DD valide."
+            ev_time = args.get("event_time")
+            if ev_time is not None:
+                tm_parts = [int(p) for p in str(ev_time).split(":")]
+                hh, mm = tm_parts[0], tm_parts[1]
+                ss = tm_parts[2] if len(tm_parts) > 2 else 0
+                if hh > 23 or mm > 59 or ss > 59:
+                    return f"Heure hors bornes (00:00[:00]..23:59[:59]) : '{ev_time}'."
+            province = args.get("province")
+            regime = args.get("regime") or "qc_cpc"
+            if province is not None and province != "QC" and regime != "ca_li":
+                return f"Le paramètre province='{province}' hors Québec ne s'applique qu'au régime fédéral 'ca_li'."
             if not args.get("deadlines"):
                 return "La liste des délais (deadlines) ne peut pas être vide."
             for idx, dl in enumerate(args.get("deadlines") or []):
-                if isinstance(dl, dict) and dl.get("anchor_date") is not None:
-                    try:
-                        datetime.date.fromisoformat(str(dl["anchor_date"]))
-                    except ValueError:
-                        return f"Date d'ancrage invalide dans deadlines[{idx}].anchor_date : '{dl['anchor_date']}'."
+                if isinstance(dl, dict):
+                    if dl.get("anchor_date") is not None:
+                        try:
+                            datetime.date.fromisoformat(str(dl["anchor_date"]))
+                        except ValueError:
+                            return f"Date d'ancrage invalide dans deadlines[{idx}].anchor_date : '{dl['anchor_date']}'."
+                    if dl.get("anchor_time") is not None:
+                        at_parts = [int(p) for p in str(dl["anchor_time"]).split(":")]
+                        ah, am = at_parts[0], at_parts[1]
+                        as_ = at_parts[2] if len(at_parts) > 2 else 0
+                        if ah > 23 or am > 59 or as_ > 59:
+                            return f"Heure hors bornes dans deadlines[{idx}].anchor_time : '{dl['anchor_time']}'."
+                    dep_idx = dl.get("depends_on_index")
+                    if dep_idx is not None:
+                        if dl.get("anchor_date") is not None:
+                            return f"Étape #{idx + 1} : ne pas combiner depends_on_index et anchor_date."
+                        if idx == 0:
+                            return "Étape #1 : depends_on_index ne peut pas être utilisé sur la première étape (utiliser event_date ou anchor_date)."
+                        if dep_idx >= idx:
+                            return f"Étape #{idx + 1} : depends_on_index ({dep_idx}) doit référencer une étape antérieure (0..{idx - 1})."
             for idx, extra_d in enumerate(args.get("extra_non_juridical_dates") or []):
                 try:
                     datetime.date.fromisoformat(str(extra_d))
@@ -2373,7 +2454,56 @@ class MockMcpServer:
         elif tool_name == "palais_get":
             greffe = args.get("greffe_number")
             palais = args.get("palais")
-            is_mtl = greffe == "500" or (palais and "montr" in palais.lower())
+            if greffe is not None and str(greffe).strip():
+                greffe_clean = str(greffe).strip()
+                if greffe_clean == "500":
+                    is_mtl = True
+                elif greffe_clean == "200":
+                    is_mtl = False
+                else:
+                    return {
+                        "isError": True,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"Le greffe « {greffe_clean} » ne figure pas dans la table de référence.\n\n"
+                                    "Consulter palais_list pour le répertoire connu."
+                                ),
+                            }
+                        ],
+                    }
+            else:
+                palais_clean = str(palais or "").strip()
+                folded_palais = re.sub(
+                    r"\s+",
+                    " ",
+                    re.sub(
+                        r"[^a-z0-9]+",
+                        " ",
+                        "".join(
+                            ch for ch in unicodedata.normalize("NFD", palais_clean)
+                            if unicodedata.category(ch) != "Mn"
+                        ).lower().replace("'", " ").replace("\u2019", " "),
+                    ),
+                ).strip()
+                if "montr" in folded_palais or folded_palais == "500":
+                    is_mtl = True
+                elif "queb" in folded_palais or folded_palais == "200":
+                    is_mtl = False
+                else:
+                    return {
+                        "isError": True,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"Aucun lieu de justice ne correspond à « {palais_clean} ».\n\n"
+                                    "Employer palais_list pour parcourir le répertoire."
+                                ),
+                            }
+                        ],
+                    }
             if is_mtl:
                 g_num = "500"
                 p_name = "Montréal"
@@ -2522,7 +2652,7 @@ class MockMcpServer:
         elif tool_name == "registre_get_entity":
             if args.get("lei"):
                 lookup_by = "lei"
-                lookup_val = str(args["lei"]).strip().upper()
+                lookup_val = re.sub(r"[\s-]+", "", str(args["lei"])).upper()
                 quebec_obj = None
                 federal_obj = None
                 lei_val = lookup_val
@@ -2571,7 +2701,7 @@ class MockMcpServer:
                 lookup_val = str(args["bn_ne"]).strip()
                 quebec_obj = None
                 corp_num = "8284083"
-                bn_num = lookup_val
+                bn_num = re.sub(r"[\s-]", "", lookup_val)
                 lei_val = "549300FEDBOREALE0002"
                 gleif_name = "CORPORATION BORÉALE DU CANADA INC."
                 matched_neq = None
@@ -2604,15 +2734,16 @@ class MockMcpServer:
             else:
                 lookup_by = "neq"
                 lookup_val = str(args.get("neq") or "1172345678").strip()
+                clean_neq = re.sub(r"[\s-]", "", lookup_val)
                 federal_obj = None
                 lei_val = "549300BOREALE0000001"
                 gleif_name = "9123-4567 QUÉBEC INC."
-                matched_neq = lookup_val
+                matched_neq = clean_neq
                 matched_corp = None
                 ra_id = "RA000842"
-                ra_entity_id = lookup_val
+                ra_entity_id = clean_neq
                 quebec_obj = {
-                    "neq": lookup_val,
+                    "neq": clean_neq,
                     "nom_officiel": "9123-4567 QUÉBEC INC.",
                     "is_active": True,
                     "statut_immatriculation": {
@@ -5325,7 +5456,19 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 ("interets_1619", {"mode": "contractual", "end_date": "2026-11-18", "tranches": [{"principal_cents": 100000, "start_date": "2025-01-01"}]}),
                 ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": -100}),
                 ("loyer_tal", {"mode": "bareme", "year": 1800}),
+                ("loyer_tal", {"mode": "bareme", "year": 2014}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2027-04-02", "current_rent_cents": 100000}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "is_rpa": True, "rpa_personal_services_cents": 200000}),
+                ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"gross_amount_cents": 10000, "beneficiary_rents_monthly_cents": 50000}]}),
                 ("loyer_tal", {"mode": "calcul_2026", "lease_renewal_date": "2026-07-01", "current_rent_cents": 100000, "capital_works": [{"gross_amount_cents": 500000, "bogus": True}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "deadlines": [{"amount": 10, "depends_on_index": 0}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "deadlines": [{"amount": 10}, {"amount": 5, "anchor_date": "2026-05-10", "depends_on_index": 0}]}),
+                ("calendrier_deadlines", {"event_date": "2026-05-01", "regime": "qc_cpc", "province": "ON", "deadlines": [{"amount": 10}]}),
+                ("registre_get_entity", {"neq": "abc"}),
+                ("registre_get_entity", {"neq": "12345678901"}),
+                ("registre_get_entity", {"bn_ne": "abc"}),
+                ("palais_get", {"greffe_number": "999"}),
+                ("palais_get", {"palais": "Atlantis"}),
             ]
             failed_probes = []
             for tname, targs in neg_probes:
