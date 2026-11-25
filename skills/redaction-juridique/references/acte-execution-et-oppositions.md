@@ -10,7 +10,7 @@
 
 ## Conditions et préalables
 
-`[FICHE À RÉDIGER]` — Vérifier si le jugement est exécutoire (expiration du délai d'appel `656` ou exécution provisoire `660–661`), si une mise en demeure de payer a été transmise, et vérifier la nature des biens saisissables ou insaisissables.
+`[FICHE À RÉDIGER]` — Vérifier si le jugement est exécutoire (expiration du délai d'appel `656` ou exécution provisoire `660–661`), si une mise en demeure de payer a été transmise, et vérifier la nature des biens saisissables ou insaisissables (`outils.registre_search` / `registre_get_entity` avec `lei` et `portails_officiels` REQ/Corporations Canada/ISC-PISC ; `outils.adresse_verify(lot_number=..., matricule=...)` à titre de repérage RQA indicatif — **sans jamais substituer le RQA à l'Index des immeubles du Registre foncier du Québec ni au RDPRM**, art. `3030 al. 2, 3032 C.c.Q.`).
 
 ## Forum et compétence
 
@@ -22,7 +22,7 @@
 
 ## Pièces jointes et formalités
 
-`[FICHE À RÉDIGER]` — Jugement exécutoire, état des frais et calcul actualisé des intérêts `art. 1619 C.c.Q.` via `outils.interets_1619`, procès-verbal d'exécution de l'huissier, déclaration sous serment si opposition fondée sur faits hors dossier.
+`[FICHE À RÉDIGER]` — Jugement exécutoire, état des frais et calcul actualisé des intérêts `art. 1619 C.c.Q.` (ou `mode="prime_plus_margin"` si le jugement condamne à un taux préférentiel + marge) via `outils.interets_1619`, procès-verbal d'exécution de l'huissier, déclaration sous serment si opposition fondée sur faits hors dossier.
 
 ## Particularités et pièges
 

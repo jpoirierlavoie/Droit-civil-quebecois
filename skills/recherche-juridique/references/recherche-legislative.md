@@ -30,7 +30,7 @@ Encadre l'interrogation du corpus législatif et réglementaire québécois et f
 
 * **Texte officiel consolidé (`lois`) :** Article ou paragraphe lu intégralement via `lois.get_article` / `get_articles` / `get_division` avec sa **date de consolidation** relevée en session (en distinguant règle édictée `reglement` / `regles-procedure` et texte non législatif `directive` / `orientation`).
 * **`[À VÉRIFIER VIA LOIS]` :** Réservé uniquement au Palier 1 exploratoire; **interdit** au Palier 2 ou 3.
-* **Texte hors corpus :** Si une loi récente, directive de Cour d'appel (`QCCA`) ou règle sectorielle manque aux **110** textes de la vague 1 de `lois`, indiquer explicitement l'absence au corpus et demander à l'avocat de fournir le texte officiel (LégisQuébec, Justice Canada, tribunal ou AMF).
+* **Texte hors corpus :** Si une loi récente, directive de Cour d'appel (`QCCA`) ou règle sectorielle manque aux **110** textes de la vague 1 de `lois` (par ex. le *Règlement sur les critères de fixation de loyer*, `RLRQ, c. T-15.01, r. 2`, absent de `lois` qui ne contient que `t-15.01`), indiquer explicitement l'absence au corpus et demander à l'avocat de fournir le texte officiel (LégisQuébec, Justice Canada, tribunal ou AMF). Pour les barèmes et calculs TAL post-2026 vérifiés sur `RLRQ, c. T-15.01, r. 2`, ainsi que les taux BdC et séries IPC StatCan hors ligne, employer `outils.loyer_tal`, `outils.taux_boc_rates` et `outils.indice_ipc`.
 
 ## Modes d'échec
 

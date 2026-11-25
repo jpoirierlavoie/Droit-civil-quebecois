@@ -3,7 +3,7 @@
   "name": "droit-civil-quebecois",
   "displayName": "Droit civil québécois",
   "version": "3.1.0",
-  "description": "Litige civil et commercial québécois : 5 phases de dossier, 5 services, 4 scripts de contrôle et 32 outils MCP officiels (lois, juris, outils).",
+  "description": "Litige civil et commercial québécois : 5 phases de dossier, 5 services, 4 scripts de contrôle et 35 outils MCP officiels (lois, juris, outils).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Ouvre ce nouveau dossier civil : vérifie le contrôle de conflit, l'identification du client, la prescription et les urgences",

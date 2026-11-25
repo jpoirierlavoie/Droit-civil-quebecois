@@ -252,6 +252,9 @@ EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
         "terminologie_lookup",
         "termino_attestations",
         "terminologie_scan",
+        "taux_boc_rates",
+        "indice_ipc",
+        "loyer_tal",
     ),
 }
 
