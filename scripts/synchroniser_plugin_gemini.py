@@ -134,7 +134,7 @@ def main() -> None:
         if mcp_config_copied:
             time.sleep(2.5)
             print(
-                "[!] mcp_config.json modifié : tous les identifiants d'outils v3.0 respectent "
+                "[!] mcp_config.json modifié : tous les identifiants d'outils v3.3.1 respectent "
                 "désormais la limite native <= 64 caractères (cache Antigravity rafraîchi "
                 "automatiquement). Exécuter optionnellement "
                 "'python scripts/regenerer_cache_mcp.py --apply' pour reconstruire le cache "

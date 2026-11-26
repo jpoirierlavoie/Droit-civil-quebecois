@@ -17,7 +17,7 @@ Les contributions de juristes, de développeurs et de chercheuses/chercheurs du 
 
 ## 2. Contribuer au contenu juridique / Contributing Legal Content
 
-Les 10 compétences et 60 feuilles de référence du dépôt passent intégralement le contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`). Les marqueurs `[FICHE À RÉDIGER]` et `[NON VALIDÉ PAR LA PRATIQUE]` demeurent pris en charge sur une branche de travail en cours, mais doivent être levés avant fusion vers `main`. Pour bonifier une fiche existante ou proposer une nouvelle feuille :
+Les 10 compétences, 60 feuilles de référence et 6 sous-agents de contre-épreuve (`agents/`) du dépôt passent intégralement le contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`). Les marqueurs `[FICHE À RÉDIGER]` et `[NON VALIDÉ PAR LA PRATIQUE]` demeurent pris en charge sur une branche de travail en cours, mais doivent être levés avant fusion vers `main`. Pour bonifier une fiche existante ou proposer une nouvelle feuille :
 
 1. Respecter les titres `##` exigés pour la famille de la fiche (`acte-`, `arg-`, `corr-`, `contrat-`, `preuve-`, `piece-`, `produit-`, `recherche-`, `controle-`, `cahier-`, `conformite-` — gabarits détaillés dans [`AGENTS.md`](AGENTS.md)).
 2. Privilégier les **vecteurs de recherche** (`lois.get_articles`, paires confondables, silences) plutôt que de copier le texte intégral des lois dans le dépôt.
@@ -32,7 +32,7 @@ Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement). Avant tou
 
 ```bash
 # Linux / macOS
-PYTHONUTF8=1 python3 verifier.py
+PYTHONUTF8=1 python3 verifier.py --release
 PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py
@@ -41,7 +41,7 @@ PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py
 ```powershell
 # Windows PowerShell
 $env:PYTHONUTF8 = "1"
-python verifier.py
+python verifier.py --release
 python evals/executer_evals.py --auto-test
 python verifier_tout.py --mode mock
 python scripts/empaqueter_plugin_chatgpt.py

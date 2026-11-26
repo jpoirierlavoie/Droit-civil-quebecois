@@ -6729,7 +6729,7 @@ def run_tier_3_tests(
         elapsed = (time.perf_counter() - t0) * 1000
         add_result("T3.4.2", "Exécution verifier.py", "all", False, elapsed, str(ex))
 
-    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.1.0)
+    # T3.4.3 : Vérification des 4 scripts de compétences autonomes (v3.3.1)
     t0 = time.perf_counter()
     script_calc = repo_root / "skills" / "gestion-du-mandat" / "scripts" / "calcul_delai.py"
     script_insp = repo_root / "skills" / "analyse-et-strategie" / "scripts" / "inspecter_piece.py"

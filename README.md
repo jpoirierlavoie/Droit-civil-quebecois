@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.3.0`)
+# Droit civil québécois (`v3.3.1`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -22,15 +22,16 @@ Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 
 
 ## Comment l'ensemble fonctionne
 
-Le greffon réunit trois couches complémentaires :
+Le greffon réunit quatre couches complémentaires :
 
 1. **10 compétences (`skills/`) — la méthode et les gabarits :** cinq guides d'étapes selon l'avancement du dossier (`phase-*`) et cinq guides spécialisés (recherche, analyse de preuve, rédaction, contrôle de production et gestion du mandat). Elles expliquent à l'assistant comment structurer le travail, quoi vérifier et quels formats respecter.
-2. **3 connecteurs MCP (`lois`, `juris`, `outils`) — l'accès direct aux sources et aux calculs :** au lieu de répondre de mémoire, l'assistant interroge les textes législatifs et directives officiels (`lois`), vos recherches sur CanLII (`juris`) et des outils déterministes de délais, d'intérêts, de taux et d'indices économiques, de registres, d'adresses et de palais de justice (`outils`).
-3. **4 scripts de vérification locaux (`scripts/*.py`) — le contrôle matériel (poste local uniquement) :** sur un outil installé sur votre ordinateur (Claude Code, Codex, Antigravity, Gemini CLI), ces scripts vérifient les délais hors ligne, inspectent les pièces reçues et contrôlent la mise en forme Word/PDF et la continuité des cotes. Dans les applications Web ou sans exécution Python locale, l'assistant le signale et produit un **bon de travail** à compléter manuellement.
+2. **6 sous-agents de contre-épreuve sans contexte (`agents/*.md`) — la relecture à froid :** six personas isolés (`avocat-analyste`, `avocat-adverse`, `verificateur-dossier`, `avocat-conseil`, `parajuriste-inventaire`, `coordonnateur-revue`) dépouillant les lots volumineux et contre-vérifiant projets et actes adverses sur liste blanche (`etat-dossier/banc/`) sans accès à `juris`.
+3. **3 connecteurs MCP (`lois`, `juris`, `outils`) — l'accès direct aux sources et aux calculs :** au lieu de répondre de mémoire, l'assistant interroge les textes législatifs et directives officiels (`lois`), vos recherches sur CanLII (`juris`) et des outils déterministes de délais, d'intérêts, de taux et d'indices économiques, de registres, d'adresses et de palais de justice (`outils`).
+4. **4 scripts de vérification locaux (`skills/*/scripts/*.py`) — le contrôle matériel (poste local uniquement) :** sur un outil installé sur votre ordinateur (Claude Code, Codex, Antigravity, Gemini CLI), ces scripts vérifient les délais hors ligne, inspectent les pièces reçues et contrôlent la mise en forme Word/PDF et la continuité des cotes. Dans les applications Web ou sans exécution Python locale, l'assistant le signale et produit un **bon de travail** à compléter manuellement.
 
 ---
 
-## Fonctionnement et garanties (`v3.3.0`)
+## Fonctionnement et garanties (`v3.3.1`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -93,7 +94,7 @@ Le greffon réunit trois couches complémentaires :
 
 > Depuis `v3.1.0`, la configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut `lois` et `juris` à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.3.0`)
+### Catalogue exact des 37 outils (`v3.3.1`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -223,16 +224,16 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ---
 
-## Migration depuis `v3.0.x` -> `v3.1.0`
+## Mise à jour du greffon
 
-- **Claude Code / Gemini CLI :** mettre à jour le greffon ou l'extension ; les connecteurs basculent automatiquement sur OAuth 2.1 (`/mcp/oauth`) et ouvrent la connexion navigateur vers `acces.poirierlavoie.ca`. Vos jetons `Bearer` individuels antérieurs demeurent valides sur `/mcp` pour tout usage scripté ou sans navigateur.
-- **Google Antigravity :** exécuter `python scripts/synchroniser_plugin_gemini.py --apply` et `python scripts/regenerer_cache_mcp.py --apply`, puis autoriser la connexion OAuth 2.1 lorsqu'Antigravity le propose (aucune variable secrète à configurer).
+- **Claude Code / Gemini CLI :** mettre à jour le greffon ou l'extension ; les connecteurs utilisent par défaut OAuth 2.1 (`/mcp/oauth`) et ouvrent la connexion navigateur vers `acces.poirierlavoie.ca`. Vos jetons `Bearer` individuels antérieurs demeurent valides sur `/mcp` pour tout usage scripté ou sans navigateur.
+- **Google Antigravity :** exécuter `agy plugin update` ou, depuis un clone local, `python scripts/synchroniser_plugin_gemini.py --apply`, puis autoriser la connexion OAuth 2.1 lorsqu'Antigravity le propose (aucune variable secrète à configurer).
 
 ---
 
 ## État de maturité et contribution ouverte
 
-L'ensemble du corpus `v3.3.0` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
+L'ensemble du corpus `v3.3.1` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).

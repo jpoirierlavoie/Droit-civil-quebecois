@@ -2,6 +2,18 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.3.1] — 2026-11-26
+
+### Corrigé
+- Suppression de l'import inutilisé `import sys` dans `scripts/regenerer_cache_mcp.py` (résolution de l'alerte CodeQL #26 `py/unused-import`).
+- Mise à jour de la documentation, des manifestes et des avis légaux (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `NOTICE`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`) : ajout explicite des **6 sous-agents de contre-épreuve (`agents/`)**, correction du chemin des scripts locaux (`skills/*/scripts/*.py`), distinction entre les 3 manifestes de configuration MCP (`/mcp/oauth`) et les 6 manifestes de plateforme/place de marché, mention du repli optionnel `pypdf` dans `inspecter_piece.py`, retrait de `regenerer_cache_mcp.py --apply` des consignes utilisateur finales et ajout des séries statistiques et économiques dans `NOTICE`.
+
+### Modifié
+- Activation de `python verifier.py --release` dans le flux CI `.github/workflows/verify.yml` ainsi que dans les listes de contrôle `CONTRIBUTING.md` et `.github/PULL_REQUEST_TEMPLATE.md`.
+- Alignement de parité semver `3.3.1` sur l'ensemble des 9 manifestes, `evals/scenarios.json`, `evals/README.md`, `evals/test_verifier.py`, `verifier.py`, `verifier_tout.py` et `scripts/synchroniser_plugin_gemini.py`.
+
+---
+
 ## [3.3.0] — 2026-11-26
 
 ### Ajouté
