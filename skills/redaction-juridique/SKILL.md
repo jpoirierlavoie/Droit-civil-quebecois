@@ -61,12 +61,13 @@ Pour tout **acte de procédure**, charger obligatoirement `references/fondamenta
 | Mise en demeure (`1594–1597 C.c.Q.`) | `references/corr-mise-en-demeure.md` | `lois`, `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`) |
 | Lettre au confrère, au tribunal ou au greffe | `references/corr-confrere-et-tribunal.md` | `outils` (`terminologie_scan`) |
 | Lettre d'opinion, rapport ou demande d'instructions au client | `references/corr-client.md` | `lois`, `outils` |
-| Protocole de l'instance (`148 C.p.c.`) | `references/contrat-protocole-instance.md` | `lois` (`cpc`) |
-| Ententes judiciaires (expertise commune, consentement à jugement, homologation) | `references/contrat-ententes-judiciaires.md` | `lois` (`cpc`), `outils` (`registre_*`, `interets_1619`) |
-| Transaction et quittance (`2631–2637 C.c.Q.`) | `references/contrat-transaction-quittance.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`) |
+| Formulaires d'avant-mise en état : protocole de l'instance (`148, 173 C.p.c.`) et avis C.Q. (`SJ-1273`, `SJ-1274`) | `references/contrat-protocole-instance.md` | `lois` (`cpc`, `qccq-regles-simplifiees`) |
+| Formulaires de mise en état et fixation d'audience (`174 C.p.c.`, `SJ-1100`, `SJ-1276`, fixation C.S.) et ententes accessoires | `references/contrat-ententes-judiciaires.md` | `lois` (`cpc`, `c-25.01-r.0.2.1`, `qccs-*`, `qccq-*`), `outils` (`greffe_parse_number`) |
+| Transaction, quittance (`2631–2637 C.c.Q.`), avis de règlement (`220`), acquiescement (`217`) et homologation (`527–528`) | `references/contrat-transaction-quittance.md` | `lois` (`ccq`, `cpc`), `outils` (`registre_*`, `adresse_verify`, `interets_1619`) |
 | Contrats civils et commerciaux (style civiliste, ordre public C.c.Q.) | `references/contrat-civil-commercial.md` | `lois` (`ccq`), `outils` (`registre_*`, `adresse_verify`, `interets_1619`, `taux_boc_rates`, `indice_ipc`, `loyer_tal`) |
 | Bordereau de pièces, endos de cour ou cahier des sources à joindre | `../production-et-conformite/references/cahier-des-pieces-et-bordereaux.md` *(ou `cahier-des-sources.md` / `controle-endos-depot-signification.md`)* | `lois`, `juris` (`check_exempt_cases`), `outils` (`greffe_parse_number`, `palais_get`) |
 | Délai d'avis d'assignation, de présentation (`101, 527`) ou de protocole à confirmer | `../gestion-du-mandat/references/conformite-echeanciers-cpc.md` *(si absent : `lois` + `outils.calendrier_deadlines`)* | `lois`, `outils` |
+| Contre-épreuve à froid d'un écrit contesté (Palier 3 par défaut, opt-in Palier 2) et porte de triage contradictoire | `../analyse-et-strategie/references/produit-contre-epreuve-banc.md` *(repli nuage : paquet nouvel onglet vierge)* | `lois`, `juris`, `outils` |
 | Fondement juridique non encore vérifié, caviardage (`108`) ou déclencheur déontologique | `../recherche-juridique/references/grille-prealables.md` ou `../analyse-et-strategie/references/preuve-privilege-confidentialite-caviardage.md` | `lois` (`get_articles`) |
 
 ## Contrôle avant remise

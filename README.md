@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.2.1`)
+# Droit civil québécois (`v3.3.0`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -8,9 +8,9 @@
 
 Greffon ouvert (licence Apache-2.0) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)*, compatible avec Claude (Claude Code, Claude Desktop, `claude.ai` / Claude Research), ChatGPT Web et Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, l'API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI et Gemini API Deep Research.
 
-Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 services transversaux), **59 feuilles de référence**, **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 37 outils officiels) adossés au portail [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca) ([`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces)).
+Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 services transversaux), **60 feuilles de référence**, **6 sous-agents de contre-épreuve sans contexte** (`agents/`), **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 37 outils officiels) adossés au portail [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca) ([`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces)).
 
-> **In English:** Open-source (`Apache-2.0`) plugin for **Québec civil and commercial litigation** *(excluding family and criminal law)* across **Claude**, **ChatGPT / Codex**, and **Gemini / Antigravity**. It bundles 10 litigation skills, 59 reference sheets, 4 standard-library Python verification scripts, and 3 MCP connectors (`lois`, `juris`, `outils` — 37 tools). The `outils` connector is public with no account required; `lois` and `juris` are available free of charge to active Barreau du Québec members with a personal CanLII API key (BYOK) via [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca).
+> **In English:** Open-source (`Apache-2.0`) plugin for **Québec civil and commercial litigation** *(excluding family and criminal law)* across **Claude**, **ChatGPT / Codex**, and **Gemini / Antigravity**. It bundles 10 litigation skills, 60 reference sheets, 6 stateless Goldfish review personas (`agents/`), 4 standard-library Python verification scripts, and 3 MCP connectors (`lois`, `juris`, `outils` — 37 tools). The `outils` connector is public with no account required; `lois` and `juris` are available free of charge to active Barreau du Québec members with a personal CanLII API key (BYOK) via [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca).
 
 ---
 
@@ -30,7 +30,7 @@ Le greffon réunit trois couches complémentaires :
 
 ---
 
-## Fonctionnement et garanties (`v3.2.1`)
+## Fonctionnement et garanties (`v3.3.0`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -39,13 +39,16 @@ Le greffon réunit trois couches complémentaires :
 3. **Trois paliers de rigueur :**
    - **Palier 1 — Question ponctuelle :** orientation rapide appuyée sur une règle vérifiée.
    - **Palier 2 — Travail de dossier :** analyse probatoire, stratégie, chronologie, matrice de concordance ou note interne.
-   - **Palier 3 — Acte ou cahier destiné au tribunal :** procédure complète par défaut (ou bloc destiné au gabarit du cabinet), lecture intégrale vérifiée sur `lois`/`juris` (`Lue (intégrale) [par. X]` ou marqueur `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`), contrôle technique et bon de travail.
-4. **Vérifications locales et dégradation en ligne :** Les 4 scripts Python inspectent localement en lecture seule les métadonnées, la mise en page Word/PDF, la couche texte (OCR), les signets et la continuité des cotes, puis émettent un **bon de travail** précis pour les logiciels du cabinet (Microsoft Word, Adobe Acrobat). Sur les plateformes sans disque local ni Python (`claude.ai`, ChatGPT Web sans exécutant local, Gemini App, Deep Research), les suivis `etat-dossier/` sont remis en ligne dans la réponse et les vérifications techniques non exécutées sont signalées en tête du bon de travail manuel.
-5. **Corpus officiel verbatim (`134` textes répartis en 8 domaines et 50 matières) :** `lois` restitue sans modification les lois et règlements consolidés (LégisQuébec et Justice Canada, incluant les *Lois constitutionnelles de 1867 et de 1982*, le droit sectoriel québécois et fédéral ainsi que `ca-c-46`/`ca-c-38.8`/`ca-y-1.5` en quarantaine dans `penal` ; *Loi de l'impôt sur le revenu* exclue), les règlements de cour et règlements AMF `V-1.1`, ainsi que les directives de pratique PDF de la C.S. et de la C.Q. et les *Instructions générales* de l'AMF (textes indicatifs sans force de loi, certains publiés en français seulement ; aucun recueil unifié de directives QCCA n'existe au-delà de `c-25.01-r.0.2.01`). Par défaut, `find_relevant`, `list_laws` et `search_text` (sans `law`) interrogent le tronc commun (`core`) avec radar `other_domains`, tout en permettant d'ouvrir 7 silos spécialisés (`domains`), de cibler un tribunal (`forum`) ou un ordre de gouvernement (`jurisdiction='qc'|'ca'`).
+   - **Palier 3 — Acte ou cahier destiné au tribunal :** procédure complète par défaut (ou bloc destiné au gabarit du cabinet), lecture intégrale vérifiée sur `lois`/`juris` (`Lue (intégrale) [par. X]` ou marqueur `[RATIO / PAR. X À INSÉRER APRÈS LECTURE DE <citation + lien CanLII>]`), contre-épreuve à froid, contrôle technique et bon de travail.
+4. **Banc de contre-épreuve sans contexte (`agents/` + `produit-contre-epreuve-banc.md`) :**
+   - **4 modes calibrés :** indexation de lots volumineux (`>= 6` pièces, `LOT_PIECES`), pression sur la théorie de la cause (`REMUE_MENINGES`), dissection d'écrits/jugements adverses (`AUTOPSIE_ADVERSE`) et contre-épreuve à froid d'un projet contesté avec contrôle d'aveux `2852 C.c.Q.` (`CONTRE_EPREUVE`).
+   - **Pare-feu et protection du quota CanLII :** les sous-agents travaillent exclusivement sur une liste blanche de fichiers (`etat-dossier/banc/`, avec extraction texte stdlib `--extraire-texte` pour `.docx`/`.xlsx`/`.eml`) sans jamais voir les notes stratégiques internes ; `juris` reste réservé à l'Éléphant (`lois` et `outils` anonymisés en mode hybride), et chaque critique passe par une porte de triage obligatoire (`FORTIFIER`, `DÉSAMORCER`, `CIBLE D'INSTRUCTION`, `RISQUE ASSUMÉ`). Sur les surfaces Web sans sous-agents isolés, le greffon refuse de simuler une lecture à froid dans le même fil et livre un **Paquet Contre-épreuve (Nouvel onglet vierge)** inscrit au bon de travail.
+5. **Vérifications locales et dégradation en ligne :** Les 4 scripts Python inspectent localement en lecture seule les métadonnées, la mise en page Word/PDF, la couche texte (OCR), les signets et la continuité des cotes, puis émettent un **bon de travail** précis pour les logiciels du cabinet (Microsoft Word, Adobe Acrobat). Sur les plateformes sans disque local ni Python (`claude.ai`, ChatGPT Web sans exécutant local, Gemini App, Deep Research), les suivis `etat-dossier/` sont remis en ligne dans la réponse et les vérifications techniques non exécutées sont signalées en tête du bon de travail manuel.
+6. **Corpus officiel verbatim (`134` textes répartis en 8 domaines et 50 matières) :** `lois` restitue sans modification les lois et règlements consolidés (LégisQuébec et Justice Canada, incluant les *Lois constitutionnelles de 1867 et de 1982*, le droit sectoriel québécois et fédéral ainsi que `ca-c-46`/`ca-c-38.8`/`ca-y-1.5` en quarantaine dans `penal` ; *Loi de l'impôt sur le revenu* exclue), les règlements de cour et règlements AMF `V-1.1`, ainsi que les directives de pratique PDF de la C.S. et de la C.Q. et les *Instructions générales* de l'AMF (textes indicatifs sans force de loi, certains publiés en français seulement ; aucun recueil unifié de directives QCCA n'existe au-delà de `c-25.01-r.0.2.01`). Par défaut, `find_relevant`, `list_laws` et `search_text` (sans `law`) interrogent le tronc commun (`core`) avec radar `other_domains`, tout en permettant d'ouvrir 7 silos spécialisés (`domains`), de cibler un tribunal (`forum`) ou un ordre de gouvernement (`jurisdiction='qc'|'ca'`).
 
 ---
 
-## Cartographie des 10 compétences, 59 feuilles et 4 scripts (`skills/`)
+## Cartographie des 10 compétences, 60 feuilles, 6 sous-agents et 4 scripts (`skills/`, `agents/`)
 
 ### A. Cinq orchestrateurs de phase (`phase-*`)
 
@@ -62,10 +65,21 @@ Le greffon réunit trois couches complémentaires :
 | Service | Rôle principal | Feuilles (`references/`) et scripts (`scripts/`) |
 |---|---|---|
 | **`recherche-juridique`** | Préalables, législation (`lois`, 134 textes, 50 matières, quarantaine 8 domaines, directives QCCS/QCCQ et orientations AMF), jurisprudence (`juris` BYOK), doctrine admissible, précédents internes dé-identifiés, livrables et statuts de lecture | `grille-prealables.md`, `recherche-legislative.md`, `recherche-jurisprudentielle.md`, `recherche-doctrinale.md`, `recherche-precedents-internes.md`, `recherche-livrables.md` |
-| **`analyse-et-strategie`** | Réception/qualification, preuve directe (honnêteté perceptuelle & journal de garde), preuve indirecte, documents judiciaires, recevabilité, privilèges/caviardage, théorie de la cause, notes, matrice, fiche témoins, chronologie, interrogatoires | `piece-reception-et-qualification.md`, `preuve-directe.md`, `preuve-indirecte.md`, `preuve-documents-judiciaires.md`, `preuve-recevabilite-force-probante.md`, `preuve-privilege-confidentialite-caviardage.md`, `produit-theorie-de-la-cause.md`, `produit-note-et-memo.md`, `produit-matrice-allegations.md`, `produit-fiche-preuve-et-temoins.md`, `produit-chronologie.md`, `produit-interrogatoire.md`, `scripts/inspecter_piece.py` |
+| **`analyse-et-strategie`** | Réception/qualification, preuve directe (honnêteté perceptuelle & journal de garde), preuve indirecte, documents judiciaires, recevabilité, privilèges/caviardage, théorie de la cause, notes, matrice, fiche témoins, chronologie, interrogatoires, banc de contre-épreuve | `piece-reception-et-qualification.md`, `preuve-directe.md`, `preuve-indirecte.md`, `preuve-documents-judiciaires.md`, `preuve-recevabilite-force-probante.md`, `preuve-privilege-confidentialite-caviardage.md`, `produit-theorie-de-la-cause.md`, `produit-note-et-memo.md`, `produit-matrice-allegations.md`, `produit-fiche-preuve-et-temoins.md`, `produit-chronologie.md`, `produit-interrogatoire.md`, `produit-contre-epreuve-banc.md`, `scripts/inspecter_piece.py` |
 | **`redaction-juridique`** | Actes de procédure complets (12 familles : demande introductive, défense/exposé, cours d'instance/206–208, moyens préliminaires, reconvention/garantie, injonction, saisie avant jugement, mesures provisionnelles, contrôle judiciaire, appel, rétractation, exécution), argumentation/mémoires (4), correspondance & contrats (7), socle et purge bilingue | `fondamentaux-actes.md`, `anti-contamination-bilingue.md`, `acte-*` (`12`), `arg-*` (`4`), `corr-*` (`3`), `contrat-*` (`4`) |
 | **`production-et-conformite`** | Contrôle formel d'actes et correspondance, audit PDF (OCR, signets, liens, métadonnées, commentaires), cahier des sources, bordereaux & cahier des pièces, cahier des procédures, endos/dépôt/signification et bon de travail | `controle-acte-de-procedure.md`, `controle-correspondance.md`, `controle-pdf-et-metadonnees.md`, `cahier-des-sources.md`, `cahier-des-pieces-et-bordereaux.md`, `cahier-des-procedures.md`, `controle-endos-depot-signification.md`, `scripts/controler_document.py`, `scripts/verifier_cotes.py` |
 | **`gestion-du-mandat`** | Ouverture/conflits/identification/mandat, radar déontologique (11 moments, 19 silences, IA), feuilles de temps et fidéicommis (`b-1-r.5`), échéanciers et délais C.p.c., tableaux quantum/Scott, intérêts `1619 C.c.Q.` et état des frais (`339–344`) | `conformite-ouverture-conflits-mandat.md`, `conformite-radar-deontologique.md`, `conformite-facturation-fideicommis.md`, `conformite-echeanciers-cpc.md`, `conformite-quantum-interets-frais.md`, `scripts/calcul_delai.py` |
+
+### C. Six personas de contre-épreuve sans contexte (`agents/`)
+
+| Persona | Rôle | Modes et accès MCP |
+|---|---|---|
+| **`avocat-analyste`** | Avocat analyste lisant à froid sur les quatre coins (paraphrase obligatoire) | `CONTRE_EPREUVE` · zéro MCP |
+| **`avocat-adverse`** | Avocat adverse attaquant qualification, éléments, fardeau (`2803`) et posture *C.p.c.* | `REMUE_MENINGES`, `CONTRE_EPREUVE`, `AUTOPSIE_ADVERSE` · `lois` + `outils` (`juris` interdit) |
+| **`verificateur-dossier`** | Vérificateur 1:1 `Allégation ↔ Pièce`, Livre VII *C.c.Q.*, citations et aveux (`2852 C.c.Q.`) | `CONTRE_EPREUVE`, `AUTOPSIE_ADVERSE` · `lois` + `outils` (`juris` interdit) |
+| **`avocat-conseil`** | Avocat-conseil repérant mesures urgentes, demeure (`1594+`), garantie (`184+`) et règlement | `REMUE_MENINGES`, `AUTOPSIE_ADVERSE` · `lois` + `outils` (`juris` interdit) |
+| **`parajuriste-inventaire`** | Parajuriste dépouillant par tranches les lots `>= 6` pièces ou longues transcriptions | `LOT_PIECES` · zéro MCP |
+| **`coordonnateur-revue`** | Coordonnateur parallèle dédupliquant le rapport sous `etat-dossier/banc/` | Tous les modes · zéro MCP |
 
 ---
 
@@ -79,7 +93,7 @@ Le greffon réunit trois couches complémentaires :
 
 > Depuis `v3.1.0`, la configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut `lois` et `juris` à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.2.1`)
+### Catalogue exact des 37 outils (`v3.3.0`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -218,7 +232,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ## État de maturité et contribution ouverte
 
-L'infrastructure centrale `v3.2.1` (10 compétences, noyau `SAFETY-KERNEL`, 37 outils MCP OAuth 2.1/BYOK et 4 scripts Python stdlib) est fonctionnelle et testée en continu. Toutefois, plusieurs fiches de référence et compétences de phase conservent encore des marqueurs `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]` en attente de rédaction ou de validation par la pratique (suivis automatiquement par `python verifier.py --release`).
+L'ensemble du corpus `v3.3.0` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).
@@ -234,7 +248,7 @@ Prérequis : **Python `>= 3.10`** (bibliothèque standard uniquement, aucune dé
 PYTHONUTF8=1 python3 verifier.py                                  # Contrôle statique strict (muet, code 0)
 PYTHONUTF8=1 python3 verifier.py --stats                          # Bilan des 10 compétences, descriptions et chargements
 PYTHONUTF8=1 python3 verifier.py --release                        # Contrôle publication (zéro marqueur brouillon + couverture complète)
-PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 118 scénarios, 4 scripts locaux et test_verifier.py
+PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 122 scénarios, 4 scripts locaux et test_verifier.py
 PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT

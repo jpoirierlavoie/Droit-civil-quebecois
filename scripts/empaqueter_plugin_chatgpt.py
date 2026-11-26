@@ -108,7 +108,7 @@ def collecter_fichiers_archive(src_dir: Path) -> list[tuple[str, Path]]:
             raise FileNotFoundError(f"Fichier racine manquant : {chemin}")
         entrees.append((rel, chemin))
 
-    for dossier in ("assets", "skills"):
+    for dossier in ("assets", "agents", "skills"):
         base = src_dir / dossier
         if not base.is_dir():
             raise FileNotFoundError(f"Répertoire requis manquant : {base}")
@@ -139,6 +139,14 @@ def valider_entrees_archive(nom_plugin: str, noms_archive: list[str]) -> None:
             raise ValueError(f"Fichier ou dossier exclu présent dans l'archive : {nom}")
         if len(segments) >= 2 and segments[0] == "skills":
             skill_dirs.add(segments[1])
+        elif segments[0] == "agents":
+            if len(segments) != 2 or not segments[1].endswith(".md"):
+                raise ValueError(f"Entrée agents/ invalide dans l'archive : {nom}")
+            agent_id = f"{nom_plugin}:{segments[1][:-3]}"
+            if len(agent_id) > MAX_SKILL_IDENTITY_LEN:
+                raise ValueError(
+                    f"Identifiant persona trop long ({len(agent_id)} > {MAX_SKILL_IDENTITY_LEN}) : {agent_id}"
+                )
 
     if not skill_dirs:
         raise ValueError("Aucune compétence trouvée sous skills/")

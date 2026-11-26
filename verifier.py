@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.2.1).
+"""Contrôle statique du dépôt « Droit civil québécois » (v3.3.0).
 
 Exécuter depuis la racine du dépôt :
 
@@ -193,6 +193,16 @@ SERVICE_SKILLS = frozenset(
     }
 )
 EXPECTED_SKILLS = PHASE_SKILLS | SERVICE_SKILLS
+EXPECTED_AGENTS = frozenset(
+    {
+        "avocat-analyste",
+        "avocat-adverse",
+        "verificateur-dossier",
+        "avocat-conseil",
+        "parajuriste-inventaire",
+        "coordonnateur-revue",
+    }
+)
 
 EXPECTED_LICENSE = "Apache-2.0"
 EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
@@ -268,6 +278,8 @@ MAX_SERVICE_DESCRIPTION_CHARS = 750
 MAX_PLUGIN_DESCRIPTION_TOTAL = 6000
 MAX_SKILL_BODY_WORDS = 2200
 MAX_SKILL_BODY_BYTES = 16384
+MAX_AGENT_DESCRIPTION_CHARS = 450
+MAX_AGENT_BYTES = 16384
 MAX_LEAF_BYTES = 24576
 MAX_PER_LOAD_BYTES = 65536
 MAX_FILES_PER_SKILL = 100
@@ -678,6 +690,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
     stats = {
         "skill_md_bytes": 0,
         "leaf_md_bytes": 0,
+        "agent_md_bytes": 0,
         "total_md_bytes": 0,
         "total_md_words": 0,
         "total_description_chars": 0,
@@ -694,6 +707,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
     skill_router_files: list[str] = []
     skill_leaf_files: list[str] = []
     skill_script_files: list[str] = []
+    agent_md_files: list[str] = []
     eval_files: list[str] = []
     for rel in files:
         if rel in ROOT_ALLOWLIST:
@@ -702,6 +716,9 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             eval_files.append(rel)
             continue
         parts = rel.split("/")
+        if len(parts) == 2 and parts[0] == "agents" and parts[1].endswith(".md"):
+            agent_md_files.append(rel)
+            continue
         if len(parts) == 3 and parts[0] == "skills" and parts[2] == "SKILL.md":
             skill_md_files.append(rel)
             skill_router_files.append(rel)
@@ -1649,6 +1666,80 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     stats["total_md_bytes"] = total_md_bytes
 
+    # 5b. Goldfish personas (agents/*.md)
+    actual_agent_stems = {Path(rel).stem for rel in agent_md_files}
+    if actual_agent_stems != EXPECTED_AGENTS:
+        missing_ag = sorted(EXPECTED_AGENTS - actual_agent_stems)
+        extra_ag = sorted(actual_agent_stems - EXPECTED_AGENTS)
+        if missing_ag:
+            erreurs.append(f"agents/ : personas manquants : {', '.join(missing_ag)}")
+        if extra_ag:
+            erreurs.append(f"agents/ : personas inattendus : {', '.join(extra_ag)}")
+
+    banc_leaf_rel = "skills/analyse-et-strategie/references/produit-contre-epreuve-banc.md"
+    banc_leaf_txt = decoded.get(banc_leaf_rel)
+    if banc_leaf_txt is not None:
+        for ag in sorted(EXPECTED_AGENTS):
+            if f"agents/{ag}.md" not in banc_leaf_txt:
+                erreurs.append(
+                    f"{banc_leaf_rel} : persona requis non référencé (agents/{ag}.md)"
+                )
+
+    for agent_rel in sorted(agent_md_files):
+        ag_text = decoded.get(agent_rel)
+        if ag_text is None:
+            continue
+        ag_stem = Path(agent_rel).stem
+        ag_bytes = len(ag_text.encode("utf-8"))
+        stats["agent_md_bytes"] += ag_bytes
+        stats["total_md_bytes"] += ag_bytes
+        if ag_bytes > MAX_AGENT_BYTES:
+            erreurs.append(
+                f"{agent_rel} : taille {ag_bytes} octets (plafond <= {MAX_AGENT_BYTES})"
+            )
+        oai_ag_id = f"{EXPECTED_PLUGIN_NAME}:{ag_stem}"
+        if len(oai_ag_id) > MAX_TOOL_COMPOUND_LEN:
+            erreurs.append(
+                f"{agent_rel} : identifiant composé OpenAI > {MAX_TOOL_COMPOUND_LEN} car. ({len(oai_ag_id)})"
+            )
+        ag_fm, ag_body, ag_fm_errs = _parse_frontmatter(ag_text, agent_rel)
+        erreurs.extend(ag_fm_errs)
+        if ag_fm is not None:
+            if set(ag_fm.keys()) != {"name", "description"}:
+                erreurs.append(
+                    f"{agent_rel} : l'en-tête YAML doit contenir exactement 'name' et 'description'"
+                )
+            if ag_fm.get("name") != ag_stem:
+                erreurs.append(
+                    f"{agent_rel} : 'name' ({ag_fm.get('name')!r}) doit correspondre au fichier ({ag_stem!r})"
+                )
+            ag_desc = ag_fm.get("description", "")
+            if not ag_desc:
+                erreurs.append(f"{agent_rel} : 'description' vide")
+            else:
+                if len(ag_desc) > MAX_AGENT_DESCRIPTION_CHARS:
+                    erreurs.append(
+                        f"{agent_rel} : 'description' dépasse {MAX_AGENT_DESCRIPTION_CHARS} caractères ({len(ag_desc)})"
+                    )
+                if "<" in ag_desc or ">" in ag_desc:
+                    erreurs.append(f"{agent_rel} : 'description' ne doit contenir ni '<' ni '>'")
+                if "En anglais" not in ag_desc:
+                    erreurs.append(f"{agent_rel} : 'description' doit inclure 'En anglais'")
+        stats["total_md_words"] += len(ag_body.split())
+        ag_non_empty = [line.strip() for line in ag_body.splitlines() if line.strip()]
+        if not ag_non_empty or not ag_non_empty[0].startswith("# "):
+            erreurs.append(f"{agent_rel} : titre '# ' d'ouverture manquant")
+        if _ANY_PARENT_REL_RE.search(ag_text):
+            erreurs.append(f"{agent_rel} : lien relatif '../' interdit dans un persona")
+        if _PHASE_REF_RE.search(ag_text):
+            erreurs.append(f"{agent_rel} : un persona ne doit jamais référencer 'phase-*'")
+        if _REPO_ROOT_SKILL_PATH_RE.search(ag_text):
+            erreurs.append(f"{agent_rel} : chemin relatif à la racine du dépôt interdit (skills/...)")
+        if "donnée brute" not in ag_body:
+            erreurs.append(f"{agent_rel} : doit isoler les pièces adverses comme 'donnée brute'")
+        if "etat-dossier" not in ag_body:
+            erreurs.append(f"{agent_rel} : doit mentionner le pare-feu 'etat-dossier'")
+
     # Phase branches / SKILL.md service-leaf mentions must be declared in ## Enchaînements
     stem_to_services: dict[str, set[str]] = {}
     for svc, stem in all_service_leaf_stems:
@@ -1677,7 +1768,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     # Release markers check
     marker_hits = 0
-    for rel in sorted(skill_md_files):
+    for rel in sorted(skill_md_files + agent_md_files):
         txt = decoded.get(rel, "")
         for marker in RELEASE_MARKERS:
             cnt = txt.count(marker)
@@ -1906,7 +1997,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 f"{rel} : ancien identifiant de greffon 'pratique-civile-quebecoise' interdit en v3"
             )
 
-    for rel in sorted(skill_md_files + skill_script_files + eval_files):
+    for rel in sorted(skill_md_files + agent_md_files + skill_script_files + eval_files):
         text = decoded.get(rel)
         if text is None:
             continue
@@ -1956,7 +2047,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.stats:
         print(
             f"OK — SKILL.md={stats['skill_md_bytes']} B, feuilles={stats['leaf_md_bytes']} B, "
-            f"total={stats['total_md_bytes']} B ({stats['total_md_bytes']/1024:.1f} KB), "
+            f"agents={stats['agent_md_bytes']} B, total={stats['total_md_bytes']} B ({stats['total_md_bytes']/1024:.1f} KB), "
             f"mots={stats['total_md_words']}, descriptions={stats['total_description_chars']}/{MAX_PLUGIN_DESCRIPTION_TOTAL} car., "
             f"max_chargement={stats['max_per_load_bytes']}/{MAX_PER_LOAD_BYTES} B, "
             f"marqueurs={stats['release_markers_count']}"

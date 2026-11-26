@@ -10,9 +10,7 @@ description: >-
 
 # Phase 2 — Introduction d'instance ou réponse
 
-[NON VALIDÉ PAR LA PRATIQUE]
-
-Orchestre la phase introductive du litige selon la posture (demandeur, défendeur ou voie rapide d'urgence), de la vérification des préalables jusqu'à la signification/notification et au protocole. Aucune règle de fond ici.
+Orchestre la phase introductive du litige selon la posture (demandeur, défendeur ou voie rapide d'urgence), de la vérification des préalables et du dépôt de la réponse dans les délais jusqu'à la signification/notification et aux données du formulaire officiel de protocole. Aucune règle de fond ici.
 
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
@@ -39,30 +37,30 @@ Orchestre la phase introductive du litige selon la posture (demandeur, défendeu
 
 ## Parcours
 
-### Étape 1 — Choix de branche, préalables et délais critiques
-* **Objectif :** Confirmer les préalables (demandeur) ou calculer immédiatement les délais de réponse, protocole et moyens préliminaires (défendeur/urgence).
-* **Livrable :** Tableau des échéances et préalables.
-* **Porte :** **BLOQUANTE** en défense sur la date de réponse; en demande sur prescription/compétence.
+### Étape 1 — Choix de branche, préalables, délais critiques et dépôt de la Réponse
+* **Objectif :** Confirmer les préalables (demandeur) ou calculer immédiatement le délai d'assignation, **déposer et notifier la `Réponse` dans le délai imparti pour éviter tout jugement par défaut**, et fixer le calendrier des moyens préliminaires, d'appel en garantie ou de protocole / régime simplifié C.Q. (`535.1 s.`) (défendeur/urgence).
+* **Livrable :** Tableau des échéances, préalables et confirmation de la `Réponse` en défense.
+* **Porte :** **BLOQUANTE** en défense sur l'échéance et le dépôt de la `Réponse` ; en demande sur prescription et compétence.
 
-### Étape 2 — Théorie de la cause et matrice de concordance
-* **Objectif :** Fixer les fondements, allégations, cotes et lacunes de preuve avant d'écrire la procédure.
-* **Livrable :** Théorie de la cause (8 blocs) et matrice `Allégation ↔ Pièce ↔ Témoin`.
+### Étape 2 — Théorie de la cause, registre maître et matrice de concordance
+* **Objectif :** Fixer les fondements, allégations, cotes et lacunes de preuve dans le **registre maître interne** et la matrice de concordance avant d'écrire la procédure *(et disséquer tout acte adverse reçu via `AUTOPSIE_ADVERSE` ou éprouver la théorie via `REMUE_MENINGES`)*.
+* **Livrable :** Théorie de la cause (8 blocs), registre maître à jour et matrice `Procédure ↔ Preuve ↔ Interrogatoire`.
 * **Porte :** Chaque conclusion visée est appuyée par des faits identifiés.
 
-### Étape 3 — Rédaction de l'acte approprié (ou mesure d'urgence)
-* **Objectif :** Produire l'acte adapté à la branche (demande introductive, défense/exposé sommaire, moyen préliminaire, reconvention/garantie, ou injonction/saisie/contrôle judiciaire).
-* **Livrable :** Projet d'acte complet (Palier 3) sans droit dans les allégations de fait.
-* **Porte :** Cotes continues et faits manquants marqués `[À CONFIRMER]`.
+### Étape 3 — Rédaction de l'acte approprié, avis joints et mesure d'urgence
+* **Objectif :** Produire l'acte adapté à la branche : demande introductive + **`Avis d'assignation` (joint à toutes les demandes introductives, C.S. et C.Q.) + `Avis requis par le C.p.c.` en sus devant la Cour du Québec, Chambre civile** ; moyen préliminaire (formulaire officiel `SJ-1274` si C.Q. simplifiée), défense/exposé sommaire, reconvention/garantie ; ou injonction (`510`), saisie avant jugement, sauvegarde, mesure exceptionnelle ou pourvoi en contrôle judiciaire (avec divulgation complète et loyale si *ex parte*).
+* **Livrable :** Projet d'acte complet (Palier 3) sans droit dans les allégations de fait, passé au banc de contre-épreuve (`CONTRE_EPREUVE`, ou paquet nuage) avec triage approuvé.
+* **Porte :** Cotes continues, avis obligatoires joints, faits manquants marqués `[À CONFIRMER]`, transparence *ex parte* contrôlée et triage contradictoire validé par l'avocat.
 
-### Étape 4 — Bordereau, contrôle de production et signification
-* **Objectif :** Dresser le bordereau (`145`), purger métadonnées/caviardages (`108`), vérifier pagination (`535.3`/`535.6`) et préparer l'endos et la signification/notification.
-* **Livrable :** Bordereau, endos et bon de travail de dépôt/signification.
+### Étape 4 — Bordereau, contrôle de production, signification et suites immédiates d'urgence
+* **Objectif :** Dresser le bordereau (`145`), purger métadonnées/caviardages (`108`), vérifier pagination (`535.3`/`535.6`), préparer l'endos et la signification/notification, et inscrire immédiatement les suites impératives après ordonnance urgente (signification aux tiers désignés, dépôt/signification de la demande introductive dans les `5 jours` d'une saisie pré-action, retour `<= 10 jours` ou relais de sauvegarde).
+* **Livrable :** Bordereau, endos, bon de travail de dépôt/signification et calendrier des suites post-ordonnance.
 * **Porte :** **BLOQUANTE** — zéro commentaire caché, zéro renseignement sensible non caviardé.
 
-### Étape 5 — Protocole de l'instance (procédure ordinaire)
-* **Objectif :** Rédiger et négocier le protocole de l'instance (`148 C.p.c.`, exclu sous régime simplifié C.Q. `535.2`).
-* **Livrable :** Protocole daté et vérifié.
-* **Porte :** Dépôt confirmé dans les délais légaux.
+### Étape 5 — Données du formulaire officiel de protocole (ou formulaires C.Q. simplifiée)
+* **Objectif :** Préparer les entrées structurées destinées à remplir le **formulaire officiel prescrit du *1er Protocole de l'instance en matière civile*** (`148 C.p.c.`, ancrant la date limite ultime de mise en état ; aucun acte confectionné à la main — et aucun protocole sous le régime simplifié C.Q. `535.2`, où s'appliquent l'échéancier légal et les formulaires officiels `SJ-1273` / `SJ-1274`).
+* **Livrable :** Fiche d'entrées vérifiée pour le formulaire officiel applicable.
+* **Porte :** Formulaire officiel complété et déposé dans les délais légaux, avec date butoir de mise en état consignée.
 
 ## Enchaînements
 
@@ -70,26 +68,28 @@ Orchestre la phase introductive du litige selon la posture (demandeur, défendeu
 |---|---|---|---|---|---|
 | 1 | référence | recherche-juridique | grille-prealables | — | toujours |
 | 1 | livrable | gestion-du-mandat | conformite-ouverture-conflits-mandat | 2 | branche urgence (si conflit à revalider) |
-| 1 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | toujours (délais réponse/signification) |
+| 1 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | toujours (délais réponse/signification/suites d'urgence) |
 | 2 | livrable | analyse-et-strategie | piece-reception-et-qualification | 2 | branche défendeur (pièces adverses) |
 | 2 | livrable | analyse-et-strategie | preuve-directe | 2 | branche urgence (média/pièce clé et journal) |
 | 2 | livrable | analyse-et-strategie | produit-theorie-de-la-cause | 2 | après Étape 1 franchie |
-| 2 | livrable | analyse-et-strategie | produit-matrice-allegations | 2 | après Étape 1 franchie |
+| 2 | livrable | analyse-et-strategie | produit-matrice-allegations | 2 | après Étape 1 franchie (registre maître et matrice) |
+| 2 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | branche défendeur/urgence sur acte adverse (AUTOPSIE_ADVERSE) ou opt-in REMUE_MENINGES |
 | 3 | référence | redaction-juridique | fondamentaux-actes | — | toujours pour un acte (incluant déclaration sous serment) |
+| 3 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | contre-épreuve à froid et triage avant Étape 4 sur acte contesté (CONTRE_EPREUVE) |
 | 3 | livrable | redaction-juridique | acte-demande-introductive | 3 | branche demandeur |
-| 3 | livrable | redaction-juridique | acte-defense-et-expose-sommaire | 3 | branche défendeur |
-| 3 | livrable | redaction-juridique | acte-moyens-preliminaires | 3 | si exception soulevée |
+| 3 | livrable | redaction-juridique | acte-defense-et-expose-sommaire | 3 | branche défendeur (Réponse puis défense / exposé sommaire) |
+| 3 | livrable | redaction-juridique | acte-moyens-preliminaires | 3 | si exception soulevée (ou formulaire SJ-1274 en C.Q. simplifiée) |
 | 3 | livrable | redaction-juridique | acte-reconvention-intervention-garantie | 3 | si reconvention ou tiers |
 | 3 | livrable | redaction-juridique | acte-injonction | 3 | branche urgence (injonction) |
 | 3 | livrable | redaction-juridique | acte-saisie-avant-jugement | 3 | branche urgence (saisie) |
 | 3 | livrable | redaction-juridique | acte-demandes-cours-instance | 3 | branche urgence (ordonnance de sauvegarde) |
-| 3 | livrable | redaction-juridique | acte-mesures-provisionnelles-autres | 3 | branche urgence (séquestre / type Mareva) |
+| 3 | livrable | redaction-juridique | acte-mesures-provisionnelles-autres | 3 | branche urgence (séquestre / type Mareva / Anton Piller / Norwich) |
 | 3 | livrable | redaction-juridique | acte-pourvoi-controle-judiciaire | 3 | si contrôle judiciaire |
 | 4 | livrable | production-et-conformite | cahier-des-pieces-et-bordereaux | 3 | après Étape 3 franchie |
 | 4 | livrable | production-et-conformite | controle-acte-de-procedure | 3 | avant dépôt ou signification |
 | 4 | livrable | production-et-conformite | controle-pdf-et-metadonnees | 3 | avant dépôt PDF (dont urgence) |
 | 4 | livrable | production-et-conformite | controle-endos-depot-signification | 3 | avant dépôt ou signification |
-| 5 | livrable | redaction-juridique | contrat-protocole-instance | 3 | instance ordinaire uniquement |
+| 5 | livrable | redaction-juridique | contrat-protocole-instance | 3 | entrées du formulaire officiel de protocole (ou SJ-1273 / SJ-1274 en C.Q. simplifiée) |
 
 ## Branches
 
@@ -99,6 +99,6 @@ Orchestre la phase introductive du litige selon la posture (demandeur, défendeu
 
 ## Contrôle de sortie de phase
 
-1. Actes signifiés/notifiés, preuve de signification archivée et `etat-dossier/phase-introduction-reponse.md` à jour *(ou bloc d'état en ligne livré si disque non inscriptible)*.
-2. Protocole déposé (ou calendrier simplifié C.Q. consigné) avec date limite de mise en état notée.
-3. **Suite suggérée (texte brut) :** passer à `phase-interrogatoires-instruction` (ou `phase-preparation-audience` si audience urgente fixée à court terme).
+1. Actes (et `Réponse` en défense) signifiés/notifiés, preuve de signification archivée et `etat-dossier/phase-introduction-reponse.md` à jour *(ou bloc d'état en ligne livré si disque non inscriptible)*.
+2. Formulaire officiel du *1er Protocole de l'instance* déposé (ou calendrier simplifié C.Q. et formulaires `SJ-1273` / `SJ-1274` consignés) avec date limite ultime de mise en état notée.
+3. **Suite suggérée (texte brut) :** passer à `phase-interrogatoires-instruction` (ou `phase-preparation-audience` si audience urgente ou interlocutoire fixée à court terme).

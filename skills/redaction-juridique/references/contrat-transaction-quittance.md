@@ -1,6 +1,6 @@
 # Transaction et quittance (`art. 2631–2637 C.c.Q.`)
 
-Encadre la rédaction d'une transaction civile ou commerciale mettant fin à un différend ou prévenant une contestation, ainsi que la quittance associée. **Lire `lois.get_articles(law="ccq", numbers=["2631", "2632", "2633", "2634", "2635", "2636", "2637"])` avant toute version finale.**
+Encadre la rédaction d'une transaction civile ou commerciale mettant fin à un différend ou prévenant une contestation, la quittance associée et les actes procéduraux de clôture du dossier. **Lire `lois.get_articles(law="ccq", numbers=["2631", "2632", "2633", "2634", "2635", "2636", "2637"])` et `lois.get_articles(law="cpc", numbers=["213", "217", "218", "219", "220", "527", "528"])` avant toute version finale.**
 
 ## Objet et destinataire
 
@@ -12,7 +12,10 @@ Encadre la rédaction d'une transaction civile ou commerciale mettant fin à un 
 1. **Concessions réciproques visibles (`2631`) :** Une renonciation purement unilatérale sans contrepartie/concession réciproque n'est pas une transaction et risque la requalification.
 2. **Circonscription exacte du différend :** Numéro(s) de dossier de cour, faits, contrat visé et période couverte.
 3. **Absence d'aveu de responsabilité :** Mention explicite que le règlement est conclu pour éviter les coûts et aléas du litige et **ne constitue aucun aveu de responsabilité ou de faute**.
-4. **Sort du dossier judiciaire :** Désistement sans frais (`213 C.p.c.`), consentement à jugement ou homologation (`2633 C.c.Q.`, `527 C.p.c.`) avec échéance précise.
+4. **Sort du dossier judiciaire et mécanisme procédural de clôture :**
+   * *Avis de règlement hors cour (`220 C.p.c.`)* : à déposer **sans délai** au greffe pour libérer le rôle — ne jamais confondre avec un *désistement* unilatéral (`213 C.p.c.`), qui met les frais de justice à la charge du demandeur sauf convention expresse *sans frais* ;
+   * *Paiements échelonnés et homologation (`2633 al. 2 C.c.Q.`, `527–528 C.p.c.`)* : un avis de règlement seul n'est pas exécutoire par saisie forcée sans homologation (`528` : contrôle de légalité uniquement, préavis `>= 5 jours` si contesté sous `527`) — retenir la quittance finale / le désistement jusqu'à encaissement complet ou prévoir l'homologation en cas de défaut ;
+   * *Acquiescement à la demande (`217–219 C.p.c.`)* : joindre obligatoirement un **mandat spécial (`217 al. 2`)** s'il est signé par le procureur, régler les intérêts (`1619 C.c.Q.`) et frais (`339`), et surveiller le délai de **`15 jours`** en cas de réserves (`218 al. 2`, présomption d'acceptation en cas de silence) ainsi que les codéfendeurs (`219`).
 
 ## Structure
 

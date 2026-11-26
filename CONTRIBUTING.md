@@ -17,11 +17,11 @@ Les contributions de juristes, de développeurs et de chercheuses/chercheurs du 
 
 ## 2. Contribuer au contenu juridique / Contributing Legal Content
 
-Certaines fiches de référence et compétences de phase portent encore les marqueurs `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]` (visibles via `python verifier.py --release`). Pour compléter ou valider une fiche :
+Les 10 compétences et 60 feuilles de référence du dépôt passent intégralement le contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`). Les marqueurs `[FICHE À RÉDIGER]` et `[NON VALIDÉ PAR LA PRATIQUE]` demeurent pris en charge sur une branche de travail en cours, mais doivent être levés avant fusion vers `main`. Pour bonifier une fiche existante ou proposer une nouvelle feuille :
 
 1. Respecter les titres `##` exigés pour la famille de la fiche (`acte-`, `arg-`, `corr-`, `contrat-`, `preuve-`, `piece-`, `produit-`, `recherche-`, `controle-`, `cahier-`, `conformite-` — gabarits détaillés dans [`AGENTS.md`](AGENTS.md)).
 2. Privilégier les **vecteurs de recherche** (`lois.get_articles`, paires confondables, silences) plutôt que de copier le texte intégral des lois dans le dépôt.
-3. Ajouter au moins **2 scénarios synthétiques** dans [`evals/scenarios.json`](evals/scenarios.json) pour toute fiche complétée, afin de progresser vers la conformité complète `python verifier.py --release`.
+3. Ajouter ou mettre à jour au moins **2 scénarios synthétiques** dans [`evals/scenarios.json`](evals/scenarios.json) pour toute nouvelle fiche afin de préserver la conformité `python verifier.py --release`.
 4. Respecter strictement la séparation hors droit familial et droit criminel ainsi que l'étanchéité bijuridique (droit civil québécois uniquement).
 
 ---

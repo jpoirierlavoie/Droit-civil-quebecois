@@ -10,9 +10,7 @@ description: >-
 
 # Phase 3 — Interrogatoires, engagements et instruction
 
-[NON VALIDÉ PAR LA PRATIQUE]
-
-Orchestre la communication de la preuve, la préparation et l'exploitation des interrogatoires préalables, les expertises et la mise à jour des procédures jusqu'à la clôture de l'instruction préparatoire. Aucune règle de fond ici.
+Orchestre la communication de la preuve, la mise à jour continue du registre maître interne, la préparation et l'exploitation des interrogatoires préalables, les expertises et la modification des actes jusqu'à la clôture de l'instruction préparatoire. Aucune règle de fond ici.
 
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
@@ -39,13 +37,13 @@ Orchestre la communication de la preuve, la préparation et l'exploitation des i
 
 ## Parcours
 
-### Étape 1 — Communication et qualification de la preuve
-* **Objectif :** Auditer privilèges, caviardage (`108`), recevabilité et force probante des pièces avant et après communication.
-* **Livrable :** Tableau probatoire, alertes caviardage et bordereau à jour.
+### Étape 1 — Communication, qualification de la preuve et registre maître
+* **Objectif :** Auditer privilèges, caviardage (`108`), recevabilité et force probante des pièces avant et après communication *(si lot `>= 6` pièces : `LOT_PIECES`)*, et mettre à jour le **registre maître interne à onglets** ainsi que la chronologie.
+* **Livrable :** Tableau probatoire, alertes caviardage, registre maître actualisé et bordereau à jour.
 * **Porte :** Aucune pièce privilégiée ni donnée sensible non caviardée communiquée.
 
 ### Étape 2 — Plan d'interrogatoire préalable
-* **Objectif :** Contrôler seuils et budgets de temps, puis bâtir les modules de questions orientés vers aveux et engagements.
+* **Objectif :** Contrôler seuils et budgets de temps, puis bâtir les modules de questions orientés vers aveux et engagements à partir des lacunes de la matrice de concordance.
 * **Livrable :** Plan structuré d'interrogatoire (oral ou écrit).
 * **Porte :** Avis/citation respectant le délai applicable.
 
@@ -54,25 +52,25 @@ Orchestre la communication de la preuve, la préparation et l'exploitation des i
 * **Livrable :** Journal de séance et liste provisoire des engagements/objections.
 * **Porte :** **Attente** de la transcription officielle avant consolidation.
 
-### Étape 4 — Extraction de la transcription
-* **Objectif :** Dresser avec renvois `Page / Ligne` le tableau des engagements et le tableau des objections (`228 al. 2` vs `228 al. 3`).
-* **Livrable :** Tableaux d'extraction et mise à jour de preuve indirecte.
+### Étape 4 — Extraction de la transcription et synchronisation de la matrice
+* **Objectif :** Dresser avec renvois `Page / Ligne` le tableau des engagements et le tableau des objections (`228 al. 2` vs `228 al. 3`) *(en mode `LOT_PIECES` / `AUTOPSIE_ADVERSE` si volumineuse ou déclarations adverses contestées)*, puis reporter les aveux et `E-1..E-n` au **registre maître** et à la chronologie.
+* **Livrable :** Tableaux d'extraction, registre maître synchronisé et mise à jour de preuve indirecte.
 * **Porte :** **BLOQUANTE** — toute objection suspensive (`228 al. 2`) déclenche immédiatement le calcul du délai court de `5 jours`.
 
-### Étape 5 — Suivi des engagements et débat sur les objections
-* **Objectif :** Chiffrer les échéances, relancer les engagements en suspens ou saisir le tribunal sur objections (`101`).
-* **Livrable :** Calendrier de suivi et demande en cours d'instance au besoin.
-* **Porte :** Engagements clos ou tranchés; objections tranchées ou retirées.
+### Étape 5 — Suivi des engagements, débat sur les objections et échéancier d'instance
+* **Objectif :** Chiffrer les échéances du protocole (demande, transmission, contestation des engagements), saisir le tribunal sur objections ou défauts (`101`), et préparer au besoin les entrées d'un protocole modifié ou d'une demande de prolongation (`SJ-1273` / `SJ-1274` en C.Q. simplifiée) **avant** l'expiration du délai de rigueur (`173`).
+* **Livrable :** Calendrier de suivi, demande en cours d'instance vérifiée ou entrées du protocole modifié.
+* **Porte :** Engagements reçus et indexés au registre maître (ou tranchés) ; objections tranchées ou retirées.
 
-### Étape 6 — Expertise et ententes judiciaires
-* **Objectif :** Encadrer la désignation d'expert (commune ou séparée), les ententes de confidentialité/expertise et la contestation de rapport.
-* **Livrable :** Protocole ou entente judiciaire vérifiée.
-* **Porte :** Rapports communiqués et délais de contestation (`241`) contrôlés.
+### Étape 6 — Expertise et ententes accessoires d'instruction
+* **Objectif :** Encadrer les ententes accessoires de confidentialité documentaire ou d'instructions communes à l'expert, analyser tout rapport d'expertise communiqué et contrôler immédiatement le délai court de **`10 jours` (`241 C.p.c.`)** pour demander le rejet ou la correction d'un rapport entaché d'irrégularité, d'erreur grave ou de partialité.
+* **Livrable :** Entente accessoire d'expertise/confidentialité vérifiée, analyse probatoire du rapport et demande sous `241` s'il y a lieu.
+* **Porte :** Rapports communiqués, analysés et échéance `241` purgée ou exercée à temps.
 
-### Étape 7 — Modifications d'actes de procédure (`206–208 C.p.c.`)
-* **Objectif :** Intégrer les faits découverts à l'instruction sans jamais renuméroter les cotes gelées.
-* **Livrable :** Acte modifié et bordereau mis à jour.
-* **Porte :** Concordance des cotes vérifiée avant l'entrée en mise en état.
+### Étape 7 — Modifications d'actes de procédure (`206–208 C.p.c.`) et contrôle de production
+* **Objectif :** Intégrer les faits découverts à l'instruction en conservant les marques `(…)` et les **cotes gelées** (`[Pièce P-X retirée]`), contrôler la cohérence avec les aveux judiciaires antérieurs (`2852 C.c.Q.`) via `CONTRE_EPREUVE`, actualiser la théorie de la cause et la matrice, puis exécuter les contrôles de production et de signification/notification.
+* **Livrable :** Acte modifié vérifié au banc de contre-épreuve, bordereau/matrice mis à jour et bon de travail de production.
+* **Porte :** Concordance continue des cotes, absence de contradiction d'aveu et purge des métadonnées vérifiées avant l'entrée en mise en état.
 
 ## Enchaînements
 
@@ -80,22 +78,39 @@ Orchestre la communication de la preuve, la préparation et l'exploitation des i
 |---|---|---|---|---|---|
 | 1 | livrable | analyse-et-strategie | preuve-recevabilite-force-probante | 2 | toujours |
 | 1 | référence | analyse-et-strategie | preuve-privilege-confidentialite-caviardage | — | avant communication externe |
+| 1 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 2 | si lot >= 6 pièces communiquées (mode LOT_PIECES) |
+| 1 | livrable | analyse-et-strategie | produit-matrice-allegations | 2 | mise à jour du registre maître interne et de la matrice |
+| 1 | livrable | analyse-et-strategie | produit-chronologie | 2 | si nouvelles pièces ou correspondances datées |
 | 1 | livrable | production-et-conformite | cahier-des-pieces-et-bordereaux | 3 | lors de la communication |
 | 2 | livrable | analyse-et-strategie | produit-interrogatoire | 3 | si interrogatoire admissible |
 | 4 | livrable | analyse-et-strategie | produit-interrogatoire | 3 | dès réception de transcription |
 | 4 | référence | analyse-et-strategie | preuve-indirecte | — | lors de l'analyse des dépositions |
-| 5 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | dès objection 228 al. 2 ou délai engagé |
-| 5 | livrable | redaction-juridique | acte-demandes-cours-instance | 3 | si demande au tribunal requise |
-| 6 | livrable | redaction-juridique | contrat-ententes-judiciaires | 3 | si entente ou expertise commune |
+| 4 | livrable | analyse-et-strategie | produit-matrice-allegations | 2 | report des extraits (p.:l.), aveux et engagements E-n |
+| 4 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | transcription volumineuse ou déclarations adverses (LOT_PIECES / AUTOPSIE_ADVERSE) |
+| 5 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | dès objection 228 al. 2, échéance d'engagement ou risque sur 173 |
+| 5 | livrable | redaction-juridique | acte-demandes-cours-instance | 3 | si demande au tribunal (objection, engagement, prolongation) |
+| 5 | livrable | redaction-juridique | contrat-protocole-instance | 3 | si modification du formulaire officiel de protocole ou SJ-1273 / SJ-1274 |
+| 5 | livrable | production-et-conformite | controle-acte-de-procedure | 3 | avant dépôt/notification d'une demande en cours d'instance |
+| 6 | livrable | redaction-juridique | contrat-ententes-judiciaires | 3 | si entente accessoire de confidentialité ou mandat d'expertise commune |
+| 6 | livrable | analyse-et-strategie | preuve-indirecte | 2 | dès réception d'un rapport d'expertise |
+| 6 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | contrôle du délai de 10 jours (241 C.p.c.) à réception d'un rapport adverse |
+| 6 | livrable | redaction-juridique | acte-demandes-cours-instance | 3 | si demande de rejet ou correction de rapport (241 C.p.c.) |
 | 7 | livrable | redaction-juridique | acte-demandes-cours-instance | 3 | si modification 206–208 requise |
+| 7 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | contre-épreuve d'acte modifié 206–208 et contrôle des aveux 2852 C.c.Q. (CONTRE_EPREUVE) |
+| 7 | livrable | analyse-et-strategie | produit-theorie-de-la-cause | 2 | actualisation stratégique avant mise en état |
+| 7 | livrable | analyse-et-strategie | produit-matrice-allegations | 3 | vérification finale des cotes gelées et de la matrice |
+| 7 | livrable | production-et-conformite | cahier-des-pieces-et-bordereaux | 3 | mise à jour du bordereau modifié |
+| 7 | livrable | production-et-conformite | controle-acte-de-procedure | 3 | audit formel et métadonnées de l'acte modifié |
+| 7 | livrable | production-et-conformite | controle-pdf-et-metadonnees | 3 | avant dépôt PDF |
+| 7 | livrable | production-et-conformite | controle-endos-depot-signification | 3 | avant notification ou signification et dépôt |
 
 ## Branches
 
-* **Régime simplifié C.Q. (`< 100 000 $`) :** vérifier les seuils stricts d'interrogatoire (`< 50 000 $` interdit; `535.9` plafond écrit/oral) et d'expertise commune (`< 50 000 $`, `535.15`).
+* **Régime simplifié C.Q. (`< 100 000 $`) :** vérifier les seuils stricts d'interrogatoire (`< 50 000 $` interdit ; `535.9` plafond écrit/oral) et d'expertise commune (`< 50 000 $`, `535.15`), ainsi que l'emploi des formulaires officiels `SJ-1273` / `SJ-1274` (`contrat-protocole-instance`).
 * **Incident sur objection / prolongation de mise en état :** traiter sans délai avant expiration du délai de rigueur (`173`).
 
 ## Contrôle de sortie de phase
 
-1. Engagements exécutés ou tranchés, expertises communiquées et actes modifiés à jour dans `etat-dossier/phase-interrogatoires-instruction.md` *(ou bloc d'état en ligne livré si disque non inscriptible)*.
-2. Théorie de la cause et matrice de concordance actualisées avant mise en état.
+1. Engagements exécutés ou tranchés, expertises communiquées (et délai `241` vérifié) et actes modifiés contrôlés à jour dans `etat-dossier/phase-interrogatoires-instruction.md` *(ou bloc d'état en ligne livré si disque non inscriptible)*.
+2. Registre maître interne, chronologie, théorie de la cause et matrice de concordance actualisés avant mise en état.
 3. **Suite suggérée (texte brut) :** passer à `phase-preparation-audience`.

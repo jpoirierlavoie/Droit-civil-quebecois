@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Inspecteur local des métadonnées et structures cachées des pièces (.docx, .xlsx, .eml, .pdf, images, audio/vidéo).
 
-Bibliothèque standard Python uniquement, lecture seule (hors option explicite --journal), aucun appel réseau.
-Usage : python scripts/inspecter_piece.py <fichier>... [--journal chemin.json] [--source "..."] [--json]
+Bibliothèque standard Python uniquement, lecture seule (hors options explicites --journal et --extraire-texte), aucun appel réseau.
+Usage : python scripts/inspecter_piece.py <fichier>... [--journal chemin.json] [--source "..."] [--extraire-texte dossier/] [--json]
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from email import policy
 from email.parser import BytesParser
 import hashlib
+from html.parser import HTMLParser
 import json
 import mimetypes
 from pathlib import Path
@@ -361,6 +362,40 @@ def _inspect_docx(path: Path) -> dict[str, object]:
     }
 
 
+def _map_xlsx_sheets(
+    zf: zipfile.ZipFile,
+    xml_errors: list[str] | None,
+    total_budget: list[int],
+) -> tuple[list[dict[str, str]], dict[str, str], bool]:
+    wb_root = _parse_xml_from_zip(zf, "xl/workbook.xml", xml_errors, total_budget)
+    rels_root = _parse_xml_from_zip(zf, "xl/_rels/workbook.xml.rels", xml_errors, total_budget)
+    rel_targets: dict[str, str] = {}
+    if rels_root is not None:
+        for rel in rels_root:
+            rid = rel.attrib.get("Id")
+            target = rel.attrib.get("Target", "")
+            if rid:
+                norm = target.lstrip("/")
+                if not norm.startswith("xl/"):
+                    norm = f"xl/{norm}"
+                rel_targets[rid] = norm
+
+    feuilles: list[dict[str, str]] = []
+    target_to_sheet: dict[str, str] = {}
+    has_hidden = False
+    if wb_root is not None:
+        for sheet in wb_root.findall(f".//{{{_MAIN_SS_NS}}}sheet"):
+            name = sheet.attrib.get("name", "")
+            state = sheet.attrib.get("state", "visible")
+            rid = sheet.attrib.get(f"{{{_REL_NS}}}id", "")
+            if state != "visible":
+                has_hidden = True
+            feuilles.append({"nom": name, "etat": state})
+            if rid in rel_targets:
+                target_to_sheet[rel_targets[rid]] = name
+    return feuilles, target_to_sheet, has_hidden
+
+
 def _inspect_xlsx(path: Path) -> dict[str, object]:
     indicateurs: list[str] = []
     details: dict[str, object] = {}
@@ -378,33 +413,7 @@ def _inspect_xlsx(path: Path) -> dict[str, object]:
             total_budget = [0]
             xml_errors: list[str] = []
             details["proprietes"] = _extract_ooxml_props(zf, xml_errors, total_budget)
-
-            wb_root = _parse_xml_from_zip(zf, "xl/workbook.xml", xml_errors, total_budget)
-            rels_root = _parse_xml_from_zip(zf, "xl/_rels/workbook.xml.rels", xml_errors, total_budget)
-            rel_targets: dict[str, str] = {}
-            if rels_root is not None:
-                for rel in rels_root:
-                    rid = rel.attrib.get("Id")
-                    target = rel.attrib.get("Target", "")
-                    if rid:
-                        norm = target.lstrip("/")
-                        if not norm.startswith("xl/"):
-                            norm = f"xl/{norm}"
-                        rel_targets[rid] = norm
-
-            feuilles: list[dict[str, str]] = []
-            target_to_sheet: dict[str, str] = {}
-            has_hidden = False
-            if wb_root is not None:
-                for sheet in wb_root.findall(f".//{{{_MAIN_SS_NS}}}sheet"):
-                    name = sheet.attrib.get("name", "")
-                    state = sheet.attrib.get("state", "visible")
-                    rid = sheet.attrib.get(f"{{{_REL_NS}}}id", "")
-                    if state != "visible":
-                        has_hidden = True
-                    feuilles.append({"nom": name, "etat": state})
-                    if rid in rel_targets:
-                        target_to_sheet[rel_targets[rid]] = name
+            feuilles, target_to_sheet, has_hidden = _map_xlsx_sheets(zf, xml_errors, total_budget)
 
             details["feuilles"] = feuilles
             if has_hidden:
@@ -1408,6 +1417,340 @@ def _format_texte(resultats: list[dict[str, object]]) -> str:
     return "\n".join(lignes)
 
 
+class _HtmlTextExtractor(HTMLParser):
+    """Extrait le texte lisible d'un corps HTML en ignorant scripts et feuilles de style."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._skip_depth = 0
+        self._parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        low = tag.lower()
+        if low in ("script", "style"):
+            self._skip_depth += 1
+        elif low in ("p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4"):
+            self._parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        low = tag.lower()
+        if low in ("script", "style") and self._skip_depth > 0:
+            self._skip_depth -= 1
+        elif low in ("p", "div", "li", "tr"):
+            self._parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_depth == 0 and data:
+            self._parts.append(data)
+
+    def texte(self) -> str:
+        raw_lines = [line.strip() for line in "".join(self._parts).splitlines()]
+        return "\n".join(line for line in raw_lines if line)
+
+
+def _local_tag(el: ET.Element) -> str:
+    tag = el.tag
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _run_est_masque(run_el: ET.Element) -> bool:
+    rpr = run_el.find(f"{{{_W_NS}}}rPr")
+    if rpr is None:
+        return False
+    return any(
+        _is_w_flag_enabled(fl)
+        for v_tag in _VANISH_TAGS
+        for fl in rpr.findall(f"{{{_W_NS}}}{v_tag}")
+    )
+
+
+def _extraire_texte_element_w(el: ET.Element) -> str:
+    local = _local_tag(el)
+    if local == "del":
+        return ""
+    if local == "r":
+        if _run_est_masque(el):
+            return ""
+        parts: list[str] = []
+        for child in el:
+            clocal = _local_tag(child)
+            if clocal == "t" and child.text:
+                parts.append(child.text)
+            elif clocal == "tab":
+                parts.append("\t")
+            elif clocal in ("br", "cr"):
+                parts.append("\n")
+        return "".join(parts)
+    if local == "t" and el.text:
+        return el.text
+    if local == "tab":
+        return "\t"
+    if local in ("br", "cr"):
+        return "\n"
+    return "".join(_extraire_texte_element_w(child) for child in el)
+
+
+def _collect_docx_blocks(container: ET.Element, lines: list[str], par_counter: list[int]) -> None:
+    for child in container:
+        local = _local_tag(child)
+        if local == "p":
+            txt = " ".join(_extraire_texte_element_w(child).split())
+            if txt:
+                par_counter[0] += 1
+                lines.append(f"[Par. {par_counter[0]}] {txt}")
+        elif local == "tbl":
+            for row in child:
+                if _local_tag(row) != "tr":
+                    continue
+                row_cells: list[str] = []
+                for tc in row:
+                    if _local_tag(tc) != "tc":
+                        continue
+                    cell_parts: list[str] = []
+                    for p in tc:
+                        if _local_tag(p) == "p":
+                            ptxt = " ".join(_extraire_texte_element_w(p).split())
+                            if ptxt:
+                                cell_parts.append(ptxt)
+                    cell_txt = " / ".join(cell_parts).replace("|", "\\|")
+                    row_cells.append(cell_txt)
+                if any(row_cells):
+                    lines.append("| " + " | ".join(row_cells) + " |")
+        else:
+            _collect_docx_blocks(child, lines, par_counter)
+
+
+def _extract_docx_text(path: Path) -> str:
+    with zipfile.ZipFile(path, "r") as zf:
+        total_budget = [0]
+        xml_errors: list[str] = []
+        lines: list[str] = [f"# Extraction texte (.docx) : {path.name}", ""]
+        doc_root = _parse_xml_from_zip(zf, "word/document.xml", xml_errors, total_budget)
+        if doc_root is None:
+            lines.append("[DOCUMENT XML ILLISIBLE : word/document.xml]")
+            return "\n".join(lines) + "\n"
+        body = doc_root.find(f"{{{_W_NS}}}body")
+        target = body if body is not None else doc_root
+        par_counter = [0]
+        _collect_docx_blocks(target, lines, par_counter)
+
+        for note_member, heading in (
+            ("word/footnotes.xml", "## Notes de bas de page"),
+            ("word/endnotes.xml", "## Notes de fin"),
+        ):
+            note_root = _parse_xml_from_zip(zf, note_member, xml_errors, total_budget)
+            if note_root is None:
+                continue
+            note_lines: list[str] = []
+            for p in note_root.findall(f".//{{{_W_NS}}}p"):
+                txt = " ".join(_extraire_texte_element_w(p).split())
+                if txt:
+                    note_lines.append(f"- {txt}")
+            if note_lines:
+                lines.extend(["", heading, *note_lines])
+
+        if xml_errors:
+            lines.extend(["", f"[AVERTISSEMENT XML CORROMPU : {', '.join(xml_errors)}]"])
+        return "\n".join(lines) + "\n"
+
+
+def _extract_xlsx_text(path: Path) -> str:
+    with zipfile.ZipFile(path, "r") as zf:
+        total_budget = [0]
+        xml_errors: list[str] = []
+        feuilles, target_to_sheet, _ = _map_xlsx_sheets(zf, xml_errors, total_budget)
+        sheet_states = {f["nom"]: f["etat"] for f in feuilles}
+
+        shared_strings: list[str] = []
+        sst_root = _parse_xml_from_zip(zf, "xl/sharedStrings.xml", xml_errors, total_budget)
+        if sst_root is not None:
+            for si in sst_root.findall(f"{{{_MAIN_SS_NS}}}si"):
+                shared_strings.append("".join(t.text or "" for t in si.findall(f".//{{{_MAIN_SS_NS}}}t")))
+
+        lines: list[str] = [f"# Extraction texte (.xlsx) : {path.name}", ""]
+        sheet_members = sorted(
+            name for name in zf.namelist() if name.startswith("xl/worksheets/") and name.endswith(".xml")
+        )
+        for member in sheet_members:
+            ws_root = _parse_xml_from_zip(zf, member, xml_errors, total_budget)
+            if ws_root is None:
+                continue
+            label = target_to_sheet.get(member, Path(member).stem)
+            state = sheet_states.get(label, "visible")
+            lines.append(f"## Feuille : {label} (état : {state})")
+            emitted = 0
+            truncated = False
+            for row_el in ws_root.findall(f".//{{{_MAIN_SS_NS}}}row"):
+                row_ref = row_el.attrib.get("r", "?")
+                hidden = row_el.attrib.get("hidden", "").strip().lower() in ("1", "true")
+                cells_txt: list[str] = []
+                for cell in row_el.findall(f"{{{_MAIN_SS_NS}}}c"):
+                    ref = cell.attrib.get("r", "?")
+                    ctype = cell.attrib.get("t", "")
+                    f_el = cell.find(f"{{{_MAIN_SS_NS}}}f")
+                    v_el = cell.find(f"{{{_MAIN_SS_NS}}}v")
+                    is_el = cell.find(f"{{{_MAIN_SS_NS}}}is")
+                    val = ""
+                    if ctype == "s" and v_el is not None and v_el.text and v_el.text.strip().isdigit():
+                        sidx = int(v_el.text.strip())
+                        val = shared_strings[sidx] if 0 <= sidx < len(shared_strings) else v_el.text
+                    elif ctype == "inlineStr" and is_el is not None:
+                        val = "".join(t.text or "" for t in is_el.findall(f".//{{{_MAIN_SS_NS}}}t"))
+                    elif v_el is not None and v_el.text is not None:
+                        val = v_el.text
+                    val_clean = " ".join(val.split())
+                    if f_el is not None:
+                        expr = f_el.text.strip() if f_el.text else "partagée"
+                        entry = f"{ref}={val_clean} (formule: ={expr})" if val_clean else f"{ref}=(formule: ={expr})"
+                        cells_txt.append(entry)
+                    elif val_clean:
+                        cells_txt.append(f"{ref}={val_clean}")
+                if cells_txt:
+                    if emitted >= 2000:
+                        truncated = True
+                        break
+                    prefix = f"[Ligne {row_ref}{' masquée' if hidden else ''}] "
+                    lines.append(prefix + " | ".join(cells_txt))
+                    emitted += 1
+            if truncated:
+                lines.append("[TRONQUÉ À 2000 LIGNES]")
+            lines.append("")
+
+        if xml_errors:
+            lines.append(f"[AVERTISSEMENT XML CORROMPU : {', '.join(xml_errors)}]")
+        return "\n".join(lines) + "\n"
+
+
+def _extract_eml_text(path: Path) -> str:
+    msg = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
+    lines: list[str] = [f"# Extraction texte (.eml) : {path.name}", ""]
+    for key in (
+        "From",
+        "To",
+        "Cc",
+        "Bcc",
+        "Reply-To",
+        "Date",
+        "Subject",
+        "Message-ID",
+        "In-Reply-To",
+        "References",
+        "X-Unsent",
+    ):
+        val = msg.get(key)
+        if val is not None:
+            lines.append(f"- **{key} :** {' '.join(str(val).split())}")
+
+    plain_parts: list[str] = []
+    html_parts: list[str] = []
+    attachments: list[str] = []
+    for part in msg.walk():
+        if part.is_multipart():
+            continue
+        disp = part.get_content_disposition()
+        filename = part.get_filename()
+        ctype = part.get_content_type()
+        if filename or disp == "attachment" or (ctype not in ("text/plain", "text/html") and disp is not None):
+            payload = part.get_payload(decode=True)
+            size = len(payload) if isinstance(payload, bytes) else 0
+            attachments.append(f"[Pièce jointe non extraite : {filename or '(sans nom)'} ({ctype}, {size} octets)]")
+            continue
+        if ctype in ("text/plain", "text/html"):
+            try:
+                content = part.get_content()
+            except (UnicodeDecodeError, LookupError, ValueError, TypeError):
+                raw_payload = part.get_payload(decode=True)
+                content = (
+                    raw_payload.decode("utf-8", errors="replace")
+                    if isinstance(raw_payload, bytes)
+                    else str(raw_payload or "")
+                )
+            text_val = str(content)
+            if ctype == "text/plain" and text_val.strip():
+                plain_parts.append(text_val.strip())
+            elif ctype == "text/html" and text_val.strip():
+                parser = _HtmlTextExtractor()
+                parser.feed(text_val)
+                parser.close()
+                extracted = parser.texte()
+                if extracted:
+                    html_parts.append(extracted)
+
+    body_parts = plain_parts if plain_parts else html_parts
+    lines.extend(["", "## Corps du message", *body_parts] if body_parts else ["", "## Corps du message", "[Aucun corps textuel]"])
+    if attachments:
+        lines.extend(["", "## Pièces jointes", *attachments])
+    return "\n".join(lines) + "\n"
+
+
+def _extract_pdf_text(path: Path) -> str | None:
+    try:
+        import pypdf  # type: ignore[import-not-found]
+    except ImportError:
+        return None
+    reader = pypdf.PdfReader(str(path))
+    if getattr(reader, "is_encrypted", False):
+        return None
+    lines: list[str] = [f"# Extraction texte (.pdf) : {path.name}", ""]
+    for idx, page in enumerate(reader.pages, start=1):
+        txt = (page.extract_text() or "").strip()
+        if txt:
+            lines.append(f"[Page {idx}] {txt}")
+    return "\n".join(lines) + "\n"
+
+
+def extraire_texte_vers_dossier(resultats: list[dict[str, object]], dossier_sortie: Path) -> None:
+    """Extrait le texte lisible des pièces supportées (.docx, .xlsx, .eml, PDF natif) vers dossier_sortie."""
+    if dossier_sortie.exists() and not dossier_sortie.is_dir():
+        raise ValueError(f"La cible --extraire-texte n'est pas un répertoire : {dossier_sortie}")
+    dossier_sortie.mkdir(parents=True, exist_ok=True)
+
+    for item in resultats:
+        if item.get("statut") != "ok":
+            continue
+        chemin_str = str(item.get("chemin", ""))
+        src = Path(chemin_str)
+        ext = str(item.get("extension", "")).lower()
+        nom = str(item.get("nom", src.name))
+        sha8 = str(item.get("sha256", ""))[:8]
+        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(nom).stem).strip("._") or "piece"
+        out_path = dossier_sortie / f"{stem}__{sha8}.md"
+        indicateurs = set(str(x) for x in (item.get("indicateurs") or []))
+
+        if ext in _DOCX_EXTS:
+            contenu = _extract_docx_text(src)
+            out_path.write_text(contenu, encoding="utf-8", newline="\n")
+            item["statut_extraction"] = "extrait"
+            item["texte_extrait_chemin"] = str(out_path)
+        elif ext in _XLSX_EXTS:
+            contenu = _extract_xlsx_text(src)
+            out_path.write_text(contenu, encoding="utf-8", newline="\n")
+            item["statut_extraction"] = "extrait"
+            item["texte_extrait_chemin"] = str(out_path)
+        elif ext in _EML_EXTS:
+            contenu = _extract_eml_text(src)
+            out_path.write_text(contenu, encoding="utf-8", newline="\n")
+            item["statut_extraction"] = "extrait"
+            item["texte_extrait_chemin"] = str(out_path)
+        elif ext in _PDF_EXTS:
+            if "AUCUNE_COUCHE_TEXTE_DETECTEE" in indicateurs or "PDF_CHIFFRE" in indicateurs:
+                item["statut_extraction"] = "aucune_couche_texte"
+                continue
+            pdf_txt = _extract_pdf_text(src)
+            if pdf_txt is None:
+                item["statut_extraction"] = "pdf_natif_requis"
+                continue
+            out_path.write_text(pdf_txt, encoding="utf-8", newline="\n")
+            item["statut_extraction"] = "extrait"
+            item["texte_extrait_chemin"] = str(out_path)
+        elif ext in (".md", ".txt"):
+            item["statut_extraction"] = "deja_texte"
+        elif ext in (_JPEG_EXTS | _PNG_EXTS | _WAV_EXTS | _MP3_EXTS | _MP4_EXTS):
+            item["statut_extraction"] = "perception_requise"
+        else:
+            item["statut_extraction"] = "non_supporte"
+
+
 def main(argv: list[str] | None = None) -> int:
     _configure_stdio()
     parser = argparse.ArgumentParser(
@@ -1425,6 +1768,13 @@ def main(argv: list[str] | None = None) -> int:
         default="fournie par l'avocat",
         help="Mention de provenance consignée dans --journal.",
     )
+    parser.add_argument(
+        "--extraire-texte",
+        dest="extraire_texte",
+        type=Path,
+        default=None,
+        help="Dossier cible où écrire les extractions texte (.docx, .xlsx, .eml, PDF natif).",
+    )
     parser.add_argument("--json", action="store_true", help="Afficher le résultat au format JSON.")
     args = parser.parse_args(argv)
 
@@ -1434,6 +1784,13 @@ def main(argv: list[str] | None = None) -> int:
             ecrire_journal_garde(args.journal, resultats, source=args.source)
         except ValueError as exc:
             print(f"Erreur journal de garde : {exc}", file=sys.stderr)
+            return 2
+
+    if args.extraire_texte is not None:
+        try:
+            extraire_texte_vers_dossier(resultats, args.extraire_texte)
+        except (ValueError, _ZipLimitExceeded, OSError) as exc:
+            print(f"Erreur extraction texte : {exc}", file=sys.stderr)
             return 2
 
     if args.json:

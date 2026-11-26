@@ -1,11 +1,9 @@
 # Liste de contrôle — Branche urgence (injonction, saisie, sauvegarde, contrôle judiciaire)
 
-[NON VALIDÉ PAR LA PRATIQUE]
-
 Liste de contrôle opérationnelle accélérée lorsque le dossier exige une mesure provisionnelle ou urgente (aucune règle de fond : consulter les feuilles de service via les enchaînements).
 
-- [ ] **Porte 1 — Triage de l'urgence et conflits :** confirmer conflit dégagé et vérifier quel délai fatal ou péril immédiat justifie la voie rapide (`gestion-du-mandat` / `conformite-ouverture-conflits-mandat`).
-- [ ] **Porte 2 — Choix du véhicule urgent :** injonction provisoire/interlocutoire (`acte-injonction`), saisie avant jugement (`acte-saisie-avant-jugement`), ordonnance de sauvegarde (`acte-demandes-cours-instance`), mesure exceptionnelle (`acte-mesures-provisionnelles-autres`) ou pourvoi en contrôle judiciaire avec sursis (`acte-pourvoi-controle-judiciaire`).
-- [ ] **Porte 3 — Preuve directe et assermentation :** inspecter et consigner au journal de garde les pièces clés (`analyse-et-strategie` / `preuve-directe`) et préparer les faits personnels nécessaires à la déclaration sous serment (`fondamentaux-actes`).
-- [ ] **Porte 4 — Contrôle du délai de présentation et cautionnement :** chiffrer les préavis particuliers et délais courts (`gestion-du-mandat` / `conformite-echeanciers-cpc`).
-- [ ] **Porte 5 — Production accélérée :** vérifier commentaires/métadonnées, OCR, signets, endos et mandat urgent à l'huissier (`production-et-conformite`).
+- [ ] **Porte 1 — Triage de l'urgence et conflits :** confirmer que le conflit est dégagé et identifier quel délai fatal ou péril concret justifie la voie rapide (`gestion-du-mandat` / `conformite-ouverture-conflits-mandat`).
+- [ ] **Porte 2 — Choix du véhicule urgent :** injonction provisoire/interlocutoire (`acte-injonction`), saisie avant jugement (`acte-saisie-avant-jugement`), ordonnance de sauvegarde (`acte-demandes-cours-instance`), séquestre ou ordonnance de type *Mareva* / *Anton Piller* / *Norwich* (`acte-mesures-provisionnelles-autres`) ou pourvoi en contrôle judiciaire avec sursis (`acte-pourvoi-controle-judiciaire`).
+- [ ] **Porte 3 — Preuve directe, serment, transparence *ex parte* et contre-épreuve :** consigner les pièces clés au journal de garde (`analyse-et-strategie` / `preuve-directe`), réunir les faits personnels et sources requis pour la déclaration sous serment (`fondamentaux-actes`), contrôler la **divulgation complète et loyale des faits défavorables** si présentation *ex parte* ou sans préavis, et soumettre l'acte au banc `CONTRE_EPREUVE` / `AUTOPSIE_ADVERSE` (`produit-contre-epreuve-banc`).
+- [ ] **Porte 4 — Préavis, `Avis d'assignation` et cautionnement :** vérifier l'annexion de l'`Avis d'assignation` lorsque l'acte introduit l'instance, les modalités de cautionnement ou de scellés et les préavis/délais courts (`gestion-du-mandat` / `conformite-echeanciers-cpc`).
+- [ ] **Porte 5 — Production accélérée et suites post-ordonnance obligatoires :** contrôler commentaires/métadonnées, OCR, signets, endos et instructions urgentes à l'huissier (`production-et-conformite`), puis inscrire immédiatement au calendrier la signification de l'ordonnance aux tiers visés, le dépôt/signification de la demande introductive dans les `5 jours` d'une saisie pré-action et le retour contradictoire (`<= 10 jours` ou relais de sauvegarde).
