@@ -10,9 +10,7 @@ description: >-
 
 # Phase 4 — Mise en état et préparation d'audience
 
-[NON VALIDÉ PAR LA PRATIQUE]
-
-Orchestre la mise en état (`173–175 C.p.c.`), les pourparlers ou la conférence de règlement à l'amiable, la préparation des témoins et la confection complète des cahiers et plans d'argumentation jusqu'au contrôle final avant dépôt. Aucune règle de fond ici.
+Orchestre la mise en état via les formulaires judiciaires prescrits (`173–175 C.p.c.`), la conférence de règlement à l'amiable, la préparation des témoins et du cahier de procès personnel, ainsi que la confection des cahiers de cour et plans d'argumentation jusqu'au contrôle final avant dépôt. Aucune règle de fond ici.
 
 <!-- SAFETY-KERNEL:START -->
 ## Garde-fous impératifs
@@ -39,38 +37,38 @@ Orchestre la mise en état (`173–175 C.p.c.`), les pourparlers ou la conféren
 
 ## Parcours
 
-### Étape 1 — Échéance de mise en état et inventaire des pièces (`173–175`, `250 C.p.c.`)
-* **Objectif :** Contrôler le délai de rigueur de mise en état et dresser l'inventaire des pièces communiquées, ainsi que les délais à rebours de production au greffe (`250`).
-* **Livrable :** Calendrier à rebours et inventaire/bordereau de mise en état.
-* **Porte :** **BLOQUANTE** — ne jamais laisser expirer le délai de rigueur (`173`) sans dépôt ou prolongation demandée à temps.
+### Étape 1 — Mise en état sur formulaires officiels et échéancier à rebours (`173–175`, `250 C.p.c.`)
+* **Objectif :** Contrôler le délai de rigueur de mise en état (`173`), préparer le contenu des **formulaires officiels prescrits** (*Déclaration commune d'inscription* en C.S., `SJ-1100` / `SJ-1276` en C.Q., ou notification unilatérale avec délai de `15 jours` sous `174 al. 2`; inscription par défaut `175`), dresser l'inventaire des pièces communiquées et calculer à rebours le dépôt au greffe (`250` : `15 jours` / `3 jours`).
+* **Livrable :** Contenu structuré du formulaire officiel de mise en état, inventaire/bordereau et calendrier à rebours.
+* **Porte :** **BLOQUANTE** — ne jamais laisser expirer le délai de rigueur (`173`) ni rédiger un contrat de mise en état libre hors formulaire officiel.
 
-### Étape 2 — Conférence de règlement à l'amiable / conférence préparatoire
-* **Objectif :** Actualiser le quantum et les intérêts `1619`, évaluer les scénarios de règlement et rédiger la transaction/quittance si accord.
-* **Livrable :** Tableau de quantum à jour et projet de transaction/quittance si règlement.
-* **Porte :** Mandat clair du client avant toute offre ou acceptation.
+### Étape 2 — Conférence de règlement à l'amiable (`161–165 C.p.c.`) ou pourparlers
+* **Objectif :** Actualiser le quantum et les intérêts `1619`, isoler la confidentialité de la *CRA* (`163 C.p.c.`, `sans préjudice` — ne jamais verser un exposé ou une offre de *CRA* au dossier de cour), et, en cas d'accord, rédiger la transaction/quittance (`2631–2633 C.c.Q.`), exécuter la clôture judiciaire (`165` homologation ou `220` avis de règlement / `213` désistement / `217–218` acquiescement) et encadrer le fidéicommis.
+* **Livrable :** Tableau de quantum à jour et, si règlement, transaction/quittance, acte de clôture d'instance et suivi fidéicommis.
+* **Porte :** Mandat écrit/clair du client avant toute offre ou acceptation, et étanchéité complète entre dossier de *CRA* et dossier du greffe.
 
-### Étape 3 — Témoins, fiches de preuve et matrice finale
-* **Objectif :** Finaliser la matrice `Allégation ↔ Pièce ↔ Témoin`, les fiches d'interrogatoire/contre-interrogatoire et la vérification des citations à comparaître.
-* **Livrable :** Fiche de preuve, registre des témoins et matrice finale.
-* **Porte :** Chaque allégation contestée reliée à une pièce ou un témoin disponible.
+### Étape 3 — Témoins, matrice finale et *Cahier de procès* personnel
+* **Objectif :** Finaliser le registre maître interne (`TEM-X`, `CORR-X`, `DOC-X`, `INT-X`), la chronologie, la matrice `Allégation ↔ Défense ↔ Preuve ↔ Interrogatoire ↔ Témoin`, les fiches d'interrogatoire/contre-interrogatoire et le ***Cahier de procès* personnel et confidentiel du plaideur** *(jamais déposé au greffe)*, autopsier au besoin via `AUTOPSIE_ADVERSE` les déclarations `292` / `535.14` ou rapports adverses contestés, et vérifier les citations à comparaître.
+* **Livrable :** Fiches témoins, registre maître/chronologie/matrice actualisés et *Cahier de procès* interne protégé par le privilège relatif au litige.
+* **Porte :** Chaque allégation contestée reliée à une pièce recevable ou à un témoin convoqué, et aucune note interne versée aux cahiers de cour.
 
-### Étape 4 — Confection des cahiers (sources, pièces, procédures)
-* **Objectif :** Préparer les index et structures 1:1 du cahier des sources (incluant la vérification préalable `juris.verify_citations` et le contrôle automatique des dispenses de reproduction via `juris.check_exempt_cases` / `list_exempt_cases` sous `production-et-conformite` / `cahier-des-sources`), du cahier des pièces et du cahier des procédures.
-* **Livrable :** Index et gabarits des trois cahiers de cour.
-* **Porte :** Concordance exacte des cotes et des autorités avec les actes et l'argumentation.
+### Étape 4 — Confection des cahiers de cour (sources, pièces, procédures)
+* **Objectif :** Préparer les index et structures 1:1 du cahier des sources (vérification `juris.verify_citations` et contrôle automatique des dispenses `juris.check_exempt_cases` / `list_exempt_cases`), du cahier des pièces (`250`) et du **cahier des procédures** — ce dernier demeurant strictement le **reflet du plumitif** (actes déposés au greffe uniquement, recto seulement, reliure à onglets sans cartable à anneaux, sans acte sous pli cacheté `12, 108 C.p.c.` ni notes du *Cahier de procès*).
+* **Livrable :** Index, bordereaux et gabarits des trois cahiers destinés au tribunal.
+* **Porte :** Concordance 1:1 des cotes et des autorités avec les actes et l'argumentation, sans contamination par des documents internes.
 
 ### Étape 5 — Plan d'argumentation / argumentation écrite
-* **Objectif :** Rédiger le plan simple/détaillé ou les notes et autorités en respectant le seuil `Lue (intégrale)` au Palier 3.
-* **Livrable :** Plan d'argumentation ou argumentation écrite vérifiée.
-* **Porte :** Zéro proposition décisive sous `Lue (intégrale) [par. X]` (sinon maintien du crochet `[RATIO ...]`).
+* **Objectif :** Rédiger le plan simple/détaillé ou l'argumentation écrite (incluant le mémoire `<= 10 pages` préalable à la fixation en contrôle judiciaire sans preuve à Montréal) en respectant le seuil `Lue (intégrale)` au Palier 3, puis soumettre le projet au banc `CONTRE_EPREUVE` et au triage avant dépôt.
+* **Livrable :** Plan d'argumentation ou argumentation écrite vérifiée et éprouvée à froid.
+* **Porte :** Zéro proposition décisive sous `Lue (intégrale) [par. X]` (sinon maintien du crochet `[RATIO ...]`) et triage contradictoire validé.
 
-### Étape 6 — Admissions formelles et ententes pré-audience
-* **Objectif :** Consigner les admissions de faits/pièces et les modalités de déroulement convenues entre procureurs.
-* **Livrable :** Entente d'admissions vérifiée.
-* **Porte :** Signatures et dépôt confirmés avant l'audience.
+### Étape 6 — Admissions formelles et formulaires de fixation d'audience
+* **Objectif :** Consigner les admissions de faits et d'authenticité/intégrité des pièces (en distinguant origine/intégrité et véracité du contenu) directement dans les **formulaires officiels** (*Déclaration commune d'inscription*, *Déclaration commune pour fixation d'une audience* `Annexe Division 4`, `SJ-1100` / `SJ-1276`) ou dans une stipulation pré-audience ciblée, sans présumer qu'une entente privée scelle le dossier (`12 C.p.c.`).
+* **Livrable :** Rubriques d'admissions et formulaire de fixation d'audience complétés et vérifiés.
+* **Porte :** Signatures, attestations requises (dont expert `17 R.C.s.Q.m.c.`) et dépôt confirmés dans les délais.
 
 ### Étape 7 — Contrôle complet de production avant dépôt
-* **Objectif :** Auditer OCR, signets, liens, caviardages (`108`), métadonnées, pagination, endos et cotes, et émettre le bon de travail final.
+* **Objectif :** Auditer OCR, signets, liens, caviardages aplatis (`108`), déverrouillage `/Encrypt`, métadonnées, pagination, endos et continuité des cotes, et émettre le bon de travail final.
 * **Livrable :** Rapport de conformité et bon de travail complet pour les outils du cabinet.
 * **Porte :** **BLOQUANTE** — aucune fuite de commentaires/révisions, PDF OCR + signets vérifiés avant dépôt au greffe.
 
@@ -78,30 +76,36 @@ Orchestre la mise en état (`173–175 C.p.c.`), les pourparlers ou la conféren
 
 | Étape | Type | Cible | Feuille | Palier | Condition |
 |---|---|---|---|---|---|
-| 1 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | toujours (mise en état et 250 à rebours) |
+| 1 | livrable | gestion-du-mandat | conformite-echeanciers-cpc | 3 | toujours (mise en état 173, notification 174 al. 2 et 250 à rebours) |
+| 1 | livrable | redaction-juridique | contrat-ententes-judiciaires | 3 | formulaires officiels de mise en état (174, SJ-1100 / SJ-1276) |
 | 1 | livrable | production-et-conformite | cahier-des-pieces-et-bordereaux | 3 | inventaire 174 et production 250 |
 | 2 | livrable | gestion-du-mandat | conformite-quantum-interets-frais | 2 | toujours avant CRA ou audience |
-| 2 | livrable | redaction-juridique | contrat-transaction-quittance | 3 | si règlement conclu |
-| 3 | livrable | analyse-et-strategie | produit-fiche-preuve-et-temoins | 3 | procès ou enquête avec témoins |
-| 3 | livrable | analyse-et-strategie | produit-matrice-allegations | 3 | avant l'instruction |
+| 2 | livrable | redaction-juridique | contrat-transaction-quittance | 3 | si règlement conclu (2631 C.c.Q., 165 / 220 / 213 / 217 C.p.c.) |
+| 2 | livrable | gestion-du-mandat | conformite-facturation-fideicommis | 3 | si réception ou déboursement de fonds de règlement en fidéicommis |
+| 3 | livrable | analyse-et-strategie | produit-fiche-preuve-et-temoins | 3 | témoins et Cahier de procès personnel confidentiel |
+| 3 | livrable | analyse-et-strategie | produit-matrice-allegations | 3 | registre maître interne et matrice finale avant l'instruction |
+| 3 | livrable | analyse-et-strategie | produit-chronologie | 2 | chronologie de référence du Cahier de procès |
 | 3 | référence | analyse-et-strategie | preuve-indirecte | — | audience interlocutoire (transcriptions et serments au dossier) |
+| 3 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | si déclarations 292/535.14 ou rapports adverses contestés (AUTOPSIE_ADVERSE) |
 | 4 | livrable | production-et-conformite | cahier-des-sources | 3 | si autorités soumises au juge |
 | 4 | livrable | production-et-conformite | cahier-des-pieces-et-bordereaux | 3 | toujours |
-| 4 | livrable | production-et-conformite | cahier-des-procedures | 3 | procès au fond |
+| 4 | livrable | production-et-conformite | cahier-des-procedures | 3 | procès au fond (reflet strict du plumitif, jamais le Cahier de procès) |
 | 5 | livrable | redaction-juridique | arg-plan-argumentation | 3 | toujours pour plaidoirie |
-| 5 | livrable | redaction-juridique | arg-argumentation-ecrite | 3 | si argumentation écrite demandée |
+| 5 | livrable | redaction-juridique | arg-argumentation-ecrite | 3 | si argumentation écrite ou mémoire de contrôle judiciaire requis |
 | 5 | référence | redaction-juridique | arg-citations | — | toujours |
-| 6 | livrable | redaction-juridique | contrat-ententes-judiciaires | 3 | si admissions ou entente pré-audience |
+| 5 | livrable | analyse-et-strategie | produit-contre-epreuve-banc | 3 | contre-épreuve à froid du plan ou de l'argumentation écrite avant dépôt (CONTRE_EPREUVE) |
+| 6 | livrable | redaction-juridique | contrat-ententes-judiciaires | 3 | admissions aux formulaires officiels ou fixation d'audience (Annexe Division 4) |
 | 7 | livrable | production-et-conformite | controle-pdf-et-metadonnees | 3 | avant tout dépôt PDF |
 | 7 | livrable | production-et-conformite | controle-acte-de-procedure | 3 | avant tout dépôt |
 | 7 | livrable | production-et-conformite | controle-endos-depot-signification | 3 | avant dépôt ou notification |
 
 ## Branches
 
-* **Audience interlocutoire / incident :** `references/branche-audience-interlocutoire.md`
+* **Audience interlocutoire, moyen préliminaire ou contrôle judiciaire :** `references/branche-audience-interlocutoire.md`
 
 ## Contrôle de sortie de phase
 
-1. Tous les cahiers, admissions et plans contrôlés et déposés dans les délais dans `etat-dossier/phase-preparation-audience.md` *(ou bloc d'état en ligne livré si disque non inscriptible)*.
-2. Bon de travail final exécuté et vérifié.
-3. **Suite suggérée (texte brut) :** passer à `phase-jugement-et-suites` dès réception du jugement.
+1. Formulaires officiels de mise en état / fixation, cahiers de cour (distincts du *Cahier de procès* personnel), admissions et plans contrôlés et déposés dans les délais dans `etat-dossier/phase-preparation-audience.md` *(ou bloc d'état en ligne livré si disque non inscriptible)*.
+2. En cas de règlement en *CRA* ou hors cour : transaction signée, avis de règlement (`220`) / désistement (`213`) / acquiescement (`217–218`) ou homologation (`165`) déposé et suivi fidéicommis engagé.
+3. Bon de travail final exécuté et vérifié.
+4. **Suite suggérée (texte brut) :** passer à `phase-jugement-et-suites` dès réception du jugement (ou à la clôture sous `gestion-du-mandat` après règlement complet).

@@ -2,6 +2,17 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.3.0] — 2026-11-26
+
+### Ajouté
+- **Banc de contre-épreuve sans contexte (`agents/*.md` + `produit-contre-epreuve-banc.md`, `60e` feuille) :** intégration de 6 personas sans historique (`avocat-analyste`, `avocat-adverse`, `verificateur-dossier`, `avocat-conseil`, `parajuriste-inventaire`, `coordonnateur-revue`) couvrant les 4 modes (`LOT_PIECES` dès `>= 6` pièces, `REMUE_MENINGES` opt-in Palier 2, `AUTOPSIE_ADVERSE` et `CONTRE_EPREUVE` au Palier 3 avec contrôle des aveux `2852 C.c.Q.`), avec accès MCP hybride (`lois` + `outils` anonymisés, `juris` réservé à l'Éléphant), pare-feu par liste blanche sous `etat-dossier/banc/`, porte de triage obligatoire (`FORTIFIER` / `DÉSAMORCER` / `CIBLE D'INSTRUCTION` / `RISQUE ASSUMÉ`) et repli nuage honnête (**Paquet Contre-épreuve — Nouvel onglet vierge** sans drapeau `requires_local_executor`).
+- **Option `--extraire-texte` dans `skills/analyse-et-strategie/scripts/inspecter_piece.py` :** extraction stdlib du texte visible `.docx` (excluant `w:del` et `w:vanish`), `.xlsx` (`sharedStrings.xml`, feuilles masquées, formules), `.eml` et PDF natifs vers `etat-dossier/banc/texte-extrait/`.
+- **Raccordement complet dans les 5 phases et 3 services :** mise à jour des tables `## Enchaînements` et branches (`phase-ouverture-dossier`, `phase-introduction-reponse`, `phase-interrogatoires-instruction`, `phase-preparation-audience`, `phase-jugement-et-suites`) ainsi que `analyse-et-strategie`, `redaction-juridique` et `production-et-conformite`.
+- **Contrôles statiques, empaquetage et évaluations (`118` → `122` scénarios) :** validation complète de `agents/*.md` dans `verifier.py`, inclusion de `agents/` dans `scripts/synchroniser_plugin_gemini.py` et `scripts/empaqueter_plugin_chatgpt.py`, ajout de `AS-18` à `AS-21` dans `evals/scenarios.json` et des tests `--extraire-texte` / `agents/` dans `evals/executer_evals.py` et `evals/test_verifier.py`.
+
+### Modifié
+- **Validation pratique complète des 27 derniers fichiers `[NON VALIDÉ PAR LA PRATIQUE]` (`marqueurs=0`, `python verifier.py --release` conforme) :** audit systématique sur les sources primaires (`lois`) et levée de l'ensemble des marqueurs sur les 18 feuilles de référence restantes (`contrat-civil-commercial`, `contrat-ententes-judiciaires`, `arg-argumentation-ecrite`, `cahier-des-procedures`, `acte-moyens-preliminaires`, `acte-demandes-cours-instance`, `acte-reconvention-intervention-garantie`, `acte-injonction`, `acte-saisie-avant-jugement`, `acte-mesures-provisionnelles-autres`, `acte-pourvoi-controle-judiciaire`, `acte-retractation-jugement`, `acte-execution-et-oppositions`, `preuve-directe`, `preuve-documents-judiciaires`, `preuve-indirecte`, `produit-fiche-preuve-et-temoins`, `recherche-precedents-internes`) ainsi que sur les 5 orchestrateurs `phase-*` et leurs 4 feuilles `branche-*.md`, incluant le registre maître interne à 4 onglets (`produit-matrice-allegations.md`, `produit-chronologie.md`, *Cahier de procès* personnel distinct du *Cahier des procédures* reflet du plumitif) et le routage strict vers les formulaires judiciaires prescrits (`contrat-protocole-instance.md`, `contrat-ententes-judiciaires.md`).
+
 ## [3.2.1] — 2026-11-25
 
 ### Modifié

@@ -41,7 +41,7 @@ jobs:
             echo "Tag ${TAG} ne correspond pas à la version des manifestes (v${manifest_version})." >&2
             exit 1
           fi
-          sortie="$(python verifier.py 2>&1)"
+          sortie="$(python verifier.py --release 2>&1)"
           if [ -n "$sortie" ]; then
             echo "$sortie" >&2
             exit 1

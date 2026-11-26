@@ -1,23 +1,23 @@
 # droit-civil-quebecois — Architecture, principes et consignes de travail
 
-Directives de développement, architecture multi-dépôts à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.2.1`). Ce document gouverne de façon identique OpenAI Codex, Claude Code et Google Antigravity / Gemini CLI (`AGENTS.md`, `CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
+Directives de développement, architecture multi-dépôts à trois couches et règles anti-dérive pour le greffon **Droit civil québécois** (`droit-civil-quebecois`, `v3.3.0`). Ce document gouverne de façon identique OpenAI Codex, Claude Code et Google Antigravity / Gemini CLI (`AGENTS.md`, `CLAUDE.md` et `GEMINI.md` doivent rester identiques octet pour octet et sous **24 000 octets** UTF-8 LF).
 
 > **Portée en session finale :** `gemini-extension.json` fixe `"contextFileName": []`, Antigravity ignore les fichiers `AGENTS.md`/`GEMINI.md` à la racine d'un greffon (seul `rules/` est chargé) et l'archive universelle ChatGPT exclut `AGENTS.md`, `CLAUDE.md` et `GEMINI.md`. Ces instructions ne s'appliquent qu'aux agents qui modifient ce dépôt.
 
 ---
 
-## 1. Architecture v3.2.1 multi-dépôts et topologie (10 compétences)
+## 1. Architecture v3.3.0 multi-dépôts et topologie (10 compétences + 6 personas)
 
-`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web/Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **59 feuilles de référence** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 37 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé (`MCP-Socle`) :
+`droit-civil-quebecois` est le greffon cadre multiplateforme (Claude Code, Claude Desktop, `claude.ai` / Claude Research, ChatGPT Web/Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI, Gemini API Deep Research) orchestrant **10 compétences** (5 orchestrateurs de phase + 5 services transversaux), **60 feuilles de référence**, **6 personas sans contexte (`agents/`)** et **4 scripts Python stdlib** au-dessus de **3 serveurs MCP spécialisés** (`lois`, `juris`, `outils` — 37 outils), d'un **portail d'accès et serveur OAuth 2.1 dédié** (`MCP-Acces`), d'une base D1 partagée (`DB_IDENTITE` / `mcp-identite`) et d'un socle partagé (`MCP-Socle`) :
 
-- **Greffon cadre (`droit-civil-quebecois`) :** 5 orchestrateurs `phase-*`, 5 services transversaux, 59 feuilles, 4 scripts stdlib.
+- **Greffon cadre (`droit-civil-quebecois`) :** 5 orchestrateurs `phase-*`, 5 services transversaux, 60 feuilles, 6 personas `agents/*.md`, 4 scripts stdlib.
 - **Connecteurs MCP :**
   - `lois` (`MCP-Legislation`) : D1 + Vectorize + Workers AI (`hybride_permis`) — `/mcp/oauth` (OAuth 2.1) et `/mcp` (Bearer / `404`).
   - `juris` (`MCP-Jurisprudence`) : D1 cache CanLII + BYOK CanLII strict sans `fetched_at` — `/mcp/oauth` (OAuth 2.1) et `/mcp` (`404`).
   - `outils` (`MCP-Outils`) : Public, 4 D1 lecture seule (`DB_TERMINOLOGIE`, `DB_REGISTRES`, `DB_ADRESSES`, `DB_ECONOMIE`; 15 outils sur 6 familles), zéro secret, zéro journalisation — `/mcp`.
 - **Socle & Identité :** `MCP-Socle` (transport 2026, auth, OAuth 2.1, coffre, gouverne) et `MCP-Acces` (`https://acces.poirierlavoie.ca` — admission Barreau, coffre AES-GCM, portail `/moi`, serveur OAuth PKCE, D1 partagée `mcp-identite`).
 
-### Cartographie des 10 compétences, 59 feuilles et 4 scripts (`skills/`)
+### Cartographie des 10 compétences, 60 feuilles, 6 personas (`agents/`) et 4 scripts (`skills/`)
 
 Conception **Découverte progressive à 3 niveaux** + **Calibration de rigueur à 3 paliers** (Palier 1 *Triage*, Palier 2 *Dossier*, Palier 3 *Tribunal / dépôt complet*), dédiée au litige civil et commercial québécois (**hors droit familial et droit criminel**).
 
@@ -32,10 +32,14 @@ Conception **Découverte progressive à 3 niveaux** + **Calibration de rigueur �
 #### B. Cinq compétences de service (`SERVICE_SKILLS`)
 
 1. **`skills/recherche-juridique`** (`6` feuilles) — `grille-prealables.md` et `recherche-*.md` (`legislative`, `jurisprudentielle`, `doctrinale`, `precedents-internes`, `livrables`).
-2. **`skills/analyse-et-strategie`** (`12` feuilles, `1` script) — `piece-reception-et-qualification.md`, `preuve-*.md` (`5`), `produit-*.md` (`6`) ; script `scripts/inspecter_piece.py` (inspection locale `.docx`/`.xlsx`/`.eml`/`.pdf`/images/médias + `--journal` journal de garde, zéro réseau).
+2. **`skills/analyse-et-strategie`** (`13` feuilles, `1` script) — `piece-reception-et-qualification.md`, `preuve-*.md` (`5`), `produit-*.md` (`7`, dont `produit-contre-epreuve-banc.md`) ; script `scripts/inspecter_piece.py` (inspection locale `.docx`/`.xlsx`/`.eml`/`.pdf`/images/médias + `--journal` + `--extraire-texte`, zéro réseau).
 3. **`skills/redaction-juridique`** (`25` feuilles) — Socle (`fondamentaux-actes.md`, `anti-contamination-bilingue.md`), `acte-*.md` (`12`), `arg-*.md` (`4`), `corr-*.md` (`3`), `contrat-*.md` (`4`).
 4. **`skills/production-et-conformite`** (`7` feuilles, `2` scripts) — `controle-*.md` (`4`), `cahier-*.md` (`3`) ; scripts `scripts/controler_document.py` (vérification + bon de travail Word/PDF) et `scripts/verifier_cotes.py` (continuité des cotes et concordance).
 5. **`skills/gestion-du-mandat`** (`5` feuilles, `1` script) — `conformite-*.md` (`ouverture-conflits-mandat`, `radar-deontologique`, `facturation-fideicommis`, `echeanciers-cpc`, `quantum-interets-frais`) ; script `scripts/calcul_delai.py` (repli local déterministe du calendrier C.p.c., zéro réseau).
+
+#### C. Six personas sans contexte (`agents/*.md` — Banc de contre-épreuve)
+
+- `avocat-analyste.md` (*lecture à froid*, `CONTRE_EPREUVE`, zéro MCP) · `avocat-adverse.md` (*avocat adverse*, `lois`/`outils`) · `verificateur-dossier.md` (*concordance 1:1, citations & aveux `2852 C.c.Q.`*, `lois`/`outils`) · `avocat-conseil.md` (*angles procéduraux & règlement*, `lois`/`outils`) · `parajuriste-inventaire.md` (*tranches `LOT_PIECES`*, zéro MCP) · `coordonnateur-revue.md` (*coordonnateur parallèle → `etat-dossier/banc/`*, zéro MCP). **`juris` strictement réservé à l'Éléphant** (protection quota CanLII BYOK).
 
 ---
 
@@ -103,12 +107,13 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 
 *(Exceptions nommées sans préfixe de famille : `fondamentaux-actes.md`, `anti-contamination-bilingue.md`, `grille-prealables.md`, ainsi que `branche-*.md` dans les orchestrateurs de phase.)*
 
-### Règles transversales de fond (`v3.2.1`)
+### Règles transversales de fond (`v3.3.0`)
 
 - **Auto-connexion OAuth 2.1 par défaut, BYOK CanLII et zéro-log :** les 3 manifestes MCP (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) pointent par défaut vers `/mcp/oauth` sans secret ni variable statique (flux OAuth 2.1 PKCE `S256` + inscription dynamique RFC 7591 sans état `/oauth/register` via `acces.poirierlavoie.ca`), tandis que `.codex-plugin/plugin.json`, `plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` afin d'éviter le badge *Desktop only* sur ChatGPT Web, et que `/mcp` (`Bearer` / `?key=`, refus uniforme `404`) demeure actif pour les CLI/CI sans navigateur, l'API OpenAI Responses et l'API Gemini Deep Research *(ChatGPT Deep Research exclu)*. Sur `juris`, chaque titulaire utilise sa clé API CanLII personnelle (`X-Clef-CanLII` ou `DB_IDENTITE.coffre_clef`) vérifiée avant toute lecture du cache partagé. Zéro écriture dans `search_log`/`api_usage`, `observability.enabled = false`.
 - **Quarantaine par domaine et corpus élargi (`lois`, `134` textes, `50` matières) :** `list_laws`, `find_relevant` et `search_text` (sans `law`) ciblent par défaut le domaine `'core'` *(incluant Vague 1 constitutionnelle et ajouts `core` Vague 2)* avec radar `other_domains` et filtres optionnels `domains` (`core`, `cours-federales`, `financier`, `construction-immobilier`, `municipal-environnement`, `travail`, `penal` — incluant `ca-c-46`, `ca-c-38.8`, `ca-y-1.5` —, `propriete-intellectuelle`, `all`), `jurisdiction` (`qc`|`ca`) et `forum` (`get_article`/`get_articles`/`resolve_reference`/`related_laws` ouverts corpus entier ; LIR exclue) ; inclut directives QCCS/QCCQ (`fonction='directive'`, `unit='paragraphe'`, `par.`/`dir.`, `fr`-only ; aucun recueil unifié QCCA au-delà de `c-25.01-r.0.2.01`) et règlements/orientations AMF (`v-1.1-r.*`, `amf-ig-*`, `fonction='orientation'`).
 - **Aucune décharge statutaire figée :** privilégier les vecteurs `lois.get_articles`, paires confondables et silences ; ne jamais copier le texte intégral d'articles ni coder de seuils réglementaires en dur dans les scripts.
 - **Production et dégradation nuage (`production-et-conformite` & `analyse-et-strategie`) :** vérifier et rapporter par scripts Python stdlib, puis émettre un **bon de travail** précis. Lorsque les scripts `.py` locaux (`controler_document.py`, `verifier_cotes.py`, `inspecter_piece.py`) ne peuvent pas s'exécuter (`claude.ai`, ChatGPT sans Python local, Gemini App `/mcp/oauth`, Deep Research), **divulguer explicitement** que les contrôles octets/XML/PDF/cotes ont été omis et les inscrire en tête du **bon de travail** manuel.
+- **Banc de contre-épreuve (`produit-contre-epreuve-banc.md` & `agents/*.md`) :** pare-feu par liste blanche (`etat-dossier/banc/`), extraction `--extraire-texte`, accès MCP hybride (`juris` Éléphant uniquement), porte de triage obligatoire (`FORTIFIER`, `DÉSAMORCER`, `CIBLE D'INSTRUCTION`, `RISQUE ASSUMÉ`) sans modification directe de `.docx`/`.pdf`, et repli nuage honnête par **Paquet Contre-épreuve (Nouvel onglet vierge)** sans simulation dans un fil partagé.
 - **Précédents internes (`recherche-precedents-internes.md`) :** uniquement fournis par l'avocat, dé-identifiés obligatoirement, savoir-faire et structure uniquement, alerte de conflit, actes publics/jugements classés au-dessus des notes internes.
 - **Honnêteté perceptuelle (`preuve-directe.md`) :** n'analyser un média (audio, vidéo, image) que s'il a été effectivement perçu ; sinon exiger transcription ou captures et étiqueter « support secondaire » ; transcription IA = aide de travail uniquement ; empreinte SHA-256 + métadonnées à la réception (`inspecter_piece.py --journal`, ou bloc en ligne `[SHA-256 : À CALCULER LOCALEMENT]` en nuage).
 
@@ -132,11 +137,11 @@ Les **10** `SKILL.md` partagent au bit près le même bloc `<!-- SAFETY-KERNEL:S
 Toute modification doit passer `python verifier.py` (sortie strictement muette, code `0`) :
 
 1. **Inventaire strict (`ROOT_ALLOWLIST`, `EVALS_ALLOWLIST`) :** aucun fichier orphelin (incluant `CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`) ; parité octet pour octet entre `AGENTS.md`, `CLAUDE.md` et `GEMINI.md` (`< 24 000` octets) ; liens Markdown/images relatifs valides dans les documentations racine ; syntaxe `ast.parse` sur tous les `.py` et encodage UTF-8 sans BOM + LF uniquement sur **tous** les fichiers du dépôt, y compris `LICENSE` et `NOTICE`.
-2. **Parité exacte des 9 manifestes, `evals/scenarios.json` et licence (`3.2.1`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `Apache-2.0` (`LICENSE`) + `NOTICE`, semver identique partout (`3.2.1`, incluant `evals/scenarios.json`) : `.antigravity-plugin/plugin.json` (`$schema` Antigravity v1, `description <= 160` car.), `plugin.json` racine (Portable Agent Plugins 1.0 + `extensions.com.openai.interface` identique à `.codex-plugin/plugin.json`), `.claude-plugin/plugin.json` (`icon`), `.claude-plugin/marketplace.json` (`$schema`), `.codex-plugin/plugin.json` (`shortDescription <= 30`, `defaultPrompt <= 128`), `.agents/plugins/marketplace.json`, `gemini-extension.json` (`"contextFileName": []`, `"settings": []`), `mcp_config.json`, `.mcp.json`.
-3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 37 outils (`10 lois`, `12 juris`, `15 outils` sur 6 familles incluant `economie`), longueur composée `<= 64` car. (max 62 Claude Code, 53 Antigravity, 55 OpenAI `plugin:skill`) ; `plugin.json`, `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop.
-4. **Budgets et structure des compétences (`skills/`) :**
-   - Descriptions YAML : `<= 450` car. (phases), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale du greffon `<= 6 000` car.**, incluant `En anglais` et `Ne pas utiliser pour`, sans `<`/`>`.
-   - `SKILL.md` : corps `<= 2 200` mots et `<= 16 384` octets (`16 KB`), ouverture par `# `, parité SHA-256 du `SAFETY-KERNEL` v3 (règle 2 `acces.poirierlavoie.ca/moi` + `403`, règle 5 `Perception et précédents` + `donnée brute`) sur les 10 `SKILL.md`, correspondance 1:1 avec `references/*.md` et `scripts/*.py`.
+2. **Parité exacte des 9 manifestes, `evals/scenarios.json` et licence (`3.3.0`) :** `name` = `droit-civil-quebecois`, `displayName` = `Droit civil québécois`, licence = `Apache-2.0` (`LICENSE`) + `NOTICE`, semver identique partout (`3.3.0`, incluant `evals/scenarios.json`) : `.antigravity-plugin/plugin.json` (`$schema` Antigravity v1, `description <= 160` car.), `plugin.json` racine (Portable Agent Plugins 1.0 + `extensions.com.openai.interface` identique à `.codex-plugin/plugin.json`), `.claude-plugin/plugin.json` (`icon`), `.claude-plugin/marketplace.json` (`$schema`), `.codex-plugin/plugin.json` (`shortDescription <= 30`, `defaultPrompt <= 128`), `.agents/plugins/marketplace.json`, `gemini-extension.json` (`"contextFileName": []`, `"settings": []`), `mcp_config.json`, `.mcp.json`.
+3. **Serveurs MCP OAuth-first et plafond `<= 64` caractères :** `lois`, `juris` (`/mcp/oauth` sans `headers`, `variables` ni `eager`) et `outils` (`/mcp`), 37 outils (`10 lois`, `12 juris`, `15 outils` sur 6 familles incluant `economie`), longueur composée `<= 64` car. (max 62 Claude Code, 53 Antigravity, 55 OpenAI `plugin:skill`) ; `plugin.json`, `.codex-plugin/plugin.json` et `scripts/empaqueter_plugin_chatgpt.py` omettent `mcpServers` et `requires_local_executor` pour la compatibilité ChatGPT Web + Desktop. `synchroniser_plugin_gemini.py` et `empaqueter_plugin_chatgpt.py` embarquent `agents/`.
+4. **Budgets et structure des compétences (`skills/`) et personas (`agents/`) :**
+   - Descriptions YAML : `<= 450` car. (phases et `agents/*.md`), `<= 750` car. (services), `<= 1 024` car. absolu, **somme totale des compétences `<= 6 000` car.**, incluant `En anglais` (et `Ne pas utiliser pour` pour `SKILL.md`), sans `<`/`>`.
+   - `SKILL.md` et `agents/*.md` : `<= 16 384` octets (`16 KB`), ouverture par `# ` ; corps `SKILL.md <= 2 200` mots et parité SHA-256 du `SAFETY-KERNEL` v3 sur les 10 `SKILL.md` ; `agents/*.md` inclut `donnée brute` et `etat-dossier`, sans `../`, `phase-*` ni `skills/...`, et chaque persona est référencé dans `produit-contre-epreuve-banc.md`.
    - Feuilles `references/*.md` : `<= 24 576` octets (`24 KB`), zéro `../`, titres conformes à la famille.
    - Plafond par chargement : `SKILL.md` + ses 2 plus grandes feuilles `<= 65 536` octets (`64 KB`).
    - Fichiers par compétence : `<= 100`.
@@ -151,7 +156,7 @@ Toute modification doit passer `python verifier.py` (sortie strictement muette, 
 # 1. Contrôles statiques (muet, sortie 0) et mode publication (--release)
 python verifier.py
 python verifier.py --stats
-# python verifier.py --release
+python verifier.py --release
 
 # 2. Suite d'évaluation comportementale, scripts locaux et tests du vérificateur
 python evals/executer_evals.py --auto-test

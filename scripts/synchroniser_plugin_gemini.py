@@ -38,7 +38,7 @@ BUNDLE_ROOT_FILES: list[tuple[Path, Path]] = [
 
 def collect_bundle_files() -> list[tuple[Path, Path]]:
     files: list[tuple[Path, Path]] = list(BUNDLE_ROOT_FILES)
-    for folder in ("assets", "skills"):
+    for folder in ("assets", "agents", "skills"):
         folder_dir = SRC_DIR / folder
         if folder_dir.is_dir():
             for p in folder_dir.rglob("*"):

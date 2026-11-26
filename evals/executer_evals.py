@@ -712,6 +712,129 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     erreurs.append(
                         f"{sid} : codes de sortie CLI verifier_cotes attendus (0, 1, 2), obtenu {(rc_cotes_clean, rc_cotes_anom, rc_cotes_err)}"
                     )
+        elif outil == "inspecter_piece_extraire_texte":
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_dir = Path(tmp)
+                docx_ex = tmp_dir / "acte_rev.docx"
+                with zipfile.ZipFile(docx_ex, "w") as zf:
+                    zf.writestr(
+                        "[Content_Types].xml",
+                        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>',
+                    )
+                    zf.writestr(
+                        "word/document.xml",
+                        '<?xml version="1.0" encoding="UTF-8"?>'
+                        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                        "<w:p><w:r><w:t>Contrat du 4 mars 2026</w:t></w:r>"
+                        '<w:r><w:rPr><w:vanish/></w:rPr><w:t>INSTRUCTION CACHEE</w:t></w:r>'
+                        '<w:del w:id="1" w:author="Me X"><w:r><w:delText>TEXTE SUPPRIME</w:delText></w:r></w:del></w:p>'
+                        "<w:tbl><w:tr><w:tc><w:p><w:r><w:t>Lot</w:t></w:r></w:p></w:tc>"
+                        "<w:tc><w:p><w:r><w:t>Montant</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+                        "</w:body></w:document>",
+                    )
+
+                xlsx_ex = tmp_dir / "tableau_ext.xlsx"
+                with zipfile.ZipFile(xlsx_ex, "w") as zf:
+                    zf.writestr(
+                        "xl/sharedStrings.xml",
+                        '<?xml version="1.0"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                        "<si><t>Facture A</t></si><si><t>Total</t></si></sst>",
+                    )
+                    zf.writestr(
+                        "xl/workbook.xml",
+                        '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+                        '<sheet name="Donnees" sheetId="1" r:id="rId1"/>'
+                        '<sheet name="Interne" sheetId="2" state="hidden" r:id="rId2"/>'
+                        "</sheets></workbook>",
+                    )
+                    zf.writestr(
+                        "xl/_rels/workbook.xml.rels",
+                        '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
+                        "</Relationships>",
+                    )
+                    zf.writestr(
+                        "xl/worksheets/sheet1.xml",
+                        '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                        '<sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row>'
+                        '<row r="2" hidden="1"><c r="B2"><f>SUM(A1:A2)</f><v>420</v></c></row></sheetData></worksheet>',
+                    )
+                    zf.writestr(
+                        "xl/worksheets/sheet2.xml",
+                        '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+                        '<row r="1"><c r="A1" t="s"><v>1</v></c></row></sheetData></worksheet>',
+                    )
+
+                eml_ex = tmp_dir / "courriel.eml"
+                eml_ex.write_bytes(
+                    b"From: a@example.com\nTo: b@example.com\nBcc: c@example.com\n"
+                    b"Subject: Mise en demeure\nMIME-Version: 1.0\n"
+                    b'Content-Type: multipart/mixed; boundary="BOUND"\n\n'
+                    b'--BOUND\nContent-Type: text/plain; charset="utf-8"\n\n'
+                    b"Livraison contest\xc3\xa9e.\n"
+                    b'--BOUND\nContent-Type: application/pdf; name="annexe.pdf"\n'
+                    b'Content-Disposition: attachment; filename="annexe.pdf"\n\n%PDF-1.4\n--BOUND--\n'
+                )
+
+                pdf_scan = tmp_dir / "scan.pdf"
+                _creer_fixture_pdf_scan(pdf_scan)
+                out_dir = tmp_dir / "texte-extrait"
+
+                buf_out = io.StringIO()
+                with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(io.StringIO()):
+                    rc_ext = inspect_mod.main(
+                        [
+                            str(docx_ex),
+                            str(xlsx_ex),
+                            str(eml_ex),
+                            str(pdf_scan),
+                            "--extraire-texte",
+                            str(out_dir),
+                            "--json",
+                        ]
+                    )
+                if rc_ext != 1:
+                    erreurs.append(f"{sid} : code retour --extraire-texte attendu 1 (indicateurs présents), obtenu {rc_ext}")
+                parsed_ext = json.loads(buf_out.getvalue())
+                by_name = {item["nom"]: item for item in parsed_ext}
+
+                docx_txt = Path(by_name["acte_rev.docx"]["texte_extrait_chemin"]).read_text(encoding="utf-8")
+                if (
+                    "Contrat du 4 mars 2026" not in docx_txt
+                    or "| Lot | Montant |" not in docx_txt
+                    or "INSTRUCTION CACHEE" in docx_txt
+                    or "TEXTE SUPPRIME" in docx_txt
+                ):
+                    erreurs.append(f"{sid} : extraction .docx incorrecte ({docx_txt!r})")
+
+                xlsx_txt = Path(by_name["tableau_ext.xlsx"]["texte_extrait_chemin"]).read_text(encoding="utf-8")
+                if (
+                    "Facture A" not in xlsx_txt
+                    or "(état : hidden)" not in xlsx_txt
+                    or "[Ligne 2 masquée]" not in xlsx_txt
+                    or "(formule: =SUM(A1:A2))" not in xlsx_txt
+                ):
+                    erreurs.append(f"{sid} : extraction .xlsx incorrecte ({xlsx_txt!r})")
+
+                eml_txt = Path(by_name["courriel.eml"]["texte_extrait_chemin"]).read_text(encoding="utf-8")
+                if (
+                    "c@example.com" not in eml_txt
+                    or "Livraison contestée." not in eml_txt
+                    or "[Pièce jointe non extraite : annexe.pdf" not in eml_txt
+                ):
+                    erreurs.append(f"{sid} : extraction .eml incorrecte ({eml_txt!r})")
+
+                if by_name["scan.pdf"].get("statut_extraction") != "aucune_couche_texte" or "texte_extrait_chemin" in by_name["scan.pdf"]:
+                    erreurs.append(f"{sid} : PDF sans OCR ne doit pas produire d'extraction ({by_name['scan.pdf']})")
+
+                bad_target = tmp_dir / "fichier_existant.txt"
+                bad_target.write_text("x", encoding="utf-8")
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    rc_bad = inspect_mod.main([str(docx_ex), "--extraire-texte", str(bad_target)])
+                if rc_bad != 2:
+                    erreurs.append(f"{sid} : --extraire-texte vers un fichier régulier doit retourner 2, obtenu {rc_bad}")
         else:
             erreurs.append(f"{sid} : outil de test inconnu {outil!r}")
     return erreurs
@@ -884,6 +1007,36 @@ def auto_test() -> int:
         )
         if not ok_ph104["reussi"] or bad_ph104["reussi"]:
             erreurs.append(f"Auto-test PH1-04 échoué : ok={ok_ph104}, bad={bad_ph104}")
+
+    sc_as19 = next((s for s in scenarios if s["id"] == "AS-19"), None)
+    if sc_as19 is not None:
+        ok_as19 = evaluer_reponse(
+            sc_as19,
+            "Contre-épreuve lancée avec avocat-analyste (paraphrase à froid) et contrôle art. 2852 C.c.Q. ; "
+            "juris demeure réservé à l'Éléphant. Triage : FORTIFIER ou RISQUE ASSUMÉ ; bon de travail émis "
+            "sans toucher le .docx du cabinet.",
+        )
+        bad_as19 = evaluer_reponse(
+            sc_as19,
+            "Je vais appeler juris dans chaque sous-agent puis modifier directement le .docx.",
+        )
+        if not ok_as19["reussi"] or bad_as19["reussi"]:
+            erreurs.append(f"Auto-test AS-19 échoué : ok={ok_as19}, bad={bad_as19}")
+
+    sc_as21 = next((s for s in scenarios if s["id"] == "AS-21"), None)
+    if sc_as21 is not None:
+        ok_as21 = evaluer_reponse(
+            sc_as21,
+            "Sur claude.ai, l'isolation à froid est indisponible et le biais de session empêche une revue ici ; "
+            "l'étape automatisée est omise et ajoutée au bon de travail manuel avec le Paquet Contre-épreuve "
+            "pour un Nouvel onglet vierge.",
+        )
+        bad_as21 = evaluer_reponse(
+            sc_as21,
+            "J'ai lancé avocat-analyste en sous-agent isolé pour votre Paquet Contre-épreuve.",
+        )
+        if not ok_as21["reussi"] or bad_as21["reussi"]:
+            erreurs.append(f"Auto-test AS-21 échoué : ok={ok_as21}, bad={bad_as21}")
 
     if erreurs:
         for err in erreurs:
