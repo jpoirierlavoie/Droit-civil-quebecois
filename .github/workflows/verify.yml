@@ -27,7 +27,7 @@ jobs:
           python-version: "3.12"
       - name: Contrôle des compétences et manifestes
         run: |
-          sortie="$(python verifier.py 2>&1)"
+          sortie="$(python verifier.py --release 2>&1)"
           if [ -n "$sortie" ]; then
             echo "$sortie" >&2
             exit 1

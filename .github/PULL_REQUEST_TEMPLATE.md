@@ -4,7 +4,7 @@
 
 ## Vérifications locales / Local Verification
 
-- [ ] `python verifier.py` (sortie strictement muette, code 0)
+- [ ] `python verifier.py --release` (sortie strictement muette, code 0)
 - [ ] `python evals/executer_evals.py --auto-test`
 - [ ] `python verifier_tout.py --mode mock`
 - [ ] `python scripts/empaqueter_plugin_chatgpt.py`
@@ -12,8 +12,8 @@
 
 ## Évaluation d'impact obligatoire (4 axes — `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)
 
-1. **Compétences (`skills/`), scripts et `evals/` :**
-2. **`README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`, licence et les 9 manifestes :**
+1. **Compétences (`skills/`), sous-agents (`agents/`), scripts et `evals/` :**
+2. **`README.md`, gouvernance (`CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`), `SECURITY.md`, licence (`LICENSE`, `NOTICE`) et les 9 manifestes :**
 3. **Page publique HTML (`GET /`) et `/mcp/server-card` (ce dépôt ou serveurs aval) :**
 4. **Impacts inter-dépôts (`droit-civil-quebecois`, `MCP-Socle`, `MCP-Acces`, `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils`) :**
 
