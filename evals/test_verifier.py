@@ -51,7 +51,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
     }
     common_meta = {
         "name": verifier.EXPECTED_PLUGIN_NAME,
-        "version": "3.4.0",
+        "version": "3.4.1",
         "description": "Plugin v3",
         "author": {"name": "Test"},
         "homepage": verifier.EXPECTED_REPO_URL,
@@ -67,9 +67,14 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.4.0",
+                        "displayName": verifier.EXPECTED_DISPLAY_NAME,
+                        "version": "3.4.1",
                         "license": verifier.EXPECTED_LICENSE,
                         "icon": "./assets/logo.svg",
+                        "documentationUrl": "https://github.com/jpoirierlavoie/droit-civil-quebecois#readme",
+                        "supportUrl": "https://acces.poirierlavoie.ca",
+                        "privacyPolicyUrl": "https://acces.poirierlavoie.ca/confidentialite",
+                        "termsOfServiceUrl": "https://acces.poirierlavoie.ca/cgu",
                         "homepage": verifier.EXPECTED_REPO_URL,
                         "repository": verifier.EXPECTED_REPO_URL,
                     }
@@ -83,11 +88,11 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "$schema": verifier.CLAUDE_MARKETPLACE_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "metadata": {"version": "3.4.0"},
+                        "metadata": {"version": "3.4.1"},
                         "plugins": [
                             {
                                 "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "version": "3.4.0",
+                                "version": "3.4.1",
                                 "license": verifier.EXPECTED_LICENSE,
                                 "homepage": verifier.EXPECTED_REPO_URL,
                                 "repository": verifier.EXPECTED_REPO_URL,
@@ -140,7 +145,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "$schema": verifier.ANTIGRAVITY_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.4.0",
+                        "version": "3.4.1",
                         "description": "Plugin v3",
                         "logo": "assets/logo.svg",
                         "suggestedPrompts": ["Test 1"],
@@ -185,7 +190,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.4.0",
+                        "version": "3.4.1",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -386,7 +391,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
 
     _write_lf(
         root / "evals" / "scenarios.json",
-        json.dumps({"version": "3.4.0", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"version": "3.4.1", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
     )
 
 
@@ -647,7 +652,8 @@ class VerifierV3Tests(unittest.TestCase):
                             },
                             "juris": {"type": "http", "url": verifier.EXPECTED_JURISPRUDENCE_OAUTH_URL},
                             "outils": {"type": "http", "url": verifier.EXPECTED_OUTILS_URL},
-                        }
+                        },
+                        "recommendedCategories": ["legal-research"],
                     }
                 )
                 + "\n",
@@ -657,7 +663,7 @@ class VerifierV3Tests(unittest.TestCase):
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.4.0",
+                        "version": "3.4.1",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -672,7 +678,7 @@ class VerifierV3Tests(unittest.TestCase):
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'headers'" in e for e in errs))
             self.assertTrue(any("mcp_config.json : mcpServers.lois ne doit pas contenir 'eager'" in e for e in errs))
-            self.assertTrue(any(".mcp.json" in e for e in errs))
+            self.assertTrue(any(".mcp.json : clés racine non reconnues" in e for e in errs))
             self.assertTrue(any("gemini-extension.json" in e and "httpUrl" in e for e in errs))
 
     def test_codex_chatgpt_manifests_validation(self) -> None:
@@ -775,6 +781,50 @@ class VerifierV3Tests(unittest.TestCase):
                 "GEMINI.md",
             ):
                 self.assertNotIn(forbidden, names)
+
+    def test_claude_directory_manifest_and_packaging_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _build_valid_v3_fixture(root)
+
+            env = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
+            cmd = [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_claude.py"), "--apply"]
+            res = subprocess.run(cmd, cwd=RACINE, env=env, capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
+
+            bundle_dir = root / "dist" / "claude-directory"
+            self.assertTrue(bundle_dir.is_dir())
+            rel_files = {p.relative_to(bundle_dir).as_posix() for p in bundle_dir.rglob("*") if p.is_file()}
+            for req in (
+                ".claude-plugin/plugin.json",
+                ".mcp.json",
+                "LICENSE",
+                "NOTICE",
+                "README.md",
+                "SECURITY.md",
+                "assets/logo.svg",
+            ):
+                self.assertIn(req, rel_files)
+            self.assertFalse(any(f.endswith(".py") for f in rel_files))
+            for forbidden in (
+                "AGENTS.md",
+                "CLAUDE.md",
+                "GEMINI.md",
+                ".claude-plugin/marketplace.json",
+                "plugin.json",
+                "mcp_config.json",
+                "gemini-extension.json",
+            ):
+                self.assertNotIn(forbidden, rel_files)
+
+            cp_path = root / ".claude-plugin" / "plugin.json"
+            cp_data = json.loads(cp_path.read_text(encoding="utf-8"))
+            del cp_data["privacyPolicyUrl"]
+            cp_data["unknownField"] = True
+            _write_lf(cp_path, json.dumps(cp_data, ensure_ascii=False, indent=2) + "\n")
+            errs, _ = verifier.verifier(root, release_mode=False)
+            self.assertTrue(any(".claude-plugin/plugin.json : 'privacyPolicyUrl'" in e for e in errs))
+            self.assertTrue(any(".claude-plugin/plugin.json : clés non reconnues" in e for e in errs))
 
     def test_scenarios_version_and_markdown_links_checked(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

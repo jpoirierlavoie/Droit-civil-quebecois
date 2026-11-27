@@ -1,6 +1,7 @@
 {
   "name": "droit-civil-quebecois",
-  "version": "3.4.0",
+  "displayName": "Droit civil québécois",
+  "version": "3.4.1",
   "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement), 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) et 6 sous-agents de contre-épreuve branchés sur « lois », « juris » et « outils ».",
   "author": {
     "name": "Jason Poirier Lavoie",
@@ -10,6 +11,10 @@
   "repository": "https://github.com/jpoirierlavoie/droit-civil-quebecois",
   "license": "Apache-2.0",
   "icon": "./assets/logo.svg",
+  "documentationUrl": "https://github.com/jpoirierlavoie/droit-civil-quebecois#readme",
+  "supportUrl": "https://acces.poirierlavoie.ca",
+  "privacyPolicyUrl": "https://acces.poirierlavoie.ca/confidentialite",
+  "termsOfServiceUrl": "https://acces.poirierlavoie.ca/cgu",
   "keywords": [
     "québec",
     "droit civil",

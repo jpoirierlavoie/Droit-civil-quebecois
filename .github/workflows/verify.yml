@@ -40,3 +40,7 @@ jobs:
         run: |
           python scripts/empaqueter_plugin_chatgpt.py
           python scripts/empaqueter_plugin_chatgpt.py --apply
+      - name: Validation du paquet Claude Directory
+        run: |
+          python scripts/empaqueter_plugin_claude.py
+          python scripts/empaqueter_plugin_claude.py --apply

@@ -12,8 +12,5 @@
       "type": "http",
       "url": "https://outils.poirierlavoie.ca/mcp/oauth"
     }
-  },
-  "recommendedCategories": [
-    "legal-research"
-  ]
+  }
 }

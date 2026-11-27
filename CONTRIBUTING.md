@@ -36,6 +36,7 @@ PYTHONUTF8=1 python3 verifier.py --release
 PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py
+PYTHONUTF8=1 python3 scripts/empaqueter_plugin_claude.py
 ```
 
 ```powershell
@@ -45,6 +46,7 @@ python verifier.py --release
 python evals/executer_evals.py --auto-test
 python verifier_tout.py --mode mock
 python scripts/empaqueter_plugin_chatgpt.py
+python scripts/empaqueter_plugin_claude.py
 ```
 
 Toute PR doit aussi renseigner l'évaluation d'impact à 4 axes demandée dans le gabarit de PR (et garder `AGENTS.md`, `CLAUDE.md` et `GEMINI.md` identiques octet pour octet et sous `24 000` octets).
@@ -56,6 +58,7 @@ Toute PR doit aussi renseigner l'évaluation d'impact à 4 axes demandée dans l
 | Script | Public cible | Rôle |
 |---|---|---|
 | [`scripts/empaqueter_plugin_chatgpt.py`](scripts/empaqueter_plugin_chatgpt.py) | Utilisateurs / CI | Valide et produit l'archive universelle `dist/droit-civil-quebecois-chatgpt-universal.zip` |
+| [`scripts/empaqueter_plugin_claude.py`](scripts/empaqueter_plugin_claude.py) | Mainteneur / CI | Valide et produit `dist/claude-directory/` ainsi que la branche `claude-directory` (sans `.py` ni fichiers racine de développement) pour Anthropic Directory |
 | [`scripts/synchroniser_plugin_gemini.py`](scripts/synchroniser_plugin_gemini.py) | Utilisateurs Antigravity | Copie le greffon vers `~/.gemini/config/plugins/droit-civil-quebecois` (en promouvant `.antigravity-plugin/plugin.json` à la racine) |
 | [`scripts/regenerer_cache_mcp.py`](scripts/regenerer_cache_mcp.py) | Mainteneur uniquement | Reconstruit le cache local d'outils depuis les clones locaux de `MCP-Legislation`, `MCP-Jurisprudence` et `MCP-Outils` + Node.js (`npx tsx`) |
 
