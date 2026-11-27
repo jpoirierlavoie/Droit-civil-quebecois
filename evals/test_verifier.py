@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import os
@@ -39,26 +38,6 @@ def _write_lf(path: Path, text: str) -> None:
 
 
 def _build_valid_v3_fixture(root: Path) -> None:
-    codex_interface = {
-        "displayName": verifier.EXPECTED_DISPLAY_NAME,
-        "shortDescription": "Litige civil québécois",
-        "websiteURL": "https://acces.poirierlavoie.ca",
-        "privacyPolicyURL": "https://acces.poirierlavoie.ca/confidentialite",
-        "termsOfServiceURL": "https://acces.poirierlavoie.ca/cgu",
-        "defaultPrompt": ["Test prompt 1"],
-        "composerIcon": "./assets/logo.svg",
-        "logo": "./assets/logo.svg",
-    }
-    common_meta = {
-        "name": verifier.EXPECTED_PLUGIN_NAME,
-        "version": "3.4.1",
-        "description": "Plugin v3",
-        "author": {"name": "Test"},
-        "homepage": verifier.EXPECTED_REPO_URL,
-        "repository": verifier.EXPECTED_REPO_URL,
-        "license": verifier.EXPECTED_LICENSE,
-        "keywords": ["québec", "droit civil"],
-    }
     for rel in sorted(verifier.ROOT_ALLOWLIST | verifier.EVALS_ALLOWLIST):
         target = root / rel
         if rel in (".claude-plugin/plugin.json",):
@@ -68,7 +47,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.4.1",
+                        "version": "3.5.0",
                         "license": verifier.EXPECTED_LICENSE,
                         "icon": "./assets/logo.svg",
                         "documentationUrl": "https://github.com/jpoirierlavoie/droit-civil-quebecois#readme",
@@ -88,49 +67,15 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "$schema": verifier.CLAUDE_MARKETPLACE_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "metadata": {"version": "3.4.1"},
+                        "metadata": {"version": "3.5.0"},
                         "plugins": [
                             {
                                 "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "version": "3.4.1",
+                                "version": "3.5.0",
                                 "license": verifier.EXPECTED_LICENSE,
                                 "homepage": verifier.EXPECTED_REPO_URL,
                                 "repository": verifier.EXPECTED_REPO_URL,
                                 "source": "./",
-                            }
-                        ],
-                    }
-                )
-                + "\n",
-            )
-        elif rel == ".codex-plugin/plugin.json":
-            _write_lf(
-                target,
-                json.dumps(
-                    {
-                        **common_meta,
-                        "skills": "./skills/",
-                        "interface": codex_interface,
-                    }
-                )
-                + "\n",
-            )
-        elif rel == ".agents/plugins/marketplace.json":
-            _write_lf(
-                target,
-                json.dumps(
-                    {
-                        "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "interface": {"displayName": verifier.EXPECTED_DISPLAY_NAME},
-                        "plugins": [
-                            {
-                                "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "source": {"source": "local", "path": "./"},
-                                "policy": {
-                                    "installation": "AVAILABLE",
-                                    "authentication": "ON_USE",
-                                },
-                                "category": "Productivity",
                             }
                         ],
                     }
@@ -145,7 +90,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "$schema": verifier.ANTIGRAVITY_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.4.1",
+                        "version": "3.5.0",
                         "description": "Plugin v3",
                         "logo": "assets/logo.svg",
                         "suggestedPrompts": ["Test 1"],
@@ -154,18 +99,6 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "repository": verifier.EXPECTED_REPO_URL,
                         "license": verifier.EXPECTED_LICENSE,
                         "keywords": ["québec", "droit civil"],
-                    }
-                )
-                + "\n",
-            )
-        elif rel == "plugin.json":
-            _write_lf(
-                target,
-                json.dumps(
-                    {
-                        "$schema": verifier.AGENT_PLUGINS_SCHEMA,
-                        **common_meta,
-                        "extensions": {"com.openai": {"interface": codex_interface}},
                     }
                 )
                 + "\n",
@@ -190,7 +123,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.4.1",
+                        "version": "3.5.0",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -391,7 +324,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
 
     _write_lf(
         root / "evals" / "scenarios.json",
-        json.dumps({"version": "3.4.1", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"version": "3.5.0", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
     )
 
 
@@ -663,7 +596,7 @@ class VerifierV3Tests(unittest.TestCase):
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.4.1",
+                        "version": "3.5.0",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -681,33 +614,6 @@ class VerifierV3Tests(unittest.TestCase):
             self.assertTrue(any(".mcp.json : clés racine non reconnues" in e for e in errs))
             self.assertTrue(any("gemini-extension.json" in e and "httpUrl" in e for e in errs))
 
-    def test_codex_chatgpt_manifests_validation(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            _build_valid_v3_fixture(root)
-
-            cp_path = root / ".codex-plugin" / "plugin.json"
-            cp_data = json.loads(cp_path.read_text(encoding="utf-8"))
-            cp_data["version"] = "3.0.9"
-            cp_data["mcpServers"] = "./.mcp.json"
-            cp_data["requires_local_executor"] = True
-            cp_data["interface"]["shortDescription"] = "x" * 31
-            cp_data["interface"]["defaultPrompt"] = ["p" * 129]
-            _write_lf(cp_path, json.dumps(cp_data, ensure_ascii=False, indent=2) + "\n")
-
-            cm_path = root / ".agents" / "plugins" / "marketplace.json"
-            cm_data = json.loads(cm_path.read_text(encoding="utf-8"))
-            cm_data["plugins"][0]["source"] = {"source": "git", "url": "https://example.com"}
-            _write_lf(cm_path, json.dumps(cm_data, ensure_ascii=False, indent=2) + "\n")
-
-            errs, _ = verifier.verifier(root, release_mode=False)
-            self.assertTrue(any("versions divergentes" in e for e in errs))
-            self.assertTrue(any("'mcpServers' est interdit" in e for e in errs))
-            self.assertTrue(any("'requires_local_executor' est interdit" in e for e in errs))
-            self.assertTrue(any("interface.shortDescription" in e for e in errs))
-            self.assertTrue(any("interface.defaultPrompt[0]" in e for e in errs))
-            self.assertTrue(any("plugins[0].source" in e for e in errs))
-
     def test_agents_claude_gemini_parity_enforced(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -716,7 +622,7 @@ class VerifierV3Tests(unittest.TestCase):
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertTrue(any("AGENTS.md, CLAUDE.md et GEMINI.md" in e for e in errs))
 
-    def test_antigravity_and_portable_root_manifest_validation(self) -> None:
+    def test_antigravity_manifest_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _build_valid_v3_fixture(root)
@@ -725,62 +631,13 @@ class VerifierV3Tests(unittest.TestCase):
             agy_data = json.loads(agy_path.read_text(encoding="utf-8"))
             agy_data["$schema"] = "https://example.com/bad.json"
             agy_data["license"] = "MIT"
+            agy_data["version"] = "3.0.9"
             _write_lf(agy_path, json.dumps(agy_data, ensure_ascii=False, indent=2) + "\n")
-
-            port_path = root / "plugin.json"
-            port_data = json.loads(port_path.read_text(encoding="utf-8"))
-            port_data["$schema"] = "https://example.com/bad-portable.json"
-            port_data["mcpServers"] = "./.mcp.json"
-            port_data["displayName"] = "Interdit"
-            port_data["extensions"]["com.openai"]["interface"]["shortDescription"] = "Autre"
-            _write_lf(port_path, json.dumps(port_data, ensure_ascii=False, indent=2) + "\n")
 
             errs, _ = verifier.verifier(root, release_mode=False)
             self.assertTrue(any(".antigravity-plugin/plugin.json : '$schema'" in e for e in errs))
             self.assertTrue(any(".antigravity-plugin/plugin.json : 'license'" in e for e in errs))
-            self.assertTrue(any("plugin.json : '$schema'" in e for e in errs))
-            self.assertTrue(any("plugin.json : 'mcpServers' est interdit" in e for e in errs))
-            self.assertTrue(any("clés non reconnues par Agent Plugins 1.0" in e for e in errs))
-            self.assertTrue(any("diverge de .codex-plugin/plugin.json" in e for e in errs))
-
-    def test_empaqueter_plugin_chatgpt_end_to_end(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            _build_valid_v3_fixture(root)
-            env = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
-            cmd = [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"]
-            res = subprocess.run(cmd, cwd=RACINE, env=env, capture_output=True, text=True, encoding="utf-8")
-            self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
-            zip_path = root / "dist" / "droit-civil-quebecois-chatgpt-universal.zip"
-            self.assertTrue(zip_path.is_file())
-            hash1 = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-
-            res2 = subprocess.run(cmd, cwd=RACINE, env=env, capture_output=True, text=True, encoding="utf-8")
-            self.assertEqual(res2.returncode, 0, msg=res2.stderr + res2.stdout)
-            hash2 = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-            self.assertEqual(hash1, hash2)
-
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                infos = {info.filename: info for info in zf.infolist()}
-            names = set(infos)
-            for req in ("plugin.json", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "assets/logo.svg"):
-                self.assertIn(req, names)
-            self.assertEqual((infos["plugin.json"].external_attr >> 16) & 0o777, 0o644)
-            for py_name in (n for n in names if n.endswith(".py")):
-                self.assertEqual((infos[py_name].external_attr >> 16) & 0o777, 0o755)
-            for forbidden in (
-                ".antigravity-plugin/plugin.json",
-                ".codex-plugin/plugin.json",
-                ".claude-plugin/plugin.json",
-                ".agents/plugins/marketplace.json",
-                ".mcp.json",
-                "mcp_config.json",
-                "gemini-extension.json",
-                "AGENTS.md",
-                "CLAUDE.md",
-                "GEMINI.md",
-            ):
-                self.assertNotIn(forbidden, names)
+            self.assertTrue(any("versions divergentes" in e for e in errs))
 
     def test_claude_directory_manifest_and_packaging_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -953,22 +810,18 @@ class VerifierV3Tests(unittest.TestCase):
             _build_valid_v3_fixture(root)
 
             env_pack = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
-            res_zip = subprocess.run(
-                [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"],
+            res_claude = subprocess.run(
+                [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_claude.py"), "--apply"],
                 cwd=RACINE,
                 env=env_pack,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
             )
-            self.assertEqual(res_zip.returncode, 0, msg=res_zip.stderr + res_zip.stdout)
-            zip_path = root / "dist" / "droit-civil-quebecois-chatgpt-universal.zip"
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                infos = {info.filename: info for info in zf.infolist()}
+            self.assertEqual(res_claude.returncode, 0, msg=res_claude.stderr + res_claude.stdout)
+            bundle_dir = root / "dist" / "claude-directory"
             for ag in sorted(verifier.EXPECTED_AGENTS):
-                ag_rel = f"agents/{ag}.md"
-                self.assertIn(ag_rel, infos)
-                self.assertEqual((infos[ag_rel].external_attr >> 16) & 0o777, 0o644)
+                self.assertTrue((bundle_dir / "agents" / f"{ag}.md").is_file())
 
             plugins_root = tmp_path / "plugins_root"
             dst_dir = plugins_root / "droit-civil-quebecois"

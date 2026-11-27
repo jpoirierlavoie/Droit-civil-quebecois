@@ -17,7 +17,7 @@ Vérifier les exigences particulières du tribunal et du district via `lois` (`c
 
 ## Contrôles automatisés
 
-1. Exécuter `python scripts/controler_document.py <cahier.pdf> --exiger-couche-texte --exiger-signets --json` une fois le PDF assemblé dans les outils du cabinet pour vérifier OCR, présence de signets par onglet et validité des URI extraits. *(Si Python local indisponible — `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que le contrôle scripté PDF/OCR/signets/URI a été omis et l'inscrire au bon de travail.)*
+1. Exécuter `python scripts/controler_document.py <cahier.pdf> --exiger-couche-texte --exiger-signets --json` une fois le PDF assemblé dans les outils du cabinet pour vérifier OCR, présence de signets par onglet et validité des URI extraits. *(Si Python local indisponible — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que le contrôle scripté PDF/OCR/signets/URI a été omis et l'inscrire au bon de travail.)*
 2. Vérifier en lot la liste de citations par `juris.verify_citations` (avec `expected_title` et `expected_year`) et exécuter systématiquement `juris.check_exempt_cases` (avec `juris.list_exempt_cases` si choix de sous-liste requis) afin de consigner le mode de reproduction de chaque onglet avant l'assemblage.
 
 ## Contrôles humains

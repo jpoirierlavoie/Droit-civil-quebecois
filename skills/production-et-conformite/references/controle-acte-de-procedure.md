@@ -20,7 +20,7 @@ Vérifie la conformité matérielle, la pagination, la typographie et l'intégri
 2. **Continuité et concordance des cotes (`scripts/verifier_cotes.py`) :**
    Exécuter `python scripts/verifier_cotes.py --acte <acte.docx|md> --bordereau <bordereau> [--matrice <matrice>] [--prefixe D|R|DA] [--modifie] --json` pour détecter sauts de numérotation, ordre de première invocation inversé, invocations sans cote, cotes orphelines et gel des cotes sur acte modifié (`206–208 C.p.c.`). Passer `--prefixe` lorsqu'un acte défendeur/requérant/codéfendeur emploie des cotes distinctes (`D-1..D-n`, `R-1..R-n`, `DA-1..DA-n`, etc.).
 3. **Purge linguistique (`outils.terminologie_scan`) :** Exécuter sur le texte de l'acte fini.
-4. **Dégradation nuage sans Python (`claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research) :** Si `controler_document.py` ou `verifier_cotes.py` ne peuvent pas être exécutés localement, **divulguer explicitement** que les contrôles scriptés sur octets, XML Word (`comments.xml`, révisions, polices, marges, `<Pages>`), PDF (couche texte OCR, signets, `/Encrypt`) et continuité automatisée des cotes ont été **omis**, puis inscrire ces vérifications en tête du bon de travail.
+4. **Dégradation nuage sans Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** Si `controler_document.py` ou `verifier_cotes.py` ne peuvent pas être exécutés localement, **divulguer explicitement** que les contrôles scriptés sur octets, XML Word (`comments.xml`, révisions, polices, marges, `<Pages>`), PDF (couche texte OCR, signets, `/Encrypt`) et continuité automatisée des cotes ont été **omis**, puis inscrire ces vérifications en tête du bon de travail.
 
 ## Contrôles humains
 

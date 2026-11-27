@@ -25,7 +25,7 @@ Encadre l'assemblage du **cahier des procédures** remis au tribunal en premièr
 
 1. Exécuter `python scripts/controler_document.py <cahier-procedures.pdf> --exiger-couche-texte --exiger-signets --json` pour vérifier pagination, couche texte OCR, signets (`/Outlines`) et format US Letter portrait/paysage sans verrou `/Encrypt`.
 2. Exécuter `python scripts/verifier_cotes.py` sur les actes de procédure (notamment tout acte modifié sous `206 C.p.c.`) afin de confirmer l'intégrité des cotes invoquées et gelées.
-3. **Dégradation nuage sans Python (`claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research) :** si les scripts ne peuvent pas s'exécuter localement, **divulguer explicitement** que les vérifications scriptées octets/PDF/OCR/signets et cotes ont été **omises** et les inscrire en tête du bon de travail.
+3. **Dégradation nuage sans Python (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research) :** si les scripts ne peuvent pas s'exécuter localement, **divulguer explicitement** que les vérifications scriptées octets/PDF/OCR/signets et cotes ont été **omises** et les inscrire en tête du bon de travail.
 
 ## Contrôles humains
 

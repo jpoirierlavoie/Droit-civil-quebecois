@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.4.1`)
+# Droit civil québécois (`v3.5.0`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -6,11 +6,11 @@
 [![Licence Apache-2.0](https://img.shields.io/badge/Licence-Apache--2.0-blue.svg)](LICENSE)
 [![Dernière version](https://img.shields.io/github/v/release/jpoirierlavoie/droit-civil-quebecois)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest)
 
-Greffon ouvert (licence Apache-2.0) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)*, compatible avec Claude (Claude Code, Claude Desktop, `claude.ai` / Claude Research), ChatGPT Web et Desktop *(hors ChatGPT Deep Research)*, OpenAI Codex, l'API OpenAI Responses, Google Antigravity, Gemini CLI, Gemini App / Vertex AI et Gemini API Deep Research.
+Greffon ouvert (licence Apache-2.0) pour le **litige civil et commercial québécois** *(hors droit familial et droit criminel)*, compatible avec Claude (Claude Code, Claude Desktop, `claude.ai` / Claude Research), Google Antigravity, Gemini CLI, Gemini App / Vertex AI et Gemini API Deep Research.
 
 Il réunit **10 compétences** (5 listes de contrôle par phase du dossier et 5 services transversaux), **60 feuilles de référence**, **6 sous-agents de contre-épreuve sans contexte** (`agents/`), **4 scripts Python locaux** (bibliothèque standard uniquement) et **3 connecteurs MCP spécialisés** (`lois`, `juris`, `outils` — 37 outils officiels) adossés au portail [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca) ([`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces)).
 
-> **In English:** Open-source (`Apache-2.0`) plugin for **Québec civil and commercial litigation** *(excluding family and criminal law)* across **Claude**, **ChatGPT / Codex**, and **Gemini / Antigravity**. It bundles 10 litigation skills, 60 reference sheets, 6 stateless Goldfish review personas (`agents/`), 4 standard-library Python verification scripts, and 3 MCP connectors (`lois`, `juris`, `outils` — 37 tools). All three connectors (`lois`, `juris`, and `outils`) are available free of charge to active Barreau du Québec members via [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca); a personal CanLII API key (BYOK) is optional at sign-up and required only for live `juris` case-law searches (not needed for `lois` or `outils`).
+> **In English:** Open-source (`Apache-2.0`) plugin for **Québec civil and commercial litigation** *(excluding family and criminal law)* across **Claude** and **Gemini / Antigravity**. It bundles 10 litigation skills, 60 reference sheets, 6 stateless Goldfish review personas (`agents/`), 4 standard-library Python verification scripts, and 3 MCP connectors (`lois`, `juris`, `outils` — 37 tools). All three connectors (`lois`, `juris`, and `outils`) are available free of charge to active Barreau du Québec members via [`acces.poirierlavoie.ca`](https://acces.poirierlavoie.ca); a personal CanLII API key (BYOK) is optional at sign-up and required only for live `juris` case-law searches (not needed for `lois` or `outils`).
 
 ---
 
@@ -27,11 +27,11 @@ Le greffon réunit quatre couches complémentaires :
 1. **10 compétences (`skills/`) — la méthode et les gabarits :** cinq guides d'étapes selon l'avancement du dossier (`phase-*`) et cinq guides spécialisés (recherche, analyse de preuve, rédaction, contrôle de production et gestion du mandat). Elles expliquent à l'assistant comment structurer le travail, quoi vérifier et quels formats respecter.
 2. **6 sous-agents de contre-épreuve sans contexte (`agents/*.md`) — la relecture à froid :** six personas isolés (`avocat-analyste`, `avocat-adverse`, `verificateur-dossier`, `avocat-conseil`, `parajuriste-inventaire`, `coordonnateur-revue`) dépouillant les lots volumineux et contre-vérifiant projets et actes adverses sur liste blanche (`etat-dossier/banc/`) sans accès à `juris`.
 3. **3 connecteurs MCP (`lois`, `juris`, `outils`) — l'accès direct aux sources et aux calculs :** au lieu de répondre de mémoire, l'assistant interroge les textes législatifs et directives officiels (`lois`), vos recherches sur CanLII (`juris`) et des outils déterministes de délais, d'intérêts, de taux et d'indices économiques, de registres, d'adresses et de palais de justice (`outils`).
-4. **4 scripts de vérification locaux (`skills/*/scripts/*.py`) — le contrôle matériel (poste local uniquement) :** sur un outil installé sur votre ordinateur (Claude Code, Codex, Antigravity, Gemini CLI), ces scripts vérifient les délais hors ligne, inspectent les pièces reçues et contrôlent la mise en forme Word/PDF et la continuité des cotes. Dans les applications Web ou sans exécution Python locale, l'assistant le signale et produit un **bon de travail** à compléter manuellement.
+4. **4 scripts de vérification locaux (`skills/*/scripts/*.py`) — le contrôle matériel (poste local uniquement) :** sur un outil installé sur votre ordinateur (Claude Code, Antigravity, Gemini CLI), ces scripts vérifient les délais hors ligne, inspectent les pièces reçues et contrôlent la mise en forme Word/PDF et la continuité des cotes. Dans les applications Web ou sans exécution Python locale, l'assistant le signale et produit un **bon de travail** à compléter manuellement.
 
 ---
 
-## Fonctionnement et garanties (`v3.4.1`)
+## Fonctionnement et garanties (`v3.5.0`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -44,7 +44,7 @@ Le greffon réunit quatre couches complémentaires :
 4. **Banc de contre-épreuve sans contexte (`agents/` + `produit-contre-epreuve-banc.md`) :**
    - **4 modes calibrés :** indexation de lots volumineux (`>= 6` pièces, `LOT_PIECES`), pression sur la théorie de la cause (`REMUE_MENINGES`), dissection d'écrits/jugements adverses (`AUTOPSIE_ADVERSE`) et contre-épreuve à froid d'un projet contesté avec contrôle d'aveux `2852 C.c.Q.` (`CONTRE_EPREUVE`).
    - **Pare-feu et protection du quota CanLII :** les sous-agents travaillent exclusivement sur une liste blanche de fichiers (`etat-dossier/banc/`, avec extraction texte stdlib `--extraire-texte` pour `.docx`/`.xlsx`/`.eml`) sans jamais voir les notes stratégiques internes ; `juris` reste réservé à l'Éléphant (`lois` et `outils` anonymisés en mode hybride), et chaque critique passe par une porte de triage obligatoire (`FORTIFIER`, `DÉSAMORCER`, `CIBLE D'INSTRUCTION`, `RISQUE ASSUMÉ`). Sur les surfaces Web sans sous-agents isolés, le greffon refuse de simuler une lecture à froid dans le même fil et livre un **Paquet Contre-épreuve (Nouvel onglet vierge)** inscrit au bon de travail.
-5. **Vérifications locales et dégradation en ligne :** Les 4 scripts Python inspectent localement en lecture seule les métadonnées, la mise en page Word/PDF, la couche texte (OCR), les signets et la continuité des cotes, puis émettent un **bon de travail** précis pour les logiciels du cabinet (Microsoft Word, Adobe Acrobat). Sur les plateformes sans disque local ni Python (`claude.ai`, ChatGPT Web sans exécutant local, Gemini App, Deep Research), les suivis `etat-dossier/` sont remis en ligne dans la réponse et les vérifications techniques non exécutées sont signalées en tête du bon de travail manuel.
+5. **Vérifications locales et dégradation en ligne :** Les 4 scripts Python inspectent localement en lecture seule les métadonnées, la mise en page Word/PDF, la couche texte (OCR), les signets et la continuité des cotes, puis émettent un **bon de travail** précis pour les logiciels du cabinet (Microsoft Word, Adobe Acrobat). Sur les plateformes sans disque local ni Python (`claude.ai`, Gemini App, Deep Research), les suivis `etat-dossier/` sont remis en ligne dans la réponse et les vérifications techniques non exécutées sont signalées en tête du bon de travail manuel.
 6. **Corpus officiel verbatim (`134` textes répartis en 8 domaines et 50 matières) :** `lois` restitue sans modification les lois et règlements consolidés (LégisQuébec et Justice Canada, incluant les *Lois constitutionnelles de 1867 et de 1982*, le droit sectoriel québécois et fédéral ainsi que `ca-c-46`/`ca-c-38.8`/`ca-y-1.5` en quarantaine dans `penal` ; *Loi de l'impôt sur le revenu* exclue), les règlements de cour et règlements AMF `V-1.1`, ainsi que les directives de pratique PDF de la C.S. et de la C.Q. et les *Instructions générales* de l'AMF (textes indicatifs sans force de loi, certains publiés en français seulement ; aucun recueil unifié de directives QCCA n'existe au-delà de `c-25.01-r.0.2.01`). Par défaut, `find_relevant`, `list_laws` et `search_text` (sans `law`) interrogent le tronc commun (`core`) avec radar `other_domains`, tout en permettant d'ouvrir 7 silos spécialisés (`domains`), de cibler un tribunal (`forum`) ou un ordre de gouvernement (`jurisdiction='qc'|'ca'`).
 
 ---
@@ -92,9 +92,9 @@ Le greffon réunit quatre couches complémentaires :
 | **`juris`** | OAuth (défaut) : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`<br>Direct (CLI/API) : `https://jurisprudence.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API<br>**Clé CanLII personnelle requise (BYOK) :** votre clé API CanLII (`/moi` ou `X-Clef-CanLII`) | [MCP-Jurisprudence](https://github.com/jpoirierlavoie/MCP-Jurisprudence) |
 | **`outils`** | OAuth (défaut) : `https://outils.poirierlavoie.ca/mcp/oauth`<br>Direct (CLI/API) : `https://outils.poirierlavoie.ca/mcp` | `/mcp/oauth` : autorisation navigateur OAuth 2.1 via `acces.poirierlavoie.ca`<br>`/mcp` : jeton individuel (`Authorization: Bearer` ou `?key=`) pour CLI et API<br>*(Lecture seule sur 4 bases D1, zéro journalisation ; aucune clé CanLII requise)* | [MCP-Outils](https://github.com/jpoirierlavoie/MCP-Outils) |
 
-> La configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut les **trois** connecteurs (`lois`, `juris` et `outils`) à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
+> La configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut les **trois** connecteurs (`lois`, `juris` et `outils`) à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.4.1`)
+### Catalogue exact des 37 outils (`v3.5.0`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -138,16 +138,9 @@ L'accès aux trois connecteurs (`lois`, `juris` et `outils`) est réservé gratu
 
 Choisissez d'abord votre environnement : **applications Web ou de bureau** (installation visuelle sans terminal) ou **outils en ligne de commande, IDE et API** (qui permettent aussi l'exécution locale des 4 scripts Python et de `etat-dossier/`).
 
-### A. Applications Web et de bureau (`.zip`, place de marché ou connecteurs visuels)
+### A. Applications Web et de bureau (place de marché ou connecteurs visuels)
 
-#### 1. ChatGPT (Web & Desktop)
-
-1. Télécharger l'archive `droit-civil-quebecois-chatgpt-universal.zip` depuis la [dernière publication GitHub (`Releases`)](https://github.com/jpoirierlavoie/droit-civil-quebecois/releases/latest) *(ou la générer localement via `python scripts/empaqueter_plugin_chatgpt.py --apply`)*.
-2. Importer l'archive et ajouter une seule fois dans `https://chatgpt.com/plugins` (**+ → Add custom MCP server**) les 3 connecteurs distants en mode **OAuth** : `lois` (`https://legislation.poirierlavoie.ca/mcp/oauth`), `juris` (`https://jurisprudence.poirierlavoie.ca/mcp/oauth`) et `outils` (`https://outils.poirierlavoie.ca/mcp/oauth`). Ils sont ensuite partagés entre ChatGPT Web et Desktop.
-
-> **Exclusion de ChatGPT Deep Research :** *ChatGPT Deep Research* (et les modèles `*-deep-research` d'OpenAI) exige une façade générique à deux outils (`search`/`fetch`) incompatible avec les 37 outils spécialisés et les exigences de vérification du Palier 3 ; il est donc exclu du greffon. Employer **Claude Research** ou **Gemini Deep Research** pour les recherches autonomes multi-étapes.
-
-#### 2. Claude Desktop, `claude.ai` & répertoire Claude (Anthropic Directory)
+#### 1. Claude Desktop, `claude.ai` & répertoire Claude (Anthropic Directory)
 
 - **Claude Desktop & répertoire Anthropic :** installer depuis la branche dédiée `claude-directory` (paquet épuré sans scripts `.py` ni fichiers de développement racine, généré par `python scripts/empaqueter_plugin_claude.py --apply --update-branch`) ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth` sur les 3 serveurs).
 - **Claude Web (`claude.ai` — OAuth 2.1 PKCE `S256`) :** sur le Web, Claude n'ajoute pas automatiquement les serveurs MCP distants d'un greffon ; ouvrir **Customize → Connectors** et ajouter une seule fois les trois URLs suivantes, puis cliquer sur **Connect** pour autoriser via `acces.poirierlavoie.ca` :
@@ -156,13 +149,13 @@ Choisissez d'abord votre environnement : **applications Web ou de bureau** (inst
   - `outils` : `https://outils.poirierlavoie.ca/mcp/oauth`
 - **Variante directe `?key=` (`claude.ai`) :** saisir `https://legislation.poirierlavoie.ca/mcp?key=<votre-jeton>`, `https://jurisprudence.poirierlavoie.ca/mcp?key=<votre-jeton>` et `https://outils.poirierlavoie.ca/mcp?key=<votre-jeton>` **dès la création du connecteur, avant toute première sonde** (sinon `claude.ai` reçoit un `404`). Importer les compétences `skills/` dans l'espace de travail pour activer le noyau `SAFETY-KERNEL`.
 
-#### 3. Gemini App (`gemini.google.com`) & Vertex AI Gemini Enterprise
+#### 2. Gemini App (`gemini.google.com`) & Vertex AI Gemini Enterprise
 
 Ajouter les trois connecteurs OAuth 2.1 **`https://legislation.poirierlavoie.ca/mcp/oauth`**, **`https://jurisprudence.poirierlavoie.ca/mcp/oauth`** et **`https://outils.poirierlavoie.ca/mcp/oauth`**.
 
 ### B. Outils en ligne de commande, IDE et API
 
-#### 4. Claude Code
+#### 3. Claude Code
 
 Aucune variable d'environnement locale requise : installer depuis la place de marché du dépôt, puis autoriser la connexion OAuth 2.1 dans votre navigateur (via `/mcp` / `/mcp auth`) sur `acces.poirierlavoie.ca` :
 
@@ -173,7 +166,7 @@ Aucune variable d'environnement locale requise : installer depuis la place de ma
 
 *(Pour un poste ou script sans navigateur, remplacer localement les URLs par `/mcp` avec un en-tête `Authorization: Bearer <jeton>` généré sur `acces.poirierlavoie.ca/moi` — extrait prêt à coller fourni dans `/moi`.)*
 
-#### 5. Google Antigravity
+#### 4. Google Antigravity
 
 Installer depuis le dépôt GitHub grâce au manifeste `.antigravity-plugin/plugin.json`, ou synchroniser localement vers `~/.gemini/config/plugins/droit-civil-quebecois`. Les trois connecteurs (`lois`, `juris`, `outils`) s'authentifient par navigateur en OAuth 2.1 via `acces.poirierlavoie.ca`, sans variable d'environnement à saisir :
 
@@ -187,7 +180,7 @@ python scripts/synchroniser_plugin_gemini.py --apply
 python scripts/regenerer_cache_mcp.py --apply   # optionnel (mainteneur : nécessite les 3 dépôts MCP frères)
 ```
 
-#### 6. Gemini CLI
+#### 5. Gemini CLI
 
 ```bash
 gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecois
@@ -195,16 +188,11 @@ gemini extensions install https://github.com/jpoirierlavoie/droit-civil-quebecoi
 
 `gemini-extension.json` emploie OAuth 2.1 sur `/mcp/oauth` (autorisation interactive sans secret statique) et laisse `"contextFileName": []` afin que `GEMINI.md` (réservé au développement de ce dépôt) n'encombre pas les sessions juridiques.
 
-#### 7. OpenAI Codex et API OpenAI Responses
-
-- **OpenAI Codex (CLI / poste local) :** installer le greffon depuis la racine du dépôt (`plugin.json` ou `.agents/plugins/marketplace.json`, où `etat-dossier/` et les 4 scripts Python locaux fonctionnent directement) et enregistrer `lois`, `juris` et `outils` (`/mcp/oauth`) via `codex mcp add`.
-- **API OpenAI Responses :** déclarer les 3 serveurs en `"type": "mcp"` sur `/mcp` avec `"require_approval": "never"` et l'en-tête `Authorization: Bearer <jeton>` (`lois`, `juris`, `outils`), sur des questions juridiques anonymisées préfixées du bloc `SAFETY-KERNEL` ci-dessous.
-
 ---
 
 ## Modes Deep Research (`Claude Research` & `Gemini Deep Research`)
 
-Les 37 outils des trois serveurs (`lois`, `juris`, `outils`) sont compatibles nativement sans façade supplémentaire avec **Claude Research** et **Gemini Deep Research** (`deep-research-preview-04-2026`, `deep-research-max-preview-04-2026`), avec plafonds de requêtes par minute dédiés aux rafales multi-agents (`300/min` `lois` et `outils`, `180/min` `juris`) et quotas journaliers UTC (`3 000` `local`, `200` `sortant`, `150` `semantique`). *ChatGPT Deep Research* est volontairement exclu du greffon, car il impose une façade à deux outils (`search`/`fetch`) incompatible avec le contrat à 37 outils et les exigences de lecture intégrale du Palier 3 :
+Les 37 outils des trois serveurs (`lois`, `juris`, `outils`) sont compatibles nativement sans façade supplémentaire avec **Claude Research** et **Gemini Deep Research** (`deep-research-preview-04-2026`, `deep-research-max-preview-04-2026`), avec plafonds de requêtes par minute dédiés aux rafales multi-agents (`300/min` `lois` et `outils`, `180/min` `juris`) et quotas journaliers UTC (`3 000` `local`, `200` `sortant`, `150` `semantique`) :
 
 - **Claude Research (`claude.ai`) :** activer les 3 connecteurs (OAuth sur `/mcp/oauth` ou `?key=` sur `/mcp`), régler les outils en lecture seule sur *Always allow*, charger `skills/`, puis **anonymiser strictement toute question** avant de lancer la boucle (la recherche web ouverte est active par défaut).
 - **Gemini API Deep Research (`google-genai` / `gemini-api` CLI) :** déclarer les 3 serveurs en `"type": "mcp_server"` sur `/mcp` avec `"Authorization": "Bearer ..."` pour `lois`, `juris` et `outils`. Comme `background=True` exige `store=True`, **ne soumettre que des questions juridiques anonymisées** et **préfixer la requête** avec le préambule `SAFETY-KERNEL` v3 ci-dessous (les fichiers `skills/` n'étant pas chargés automatiquement dans l'agent API) :
@@ -233,7 +221,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ## État de maturité et contribution ouverte
 
-L'ensemble du corpus `v3.4.1` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
+L'ensemble du corpus `v3.5.0` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).
@@ -252,7 +240,6 @@ PYTHONUTF8=1 python3 verifier.py --release                        # Contrôle pu
 PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation des 122 scénarios, 4 scripts locaux et test_verifier.py
 PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
-PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_claude.py          # Validation à sec du paquet Claude Directory (sans scripts .py)
 # PYTHONUTF8=1 python3 verifier_tout.py --mode live --require-antigravity-cache  # Vérification distante + cache local
 ```
