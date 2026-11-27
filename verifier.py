@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Contrôle statique du dépôt « Droit civil québécois » (v3.3.1).
-
-Exécuter depuis la racine du dépôt :
-
-    python verifier.py
-    python verifier.py --stats
-    python verifier.py --release
-
-Ne retourne rien (code de sortie 0) lorsque tout est conforme ; écrit une
-ligne d'erreur par manquement sur la sortie d'erreur standard (code 1) sinon.
-"""
 
 from __future__ import annotations
 
@@ -122,17 +111,6 @@ RETIRED_REPO_SLUGS = (
     "MCP-Jurisprudence-Quebec",
     "MCP-Socle-Juridique",
     "pratique-civile-outils",
-)
-LEGACY_PLUGIN_ALLOW_MIGRATION = frozenset(
-    {
-        "verifier.py",
-        "README.md",
-        "AGENTS.md",
-        "CLAUDE.md",
-        "GEMINI.md",
-        "scripts/synchroniser_plugin_gemini.py",
-        "scripts/regenerer_cache_mcp.py",
-    }
 )
 RETIRED_V1_SKILLS = (
     "analyse-documentaire",
@@ -563,7 +541,6 @@ def _load_json(racine: Path, rel: str, erreurs: list[str]) -> dict | None:
 
 
 def _extract_h2_sections(body: str) -> dict[str, list[str]]:
-    """Extrait les sections H2 hors blocs de code délimités."""
     sections: dict[str, list[str]] = {}
     current: str | None = None
     in_fence = False
@@ -590,7 +567,6 @@ def _parse_enchainements(
     skill_rel: str,
     racine: Path,
 ) -> tuple[set[tuple[str, str]], list[str]]:
-    """Valide la table ## Enchaînements d'un orchestrateur de phase."""
     erreurs: list[str] = []
     declared_pairs: set[tuple[str, str]] = set()
     table_lines = [line.strip() for line in section_lines if line.strip().startswith("|")]
@@ -698,7 +674,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         "release_markers_count": 0,
     }
 
-    # 1. File inventory & allowlist
     for rel in sorted(ROOT_ALLOWLIST | EVALS_ALLOWLIST):
         if rel not in file_set:
             erreurs.append(f"fichier requis manquant : {rel}")
@@ -742,7 +717,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             continue
         erreurs.append(f"fichier hors inventaire autorisé : {rel}")
 
-    # 2. Encoding (UTF-8 without BOM, LF only across all files)
     decoded: dict[str, str] = {}
     for rel in files:
         raw = (racine / rel).read_bytes()
@@ -770,7 +744,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
             if req_marker not in notice_text:
                 erreurs.append(f"NOTICE : mention obligatoire absente ({req_marker})")
 
-    # 3. Byte-for-byte AGENTS.md / CLAUDE.md / GEMINI.md parity
     if "AGENTS.md" in decoded and "CLAUDE.md" in decoded and "GEMINI.md" in decoded:
         if not (decoded["AGENTS.md"] == decoded["CLAUDE.md"] == decoded["GEMINI.md"]):
             erreurs.append(
@@ -779,7 +752,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         if len(decoded["GEMINI.md"].encode("utf-8")) >= 24000:
             erreurs.append("AGENTS.md / CLAUDE.md / GEMINI.md dépasse 24 000 octets UTF-8")
 
-    # 4. Manifest consistency & 64-char compound identifier invariant
     claude_plugin = _load_json(racine, ".claude-plugin/plugin.json", erreurs)
     marketplace = _load_json(racine, ".claude-plugin/marketplace.json", erreurs)
     codex_plugin = _load_json(racine, ".codex-plugin/plugin.json", erreurs)
@@ -795,6 +767,8 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         "mcp_config.json",
         "gemini-extension.json",
         ".antigravity-plugin/plugin.json",
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
         "plugin.json",
         ".codex-plugin/plugin.json",
         ".agents/plugins/marketplace.json",
@@ -1298,7 +1272,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                     f"identifiant outil OpenAI / Codex > {MAX_TOOL_COMPOUND_LEN} car. ({len(oai_id)}) : {oai_id}"
                 )
 
-    # 5. Skills, budgets, kernel parity, graph rules, Enchaînements & templates
     skills_root = racine / "skills"
     skill_dirs = (
         sorted(p.name for p in skills_root.iterdir() if p.is_dir())
@@ -1484,7 +1457,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 if not target_path.is_file():
                     erreurs.append(f"{skill_rel} : script voisin introuvable ({m.group(0)})")
 
-        # Tout autre chemin relatif '../' hors feuille/script voisin autorisé est interdit
         masked_text = _SIBLING_LEAF_RE.sub("", text)
         if not is_phase:
             masked_text = _SIBLING_SCRIPT_RE.sub("", masked_text)
@@ -1666,7 +1638,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     stats["total_md_bytes"] = total_md_bytes
 
-    # 5b. Goldfish personas (agents/*.md)
     actual_agent_stems = {Path(rel).stem for rel in agent_md_files}
     if actual_agent_stems != EXPECTED_AGENTS:
         missing_ag = sorted(EXPECTED_AGENTS - actual_agent_stems)
@@ -1740,7 +1711,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         if "etat-dossier" not in ag_body:
             erreurs.append(f"{agent_rel} : doit mentionner le pare-feu 'etat-dossier'")
 
-    # Phase branches / SKILL.md service-leaf mentions must be declared in ## Enchaînements
     stem_to_services: dict[str, set[str]] = {}
     for svc, stem in all_service_leaf_stems:
         stem_to_services.setdefault(stem, set()).add(svc)
@@ -1766,7 +1736,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                         f"doit être déclarée dans ## Enchaînements de {p_skill}"
                     )
 
-    # Release markers check
     marker_hits = 0
     for rel in sorted(skill_md_files + agent_md_files):
         txt = decoded.get(rel, "")
@@ -1786,7 +1755,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 )
     stats["release_markers_count"] = marker_hits
 
-    # 6. Evals & scripts syntax validation (v3 schema & coverage)
     py_to_parse = sorted(
         {
             "evals/executer_evals.py",
@@ -1982,7 +1950,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                             f"{svc}/references/{leaf_stem}.md ({cnt} trouvé(s))"
                         )
 
-    # 7. Retired slugs, stale v1/v2 names, banned patterns & repository-relative paths
     for rel in files:
         if rel == "verifier.py":
             continue
@@ -1992,7 +1959,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         for slug in RETIRED_REPO_SLUGS:
             if slug in text:
                 erreurs.append(f"{rel} : ancien identifiant de dépôt interdit ({slug})")
-        if rel not in LEGACY_PLUGIN_ALLOW_MIGRATION and "pratique-civile-quebecoise" in text:
+        if "pratique-civile-quebecoise" in text:
             erreurs.append(
                 f"{rel} : ancien identifiant de greffon 'pratique-civile-quebecoise' interdit en v3"
             )

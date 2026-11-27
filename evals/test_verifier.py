@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Tests unitaires sur fixtures pour verifier.py (architecture v3.3.1).
-
-Bibliothèque standard Python uniquement. Exécutable directement ou via
-`python evals/executer_evals.py --auto-test`.
-"""
 
 from __future__ import annotations
 
@@ -44,7 +39,6 @@ def _write_lf(path: Path, text: str) -> None:
 
 
 def _build_valid_v3_fixture(root: Path) -> None:
-    """Construit un dépôt minimal 100 % conforme aux règles v3.3.1."""
     codex_interface = {
         "displayName": verifier.EXPECTED_DISPLAY_NAME,
         "shortDescription": "Litige civil québécois",
@@ -57,7 +51,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
     }
     common_meta = {
         "name": verifier.EXPECTED_PLUGIN_NAME,
-        "version": "3.3.1",
+        "version": "3.3.2",
         "description": "Plugin v3",
         "author": {"name": "Test"},
         "homepage": verifier.EXPECTED_REPO_URL,
@@ -73,7 +67,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.1",
+                        "version": "3.3.2",
                         "license": verifier.EXPECTED_LICENSE,
                         "icon": "./assets/logo.svg",
                         "homepage": verifier.EXPECTED_REPO_URL,
@@ -89,11 +83,11 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "$schema": verifier.CLAUDE_MARKETPLACE_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "metadata": {"version": "3.3.1"},
+                        "metadata": {"version": "3.3.2"},
                         "plugins": [
                             {
                                 "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "version": "3.3.1",
+                                "version": "3.3.2",
                                 "license": verifier.EXPECTED_LICENSE,
                                 "homepage": verifier.EXPECTED_REPO_URL,
                                 "repository": verifier.EXPECTED_REPO_URL,
@@ -146,7 +140,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "$schema": verifier.ANTIGRAVITY_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.3.1",
+                        "version": "3.3.2",
                         "description": "Plugin v3",
                         "logo": "assets/logo.svg",
                         "suggestedPrompts": ["Test 1"],
@@ -191,7 +185,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.1",
+                        "version": "3.3.2",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -392,7 +386,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
 
     _write_lf(
         root / "evals" / "scenarios.json",
-        json.dumps({"version": "3.3.1", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"version": "3.3.2", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
     )
 
 
@@ -663,7 +657,7 @@ class VerifierV3Tests(unittest.TestCase):
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.1",
+                        "version": "3.3.2",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -908,7 +902,6 @@ class VerifierV3Tests(unittest.TestCase):
             root = tmp_path / "repo"
             _build_valid_v3_fixture(root)
 
-            # 1. Packaging ChatGPT et synchronisation Gemini incluent les 6 agents/*.md
             env_pack = {**os.environ, "DCQ_PLUGIN_SRC_DIR": str(root), "PYTHONUTF8": "1"}
             res_zip = subprocess.run(
                 [sys.executable, str(RACINE / "scripts" / "empaqueter_plugin_chatgpt.py"), "--apply"],
@@ -946,7 +939,6 @@ class VerifierV3Tests(unittest.TestCase):
             for ag in sorted(verifier.EXPECTED_AGENTS):
                 self.assertTrue((dst_dir / "agents" / f"{ag}.md").is_file())
 
-            # 2. Détection de défauts sur agents/ et référence manquante dans produit-contre-epreuve-banc.md
             analyste_path = root / "agents" / "avocat-analyste.md"
             _write_lf(
                 analyste_path,

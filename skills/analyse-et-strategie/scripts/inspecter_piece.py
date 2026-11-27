@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Inspecteur local des métadonnées et structures cachées des pièces (.docx, .xlsx, .eml, .pdf, images, audio/vidéo).
-
-Bibliothèque standard Python uniquement, lecture seule (hors options explicites --journal et --extraire-texte), aucun appel réseau.
-Usage : python scripts/inspecter_piece.py <fichier>... [--journal chemin.json] [--source "..."] [--extraire-texte dossier/] [--json]
-"""
 
 from __future__ import annotations
 
@@ -60,7 +55,7 @@ _PDF_TEXT_OP_RE = re.compile(rb"\bBT\b.*?(?:\bTj\b|\bTJ\b)", re.S)
 _PDF_OBJSTM_RE = re.compile(rb"/Type\s*/ObjStm\b")
 _PDF_FIRST_RE = re.compile(rb"/First\s+(\d+)")
 
-_MP4_EPOCH_OFFSET = 2082844800  # secondes entre 1904-01-01 et 1970-01-01
+_MP4_EPOCH_OFFSET = 2082844800
 
 
 def _configure_stdio() -> None:
@@ -102,7 +97,7 @@ def _truncate(text: str, limit: int = 120) -> str:
 
 
 class _ZipLimitExceeded(ValueError):
-    """Levée lorsqu'un membre OOXML dépasse le plafond de décompression sécurisé."""
+    pass
 
 
 def _is_w_flag_enabled(el: ET.Element) -> bool:
@@ -704,8 +699,6 @@ def _try_optional_pdf_lib(path: Path) -> dict[str, object] | None:
                     acro = resolved_root["/AcroForm"].get_object()
                     has_sig = "/SigFlags" in acro
             except Exception:
-                # Certains PDF malformés ou partiellement chiffrés refusent la résolution de /Root ou /AcroForm :
-                # conserver has_acro/has_sig à False sans faire échouer l'inspection pypdf.
                 has_acro = False
                 has_sig = False
             return {
@@ -1322,7 +1315,6 @@ def ecrire_journal_garde(
     resultats: list[dict[str, object]],
     source: str = "fournie par l'avocat",
 ) -> list[dict[str, object]]:
-    """Ajoute les empreintes, dates et provenance au journal de garde local (JSON ou Markdown)."""
     horodatage = datetime.now(tz=timezone.utc).isoformat()
     entrees: list[dict[str, object]] = []
     for item in resultats:
@@ -1418,8 +1410,6 @@ def _format_texte(resultats: list[dict[str, object]]) -> str:
 
 
 class _HtmlTextExtractor(HTMLParser):
-    """Extrait le texte lisible d'un corps HTML en ignorant scripts et feuilles de style."""
-
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self._skip_depth = 0
@@ -1700,7 +1690,6 @@ def _extract_pdf_text(path: Path) -> str | None:
 
 
 def extraire_texte_vers_dossier(resultats: list[dict[str, object]], dossier_sortie: Path) -> None:
-    """Extrait le texte lisible des pièces supportées (.docx, .xlsx, .eml, PDF natif) vers dossier_sortie."""
     if dossier_sortie.exists() and not dossier_sortie.is_dir():
         raise ValueError(f"La cible --extraire-texte n'est pas un répertoire : {dossier_sortie}")
     dossier_sortie.mkdir(parents=True, exist_ok=True)

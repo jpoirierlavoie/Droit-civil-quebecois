@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-regenerer_cache_mcp.py (script mainteneur uniquement)
-Regénère de façon déterministe les 37 fichiers JSON de schémas d'outils et les 3 instructions.md
-dans ~/.gemini/antigravity/mcp/ à partir des descripteurs TypeScript faisant autorité.
-Prérequis : clones locaux frères de MCP-Legislation, MCP-Jurisprudence et MCP-Outils + Node.js (`npx tsx`).
-Usage:
-    python scripts/regenerer_cache_mcp.py                        # validation / dry-run (all)
-    python scripts/regenerer_cache_mcp.py --server outils --apply  # écriture ciblée sur disque
-    python scripts/regenerer_cache_mcp.py --apply                # écriture complète sur disque
-"""
 import argparse
 import os
 import json
@@ -50,7 +40,7 @@ REPO_OUTILS = _resolve_outils_repo(WORKSPACE_PARENT)
 NPX_BIN = shutil.which("npx.cmd" if os.name == "nt" else "npx") or ("npx.cmd" if os.name == "nt" else "npx")
 
 def load_legislation():
-    ref_path = REPO_LEGISLATION / "fixtures" / "tools-list.reference.json"
+    ref_path = REPO_LEGISLATION / "data" / "tools-list.reference.json"
     with open(ref_path, "r", encoding="utf-8") as f:
         tools = json.load(f)
     
@@ -124,7 +114,7 @@ def load_outils():
         tool_dict[t["name"]] = {
             "name": t["name"],
             "description": t["description"],
-            "parameters": t["inputSchemaJson"]
+            "parameters": t.get("inputSchema") or t.get("inputSchemaJson")
         }
     return "droit-civil-quebecois_outils", tool_dict, data["instructions"]
 
@@ -190,7 +180,6 @@ def main():
                 f.write(instructions.strip() + "\n")
             
         for name, tool_data in sorted(tools.items()):
-            # Vérifications d'intégrité
             if len(tool_data["description"]) <= 50:
                 raise ValueError(f"Description tronquée pour {name}")
             params = tool_data["parameters"]

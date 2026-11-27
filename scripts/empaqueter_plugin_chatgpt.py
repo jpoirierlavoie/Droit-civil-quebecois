@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""
-empaqueter_plugin_chatgpt.py
-Empaquete le greffon universel ChatGPT (Web et Desktop) sans badge « Desktop only »
-au format Portable Agent Plugins 1.0 dans dist/droit-civil-quebecois-chatgpt-universal.zip.
-
-Usage :
-    python scripts/empaqueter_plugin_chatgpt.py          # validation à sec (dry-run)
-    python scripts/empaqueter_plugin_chatgpt.py --apply  # génère l'archive ZIP et retire les anciennes
-"""
 
 from __future__ import annotations
 
@@ -70,7 +61,6 @@ def _ecrire_entree_deterministe(
 
 
 def construire_manifeste_portable(codex_manifest: dict[str, object]) -> dict[str, object]:
-    """Construit le manifeste racine plugin.json conforme à Agent Plugins 1.0.0."""
     for interdit in sorted(FORBIDDEN_CODEX_KEYS):
         if interdit in codex_manifest:
             raise ValueError(
@@ -99,7 +89,6 @@ def construire_manifeste_portable(codex_manifest: dict[str, object]) -> dict[str
 
 
 def collecter_fichiers_archive(src_dir: Path) -> list[tuple[str, Path]]:
-    """Collecte les fichiers du paquet universel triés en chemins POSIX relatifs."""
     entrees: list[tuple[str, Path]] = []
 
     for rel in ROOT_DOCS:
@@ -124,7 +113,6 @@ def collecter_fichiers_archive(src_dir: Path) -> list[tuple[str, Path]]:
 
 
 def valider_entrees_archive(nom_plugin: str, noms_archive: list[str]) -> None:
-    """Vérifie la sûreté des chemins et la conformité OpenAI avant et après écriture."""
     noms_set = set(noms_archive)
     skill_dirs: set[str] = set()
     for nom in noms_archive:

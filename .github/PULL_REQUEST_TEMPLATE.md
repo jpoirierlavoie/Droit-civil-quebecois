@@ -1,7 +1,5 @@
 ## Résumé / Summary
 
-<!-- Décrire brièvement l'objet de la PR / Briefly describe the purpose of this PR -->
-
 ## Vérifications locales / Local Verification
 
 - [ ] `python verifier.py --release` (sortie strictement muette, code 0)

@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Vérificateur de continuité, de concordance et de gel des cotes de pièces (.txt, .md, .csv, .docx).
-
-Bibliothèque standard Python uniquement, lecture seule, aucun appel réseau.
-Contrôle l'ordre de première invocation, les trous de numérotation, les cotes gelées
-après modification (art. 206–208 C.p.c.), les renvois sans cote et la concordance
-entre actes de procédure, bordereaux et matrices internes.
-
-Usage :
-    python scripts/verifier_cotes.py --acte demande.docx --bordereau bordereau.md [--matrice matrice.csv] [--modifie] [--json]
-"""
 
 from __future__ import annotations
 
@@ -24,10 +14,6 @@ _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 _MAX_DOCX_XML_BYTES = 64 * 1024 * 1024
 _MAX_TEXT_FILE_BYTES = 32 * 1024 * 1024
 
-# Cotes de pièces civiles québécoises : P-1, D-2, PI-1, DI-3, MP-1, OP-1, GC-1, R-1, I-1, A-1, MC-1
-# ainsi que préfixes à initiales de codéfendeur explicitement introduits (ex. Exhibit DA-1, Pièce DAB-2)
-# (tolère zéro non significatif ex. P-01 et suffixe lettre ex. P-2A)
-# Exclut les citations législatives (RLRQ/CQLR, c. P-39.1 / R-20 / I-3 / C-25.01 / T-16-r.10) et dossiers de cour (500-17-...)
 _STANDARD_PREFIXES = frozenset({"P", "D", "PI", "DI", "MP", "OP", "GC", "R", "I", "A", "MC"})
 _COTE_RE = re.compile(
     r"(?<![A-Za-z0-9.\-/])"
@@ -150,7 +136,6 @@ def _extraire_cotes(
     prefixes_autorises: set[str] | None = None,
     prefixes_d_extra: set[str] | None = None,
 ) -> tuple[list[tuple[str, int, str, str]], set[str], set[str]]:
-    """Retourne (premieres_apparitions_ordonnees, cotes_retirees, cotes_actives_dans_texte)."""
     retirees: set[str] = set()
     retrait_spans: list[tuple[int, int]] = []
     for pat in _RETRAIT_PATTERNS:
@@ -220,7 +205,6 @@ def _detecter_invocations_sans_cote(
         extrait = texte[m.start() : clause_end]
         cotes = [c[4] for c in _iter_cotes_matches(extrait, prefixes_autorises, prefixes_d_extra)]
         if not cotes:
-            # Si le marqueur est juste avant l'extrait (ex. "Exhibit DA-1")
             ctx_extrait = texte[max(0, m.start() - 16) : clause_end]
             if not [c[4] for c in _iter_cotes_matches(ctx_extrait, prefixes_autorises, prefixes_d_extra)]:
                 alertes.append(" ".join(extrait.split())[:120])
@@ -234,7 +218,6 @@ def verifier_ensemble_cotes(
     prefixes: list[str] | None = None,
     mode_modifie: bool = False,
 ) -> dict[str, object]:
-    """Vérifie la continuité et la concordance des cotes entre actes, bordereau et matrice."""
     prefixes_set = {p.upper() for p in prefixes} if prefixes else None
     anomalies: list[dict[str, object]] = []
     bon_de_travail: list[str] = []
@@ -276,7 +259,6 @@ def verifier_ensemble_cotes(
                 actes_cotes_actives.add(cote)
 
         for pref, items in par_prefixe.items():
-            # 1. Ordre de première invocation (hors marques purement retirées)
             max_vu = 0
             for num, _, cote in items:
                 if cote in retirees and cote not in actives_dans_texte:
@@ -297,7 +279,6 @@ def verifier_ensemble_cotes(
                 elif num > max_vu:
                     max_vu = num
 
-            # 2. Trous de numérotation
             nums_presents = {num for num, _, _ in items}
             nums_retires_pref = {
                 int(m.group(2))

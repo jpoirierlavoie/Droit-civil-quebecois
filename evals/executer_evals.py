@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Exécuteur et vérificateur de la suite d'évaluation comportementale (« evals ») v3.
-
-Bibliothèque standard Python uniquement, aucun appel réseau.
-Usages :
-    python evals/executer_evals.py --liste
-    python evals/executer_evals.py --auto-test
-    python evals/executer_evals.py --reponses chemin/vers/reponses.json [--json]
-"""
 
 from __future__ import annotations
 
@@ -56,7 +48,6 @@ def charger_scenarios(path: Path = SCENARIOS_PATH) -> list[dict[str, Any]]:
 
 
 def evaluer_reponse(scenario: dict[str, Any], texte: str) -> dict[str, Any]:
-    """Évalue une réponse textuelle par rapport aux expressions attendues et interdites."""
     manquants: list[str] = []
     interdits_trouves: list[str] = []
 
@@ -185,12 +176,9 @@ def _creer_fixture_docx_complet(
 
 
 def _creer_fixture_jpeg_exif(dest: Path) -> None:
-    """Construit un JPEG minimal avec segment APP1 Exif valide (Make + DateTimeOriginal)."""
-    # TIFF little-endian : header (8 bytes) + IFD0 (2 + 2*12 + 4 = 30 bytes) + strings + ExifIFD
     make_b = b"Canon\x00"
     date_b = b"2026:06:15 10:22:00\x00"
     ifd0_offset = 8
-    # 2 entries in IFD0: 0x010F Make, 0x8769 ExifIFD
     ifd0_size = 2 + 2 * 12 + 4
     make_off = ifd0_offset + ifd0_size
     exif_ifd_off = make_off + len(make_b)
@@ -216,7 +204,6 @@ def _creer_fixture_jpeg_exif(dest: Path) -> None:
 
 
 def _creer_fixture_wav(dest: Path) -> None:
-    """Construit un WAV minimal PCM 1 s + chunk LIST INFO."""
     sample_rate = 8000
     channels = 1
     bits = 16
@@ -232,7 +219,6 @@ def _creer_fixture_wav(dest: Path) -> None:
 
 
 def _creer_fixture_pdf_scan(dest: Path) -> None:
-    """Construit un PDF minimal sans couche texte ni /Outlines."""
     pdf = (
         b"%PDF-1.4\n"
         b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
@@ -244,7 +230,6 @@ def _creer_fixture_pdf_scan(dest: Path) -> None:
 
 
 def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
-    """Exécute les assertions déterministes attachées aux 4 outils Python locaux."""
     erreurs: list[str] = []
     calcul_mod = _charger_module(
         "skills/gestion-du-mandat/scripts/calcul_delai.py", "calcul_delai"
@@ -448,7 +433,6 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                 if "enregistrement.wav" not in journal_md.read_text(encoding="utf-8"):
                     erreurs.append(f"{sid} : journal Markdown ne contient pas enregistrement.wav")
 
-                # Cas limites : XML corrompu non bloquant, PNG iTXt compressé, journal corrompu préservé
                 bad_docx = tmp_dir / "corrompu.docx"
                 with zipfile.ZipFile(bad_docx, "w") as zf:
                     zf.writestr("word/document.xml", "<w:document>BROKEN")
@@ -513,7 +497,6 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     if code not in pdf_codes:
                         erreurs.append(f"{sid} : code bon de travail pdf manquant {code!r} ({sorted(pdf_codes)})")
 
-                # Cas limites : styles Word inutilisés ignorés + PDF 1.5 /ObjStm + --regles introuvable
                 clean_docx = tmp_dir / "propre.docx"
                 with zipfile.ZipFile(clean_docx, "w") as zf:
                     zf.writestr("[Content_Types].xml", '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
@@ -588,7 +571,6 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     ctrl_mod._charger_regles(str(tmp_dir / "absent.json"), {})
                     erreurs.append(f"{sid} : --regles JSON absent ignoré silencieusement")
                 except FileNotFoundError as exc:
-                    # Comportement attendu : --regles pointant vers un fichier absent doit lever FileNotFoundError.
                     if not str(exc):
                         erreurs.append(f"{sid} : exception FileNotFoundError vide pour --regles absent")
 
@@ -668,7 +650,6 @@ def executer_tests_outils(scenarios: list[dict[str, Any]]) -> list[str]:
                     if exp_type not in types_found:
                         erreurs.append(f"{sid} : anomalie attendue {exp_type!r} absente ({sorted(types_found)})")
 
-                # Cas limites : abréviation légale Acme Inc. + RLRQ/CQLR multi-chapitres + DA-1 + R-1 + P-01..P-02 + longue clause >250 car.
                 acte_ok = tmp_dir / "acte_abbrev.md"
                 acte_ok.write_text(
                     "1. Tel qu'il appert de la facture de Acme Inc. (RLRQ, c. P-39 et R-20 ; CQLR, chapter I-3), produite sous la cote **Pièce P-01** ;\n"
@@ -857,7 +838,6 @@ def auto_test() -> int:
 
     erreurs.extend(executer_tests_outils(scenarios))
 
-    # Exécuter les tests unitaires sur fixtures du vérificateur statique
     loader = unittest.TestLoader()
     suite = loader.discover(str(Path(__file__).resolve().parent), pattern="test_*.py")
     runner = unittest.TextTestRunner(verbosity=0)
@@ -868,7 +848,6 @@ def auto_test() -> int:
             f"{len(unit_res.failures)} échec(s), {len(unit_res.errors)} erreur(s)"
         )
 
-    # Auto-vérification du moteur d'évaluation de réponses (positif et négatif)
     sc_rj01 = next((s for s in scenarios if s["id"] == "RJ-01"), None)
     if sc_rj01 is not None:
         ok = evaluer_reponse(
