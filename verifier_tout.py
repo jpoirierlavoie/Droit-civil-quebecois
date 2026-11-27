@@ -1204,7 +1204,13 @@ class MockMcpServer:
                             "url": URL_SERVEURS[self.server_name],
                             "supportedProtocolVersions": ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"],
                             "headers": card_headers,
-                        }
+                        },
+                        {
+                            "type": "streamable-http",
+                            "url": URL_MANIFESTES_ATTENDUES[self.server_name],
+                            "supportedProtocolVersions": ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"],
+                            "headers": [],
+                        },
                     ],
                 }).encode("utf-8"),
             )
@@ -4404,8 +4410,12 @@ def run_tier_1_tests(
             ctype = {k.lower(): v for k, v in hdrs.items()}.get("content-type", "")
             data = json.loads(body.decode("utf-8")) if body else {}
             remotes = data.get("remotes") if isinstance(data.get("remotes"), list) else []
-            rem0 = remotes[0] if remotes and isinstance(remotes[0], dict) else {}
-            rem_headers = rem0.get("headers")
+            remotes_by_url = {
+                r.get("url"): r for r in remotes if isinstance(r, dict) and isinstance(r.get("url"), str)
+            }
+            rem_mcp = remotes_by_url.get(URL_SERVEURS[srv_key]) or {}
+            rem_oauth = remotes_by_url.get(URL_MANIFESTES_ATTENDUES[srv_key]) or {}
+            rem_headers = rem_mcp.get("headers")
             headers_ok = (
                 isinstance(rem_headers, list)
                 and len(rem_headers) >= 1
@@ -4413,6 +4423,10 @@ def run_tier_1_tests(
                 and rem_headers[0].get("name") == "Authorization"
                 and rem_headers[0].get("isRequired") is True
                 and rem_headers[0].get("isSecret") is True
+            )
+            oauth_remote_ok = (
+                rem_oauth.get("type") == "streamable-http"
+                and rem_oauth.get("headers") == []
             )
             repo_obj = data.get("repository") if isinstance(data.get("repository"), dict) else {}
             has_card = (
@@ -4422,9 +4436,9 @@ def run_tier_1_tests(
                 == "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json"
                 and data.get("name") == f"ca.poirierlavoie.{SLUGS_CARTE_SERVEUR[srv_key]}/mcp-{SLUGS_CARTE_SERVEUR[srv_key]}"
                 and repo_obj.get("url") == expected_card_repos[srv_key]
-                and rem0.get("type") == "streamable-http"
-                and rem0.get("url") == URL_SERVEURS[srv_key]
+                and rem_mcp.get("type") == "streamable-http"
                 and headers_ok
+                and oauth_remote_ok
             )
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
@@ -6127,7 +6141,7 @@ def run_tier_3_tests(
             ca_search = client.call_tool(
                 "outils",
                 "registre_search",
-                {"jurisdiction": "ca", "query": "Canada"},
+                {"jurisdiction": "ca", "query": "Banque Nationale"},
             )
             ca_search_sc = ca_search.get("structuredContent") or {}
             discovered_corp = next(
