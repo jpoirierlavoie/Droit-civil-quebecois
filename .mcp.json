@@ -10,7 +10,7 @@
     },
     "outils": {
       "type": "http",
-      "url": "https://outils.poirierlavoie.ca/mcp"
+      "url": "https://outils.poirierlavoie.ca/mcp/oauth"
     }
   },
   "recommendedCategories": [

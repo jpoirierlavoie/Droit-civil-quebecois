@@ -2,6 +2,18 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.4.0] — 2026-11-27
+
+### Modifié
+- **Authentification unifiée des trois connecteurs (`lois`, `juris`, `outils`) via `acces.poirierlavoie.ca` (`MCP-Acces` `v1.2.0`, `MCP-Outils` `v3.0.0`, `MCP-Legislation` `v2.2.4`, `MCP-Jurisprudence` `v2.3.5`, `MCP-Socle` `v0.8.8`) :**
+  - Le connecteur `outils` requiert désormais l'admission au Barreau du Québec via `acces.poirierlavoie.ca` et bascule sur OAuth 2.1 (`/mcp/oauth` par défaut dans `.mcp.json`, `mcp_config.json`, `gemini-extension.json`, et `/mcp` `404` non-oracle pour CLI/API/scripts), sans aucune journalisation des requêtes ni écriture sur les 4 bases D1 en lecture seule.
+  - **Clé API CanLII facultative à l'admission (`/demande`) :** la clé CanLII personnelle n'est requise que pour les recherches en direct sur `juris` (configurable sur `/demande` ou plus tard dans `/moi`) ; `lois` et `outils` fonctionnent sans clé CanLII.
+  - **Portée universelle `"tous"` :** remplacement de `"les_deux"` par `"tous"` sur `/moi` et OAuth 2.1 (tout en conservant la rétrocompatibilité de `"les_deux"` pour les jetons D1 existants), et relèvement du quota journalier `local` par défaut à `3 000/j` (`actif`) / `300/j` (`limite`).
+  - **Auto-hébergement autonome des fourches :** suppression de l'ancienne liste fermée d'hôtes `HTTP Host` sur `MCP-Outils` (déblocage des déploiements `*.workers.dev`), repli autonome par secret statique sans `DB_IDENTITE` (`MCP_TOKEN`/`MCP_SHARED_SECRET`) et ajout des guides bilingues d'auto-hébergement dans les trois dépôts de connecteurs.
+- Alignement semver `3.4.0` sur les 9 manifestes, `SAFETY-KERNEL`, `README.md`, `SECURITY.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`, `evals/`, `verifier.py`, `verifier_tout.py` et les scripts de synchronisation/empaquetage.
+
+---
+
 ## [3.3.2] — 2026-11-27
 
 ### Modifié
