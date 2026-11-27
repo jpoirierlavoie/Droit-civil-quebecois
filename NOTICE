@@ -1,0 +1,128 @@
+Droit civil québécois (droit-civil-quebecois)
+Copyright 2026 Jason Poirier Lavoie (avocat / lawyer, Québec)
+
+Ce logiciel et sa documentation originale sont publiés sous la licence Apache,
+version 2.0 (identifiant SPDX : Apache-2.0 ; voir LICENSE).
+This software and its original documentation are licensed under the Apache
+License, Version 2.0 (SPDX Identifier: Apache-2.0; see LICENSE).
+
+================================================================================
+1. CRÉATION ASSISTÉE PAR IA ET VOCATION D'INTÉRÊT PUBLIC /
+   AI-ASSISTED CREATION & PUBLIC-BENEFIT DEDICATION
+================================================================================
+
+FRANÇAIS — Ce greffon (manifestes, scripts Python, compétences, fiches
+méthodologiques et sous-agents de contre-épreuve) a été élaboré en grande
+partie avec l'assistance de systèmes d'intelligence artificielle et est mis
+gratuitement à la disposition du public pour l'intérêt général, l'accessibilité
+du droit et l'outillage de la pratique juridique québécoise.
+
+ENGLISH — This plugin (manifests, Python scripts, skills, methodological
+reference sheets, and review personas) was built with substantial assistance
+from artificial intelligence systems and is released free of charge for the
+public benefit, access to justice, and the advancement of Québec legal
+practice tooling.
+
+================================================================================
+2. PORTÉE DE LA LICENCE ET NON-REVENDICATION SUR LES SOURCES JURIDIQUES /
+   LICENSE SCOPE & NON-CLAIM OVER LEGAL SOURCES
+================================================================================
+
+FRANÇAIS — La licence Apache-2.0 s'applique exclusivement aux fichiers originaux
+de ce dépôt (manifestes, scripts Python locaux, icône assets/logo.svg, gabarits,
+fiches de travail et sous-agents agents/). Aucun droit d'auteur, aucune
+exclusivité ni aucun statut officiel n'est revendiqué sur les lois, règlements,
+directives judiciaires, décisions de justice, registres publics, données
+linguistiques ni séries statistiques et économiques interrogés au moyen des
+connecteurs MCP associés (« lois », « juris », « outils »).
+
+ENGLISH — The Apache-2.0 license applies solely to the original files in this
+repository (manifests, local Python scripts, icon assets/logo.svg, templates,
+workflow sheets, and review personas agents/). No copyright, exclusivity, or
+official status is claimed over any third-party statutes, regulations, court
+directives, judicial decisions, public registries, linguistic datasets, or
+statistical and economic series queried through the associated MCP connectors
+("lois", "juris", "outils").
+
+================================================================================
+3. RECONNAISSANCE DES SOURCES OFFICIELLES ET DONNÉES OUVERTES /
+   OFFICIAL SOURCES & OPEN-DATA PROVENANCE
+================================================================================
+
+Les données juridiques et publiques desservies à l'exécution demeurent régies
+exclusivement par les licences et conditions de leurs éditeurs respectifs, ainsi
+que par les conditions générales du service hébergé (https://acces.poirierlavoie.ca/cgu) :
+
+- LégisQuébec (Éditeur officiel du Québec) : publications officielles du droit
+  québécois (incluant le Règlement sur les critères de fixation de loyer,
+  RLRQ, c. T-15.01, r. 2 / CQLR, c. T-15.01, r. 2, Décret 1455-2025) ; la
+  version officielle publiée par l'Éditeur officiel du Québec fait seule foi.
+- Ministère de la Justice du Canada (justicecanada/laws-lois-xml), Corporations
+  Canada, Bureau de la traduction (TERMIUM Plus®) et Statistique Canada
+  (Tableau 10-10-0008-01 — taux de change au comptant de midi 2001–2007 ;
+  Tableaux 18-10-0004-01 et 18-10-0005-01 — Indice des prix à la consommation ;
+  Tableau 34-10-0133-01 — Loyers moyens du marché de la SCHL / CMHC average
+  market rents) : Licence du gouvernement ouvert – Canada (OGL-Canada ;
+  art. 31 de la Loi sur la révision et la codification des textes législatifs
+  pour les lois fédérales).
+- Cour supérieure du Québec et Cour du Québec : directives de pratique
+  judiciaire officielles (propriété des tribunaux concernés).
+- Autorité des marchés financiers (AMF) : règlements et Instructions générales
+  non contraignantes (propriété de l'AMF).
+- CanLII (https://www.canlii.org) : métadonnées jurisprudentielles et
+  législatives via l'API REST de CanLII ; exige la clé d'API personnelle (BYOK)
+  de chaque utilisateur et demeure soumise aux conditions d'utilisation de
+  CanLII (usage non commercial et interdiction de téléchargement en masse).
+- Registraire des entreprises du Québec (REQ) et Office québécois de la langue
+  française (OQLF) : données ouvertes publiées sous licence CC BY-NC-SA 4.0
+  (Attribution - Pas d'Utilisation Commerciale - Partage dans les Mêmes
+  Conditions 4.0 International).
+- Régie du bâtiment du Québec (RBQ), Office de la protection du consommateur
+  (OPC), Autorité des marchés publics (RENA) et ministère des Ressources
+  naturelles et des Forêts (RQA) : données publiées sous licence CC BY 4.0.
+- Global Legal Entity Identifier Foundation (GLEIF — Golden Copy Level 1
+  LEI-CDF, Level 2 RR-CDF et exceptions de déclaration REPEX) : CC0 1.0
+  Universel (https://creativecommons.org/publicdomain/zero/1.0/ ; conditions
+  d'utilisation : https://www.gleif.org/en/meta/lei-data-terms-of-use).
+- Banque du Canada / Bank of Canada (API Valet — FX_RATES_DAILY,
+  LEGACY_NOON_RATES, taux directeur V39079, taux officiel d'escompte V122530 et
+  taux préférentiel V80691311) : données statistiques publiques soumises aux
+  conditions d'utilisation de la Banque du Canada
+  (https://www.bankofcanada.ca/terms/).
+- Revenu Québec (taux d'intérêt légal, art. 28 L.A.F.), Tribunal administratif
+  du logement (TAL — pourcentages annuels publiés 2015–2027 et calculateurs
+  officiels) et ministère de la Justice du Québec (palais de justice et
+  greffes).
+
+Runtime data returned by the hosted connectors remains governed strictly by
+each upstream publisher's respective terms (including CC BY-NC-SA 4.0 for REQ
+and OQLF open data, CC0 1.0 and LEI Data Terms of Use for GLEIF Golden Copy
+datasets, Bank of Canada Terms of Use for Valet FX/policy/bank/prime series,
+Open Government Licence – Canada (OGL-Canada) for Statistics Canada Tables
+10-10-0008-01, 18-10-0004-01, 18-10-0005-01, and 34-10-0133-01 CMHC rents,
+CanLII API non-commercial/anti-bulk terms, and Québec/Canada official Crown
+publication rules including TAL and LégisQuébec CQLR, c. T-15.01, r. 2) and
+https://acces.poirierlavoie.ca/cgu.
+
+================================================================================
+4. AUCUN CONSEIL JURIDIQUE, FOURNITURE « TEL QUEL » ET ABSENCE D'AVAL /
+   NO LEGAL ADVICE, "AS IS" PROVISION & NON-ENDORSEMENT
+================================================================================
+
+FRANÇAIS — Ce dépôt ne fournit aucun conseil juridique et ne crée aucune
+relation avocat-client. Conformément aux sections 6, 7 et 8 de la licence
+Apache-2.0, les logiciels et documents sont fournis « TELS QUELS », sans
+garantie ni engagement de niveau de service (zéro SLA), et la licence ne confère
+aucun droit d'utiliser le nom ou la qualité d'avocat de l'auteur ni les marques
+ou emblèmes du Barreau du Québec ou des tribunaux à des fins d'aval officiel ou
+de promotion. Chaque utilisateur demeure seul responsable de la vérification
+indépendante des sources officielles et du respect de ses obligations
+déontologiques.
+
+ENGLISH — This repository provides no legal advice and creates no
+lawyer-client relationship. Pursuant to Sections 6, 7, and 8 of Apache-2.0,
+the software and materials are provided "AS IS", with zero warranty or SLA, and
+no right is granted to use the author's name or professional standing, nor the
+trademarks or emblems of the Barreau du Québec or any court, for official
+endorsement or promotion. Each user remains solely responsible for independent
+primary-source verification and professional compliance.
