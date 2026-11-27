@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.4.0`)
+# Droit civil québécois (`v3.4.1`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -31,7 +31,7 @@ Le greffon réunit quatre couches complémentaires :
 
 ---
 
-## Fonctionnement et garanties (`v3.4.0`)
+## Fonctionnement et garanties (`v3.4.1`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -94,7 +94,7 @@ Le greffon réunit quatre couches complémentaires :
 
 > La configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut les **trois** connecteurs (`lois`, `juris` et `outils`) à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.4.0`)
+### Catalogue exact des 37 outils (`v3.4.1`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -147,9 +147,9 @@ Choisissez d'abord votre environnement : **applications Web ou de bureau** (inst
 
 > **Exclusion de ChatGPT Deep Research :** *ChatGPT Deep Research* (et les modèles `*-deep-research` d'OpenAI) exige une façade générique à deux outils (`search`/`fetch`) incompatible avec les 37 outils spécialisés et les exigences de vérification du Palier 3 ; il est donc exclu du greffon. Employer **Claude Research** ou **Gemini Deep Research** pour les recherches autonomes multi-étapes.
 
-#### 2. Claude Desktop & `claude.ai` (connecteurs personnalisés)
+#### 2. Claude Desktop, `claude.ai` & répertoire Claude (Anthropic Directory)
 
-- **Claude Desktop :** installer le greffon ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth` sur les 3 serveurs).
+- **Claude Desktop & répertoire Anthropic :** installer depuis la branche dédiée `claude-directory` (paquet épuré sans scripts `.py` ni fichiers de développement racine, généré par `python scripts/empaqueter_plugin_claude.py --apply --update-branch`) ou copier la configuration `.mcp.json` (OAuth 2.1 automatique vers `/mcp/oauth` sur les 3 serveurs).
 - **Claude Web (`claude.ai` — OAuth 2.1 PKCE `S256`) :** sur le Web, Claude n'ajoute pas automatiquement les serveurs MCP distants d'un greffon ; ouvrir **Customize → Connectors** et ajouter une seule fois les trois URLs suivantes, puis cliquer sur **Connect** pour autoriser via `acces.poirierlavoie.ca` :
   - `lois` : `https://legislation.poirierlavoie.ca/mcp/oauth`
   - `juris` : `https://jurisprudence.poirierlavoie.ca/mcp/oauth`
@@ -233,7 +233,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ## État de maturité et contribution ouverte
 
-L'ensemble du corpus `v3.4.0` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
+L'ensemble du corpus `v3.4.1` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).
@@ -253,6 +253,7 @@ PYTHONUTF8=1 python3 evals/executer_evals.py --auto-test          # Validation d
 PYTHONUTF8=1 python3 -m unittest evals/test_verifier.py -v        # Tests unitaires sur fixtures du vérificateur v3
 PYTHONUTF8=1 python3 verifier_tout.py --mode mock                 # Suite E2E multi-paliers locale
 PYTHONUTF8=1 python3 scripts/empaqueter_plugin_chatgpt.py         # Validation à sec de l'archive universelle ChatGPT
+PYTHONUTF8=1 python3 scripts/empaqueter_plugin_claude.py          # Validation à sec du paquet Claude Directory (sans scripts .py)
 # PYTHONUTF8=1 python3 verifier_tout.py --mode live --require-antigravity-cache  # Vérification distante + cache local
 ```
 

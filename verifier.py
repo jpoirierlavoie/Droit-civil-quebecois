@@ -49,6 +49,7 @@ ROOT_ALLOWLIST = frozenset(
         "verifier.py",
         "verifier_tout.py",
         "scripts/empaqueter_plugin_chatgpt.py",
+        "scripts/empaqueter_plugin_claude.py",
         "scripts/regenerer_cache_mcp.py",
         "scripts/synchroniser_plugin_gemini.py",
     }
@@ -66,6 +67,25 @@ EVALS_ALLOWLIST = frozenset(
 ANTIGRAVITY_SCHEMA = "https://antigravity.google/schemas/v1/plugin.json"
 ANTIGRAVITY_MAX_DESC_CHARS = 160
 CLAUDE_MARKETPLACE_SCHEMA = "https://json.schemastore.org/claude-code-marketplace.json"
+CLAUDE_PLUGIN_KEYS = frozenset(
+    {
+        "$schema",
+        "name",
+        "displayName",
+        "version",
+        "description",
+        "author",
+        "homepage",
+        "repository",
+        "license",
+        "icon",
+        "documentationUrl",
+        "supportUrl",
+        "privacyPolicyUrl",
+        "termsOfServiceUrl",
+        "keywords",
+    }
+)
 ANTIGRAVITY_PLUGIN_KEYS = frozenset(
     {
         "$schema",
@@ -781,9 +801,18 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
     versions: dict[str, str] = {}
 
     if claude_plugin is not None:
+        unknown_c_keys = sorted(set(claude_plugin) - CLAUDE_PLUGIN_KEYS)
+        if unknown_c_keys:
+            erreurs.append(
+                f".claude-plugin/plugin.json : clés non reconnues par Claude Directory : {', '.join(unknown_c_keys)}"
+            )
         if claude_plugin.get("name") != EXPECTED_PLUGIN_NAME:
             erreurs.append(
                 f".claude-plugin/plugin.json : 'name' doit valoir '{EXPECTED_PLUGIN_NAME}'"
+            )
+        if claude_plugin.get("displayName") != EXPECTED_DISPLAY_NAME:
+            erreurs.append(
+                f".claude-plugin/plugin.json : 'displayName' doit valoir '{EXPECTED_DISPLAY_NAME}'"
             )
         ver = claude_plugin.get("version")
         if not isinstance(ver, str) or not _SEMVER_RE.match(ver):
@@ -799,6 +828,19 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                 erreurs.append(
                     f".claude-plugin/plugin.json : '{field}' doit valoir '{EXPECTED_REPO_URL}'"
                 )
+        for ufield in ("privacyPolicyUrl", "termsOfServiceUrl"):
+            uval = claude_plugin.get(ufield)
+            if not isinstance(uval, str) or not uval.startswith("https://"):
+                erreurs.append(
+                    f".claude-plugin/plugin.json : '{ufield}' doit être une URL HTTPS valide"
+                )
+        for opt_ufield in ("documentationUrl", "supportUrl"):
+            if opt_ufield in claude_plugin:
+                opt_uval = claude_plugin.get(opt_ufield)
+                if not isinstance(opt_uval, str) or not opt_uval.startswith("https://"):
+                    erreurs.append(
+                        f".claude-plugin/plugin.json : '{opt_ufield}' doit être une URL HTTPS valide"
+                    )
         c_icon = claude_plugin.get("icon")
         if (
             not isinstance(c_icon, str)
@@ -1226,6 +1268,11 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         erreurs.append(f"versions divergentes entre manifestes : {detail}")
 
     if mcp_json is not None:
+        extra_mcp_keys = sorted(set(mcp_json) - {"mcpServers"})
+        if extra_mcp_keys:
+            erreurs.append(
+                f".mcp.json : clés racine non reconnues par Claude Code : {', '.join(extra_mcp_keys)}"
+            )
         if mcp_json.get("mcpServers") != EXPECTED_MCP_SERVERS:
             erreurs.append(
                 ".mcp.json : 'mcpServers' doit déclarer exactement lois, juris et outils "

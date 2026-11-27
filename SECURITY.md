@@ -10,7 +10,7 @@
 
 ### Portée
 
-Cette politique couvre le greffon **`droit-civil-quebecois`** (`v3.4.0`) ainsi que les dépôts d'infrastructure associés : [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`), [`MCP-Legislation`](https://github.com/jpoirierlavoie/MCP-Legislation), [`MCP-Jurisprudence`](https://github.com/jpoirierlavoie/MCP-Jurisprudence), [`MCP-Outils`](https://github.com/jpoirierlavoie/MCP-Outils) et [`MCP-Socle`](https://github.com/jpoirierlavoie/MCP-Socle).
+Cette politique couvre le greffon **`droit-civil-quebecois`** (`v3.4.1`) ainsi que les dépôts d'infrastructure associés : [`MCP-Acces`](https://github.com/jpoirierlavoie/MCP-Acces) (`acces.poirierlavoie.ca`), [`MCP-Legislation`](https://github.com/jpoirierlavoie/MCP-Legislation), [`MCP-Jurisprudence`](https://github.com/jpoirierlavoie/MCP-Jurisprudence), [`MCP-Outils`](https://github.com/jpoirierlavoie/MCP-Outils) et [`MCP-Socle`](https://github.com/jpoirierlavoie/MCP-Socle).
 
 ---
 

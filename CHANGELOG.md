@@ -2,6 +2,19 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.4.1] — 2026-11-27
+
+### Corrigé
+- **Conformité Anthropic Claude Directory (`LOCAL_CODE_UNKNOWN_KEY`, `PRIVACY_URL_MISSING`, `LOCAL_CODE_FILE_TYPE`) :**
+  - Suppression de la clé racine non reconnue `recommendedCategories` dans `.mcp.json` (durcie dans `verifier.py` et `evals/test_verifier.py`).
+  - Ajout des champs officiels du répertoire Anthropic (`displayName`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`) dans `.claude-plugin/plugin.json` avec validation dédiée dans `verifier.py`.
+
+### Ajouté
+- **Empaqueteur Claude Directory (`scripts/empaqueter_plugin_claude.py`) :** produit le paquet épuré sous `dist/claude-directory/` et met à jour la branche locale `claude-directory` par plomberie Git sans modifier l'arbre de travail (`--apply --update-branch`), en excluant les scripts `.py`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` et `evals/` pour la validation communautaire sur `claude.ai/directory/manage` tout en conservant les 4 scripts Python sur `main`.
+- **Alignement semver `3.4.1`** sur l'ensemble des manifestes, `evals/`, la documentation et les flux CI (`.github/workflows/verify.yml`, `.github/PULL_REQUEST_TEMPLATE.md`).
+
+---
+
 ## [3.4.0] — 2026-11-27
 
 ### Modifié

@@ -6,6 +6,7 @@
 - [ ] `python evals/executer_evals.py --auto-test`
 - [ ] `python verifier_tout.py --mode mock`
 - [ ] `python scripts/empaqueter_plugin_chatgpt.py`
+- [ ] `python scripts/empaqueter_plugin_claude.py`
 - [ ] Fins de ligne LF uniquement et encodage UTF-8 sans BOM sur tous les fichiers modifiés
 
 ## Évaluation d'impact obligatoire (4 axes — `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)
