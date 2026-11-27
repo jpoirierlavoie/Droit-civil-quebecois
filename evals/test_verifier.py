@@ -51,7 +51,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
     }
     common_meta = {
         "name": verifier.EXPECTED_PLUGIN_NAME,
-        "version": "3.3.2",
+        "version": "3.4.0",
         "description": "Plugin v3",
         "author": {"name": "Test"},
         "homepage": verifier.EXPECTED_REPO_URL,
@@ -67,7 +67,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.2",
+                        "version": "3.4.0",
                         "license": verifier.EXPECTED_LICENSE,
                         "icon": "./assets/logo.svg",
                         "homepage": verifier.EXPECTED_REPO_URL,
@@ -83,11 +83,11 @@ def _build_valid_v3_fixture(root: Path) -> None:
                     {
                         "$schema": verifier.CLAUDE_MARKETPLACE_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "metadata": {"version": "3.3.2"},
+                        "metadata": {"version": "3.4.0"},
                         "plugins": [
                             {
                                 "name": verifier.EXPECTED_PLUGIN_NAME,
-                                "version": "3.3.2",
+                                "version": "3.4.0",
                                 "license": verifier.EXPECTED_LICENSE,
                                 "homepage": verifier.EXPECTED_REPO_URL,
                                 "repository": verifier.EXPECTED_REPO_URL,
@@ -140,7 +140,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                         "$schema": verifier.ANTIGRAVITY_SCHEMA,
                         "name": verifier.EXPECTED_PLUGIN_NAME,
                         "displayName": verifier.EXPECTED_DISPLAY_NAME,
-                        "version": "3.3.2",
+                        "version": "3.4.0",
                         "description": "Plugin v3",
                         "logo": "assets/logo.svg",
                         "suggestedPrompts": ["Test 1"],
@@ -185,7 +185,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.2",
+                        "version": "3.4.0",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {
@@ -386,7 +386,7 @@ def _build_valid_v3_fixture(root: Path) -> None:
 
     _write_lf(
         root / "evals" / "scenarios.json",
-        json.dumps({"version": "3.3.2", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"version": "3.4.0", "scenarios": scenarios}, ensure_ascii=False, indent=2) + "\n",
     )
 
 
@@ -657,7 +657,7 @@ class VerifierV3Tests(unittest.TestCase):
                 json.dumps(
                     {
                         "name": verifier.EXPECTED_PLUGIN_NAME,
-                        "version": "3.3.2",
+                        "version": "3.4.0",
                         "contextFileName": [],
                         "settings": [],
                         "mcpServers": {

@@ -183,7 +183,7 @@ EXPECTED_AGENTS = frozenset(
 )
 
 EXPECTED_LICENSE = "Apache-2.0"
-EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp"
+EXPECTED_OUTILS_URL = "https://outils.poirierlavoie.ca/mcp/oauth"
 EXPECTED_LEGISLATION_OAUTH_URL = "https://legislation.poirierlavoie.ca/mcp/oauth"
 EXPECTED_JURISPRUDENCE_OAUTH_URL = "https://jurisprudence.poirierlavoie.ca/mcp/oauth"
 
@@ -201,6 +201,7 @@ EXPECTED_MCP_SERVERS = {
 EXPECTED_GOOGLE_OAUTH_URLS = {
     "lois": EXPECTED_LEGISLATION_OAUTH_URL,
     "juris": EXPECTED_JURISPRUDENCE_OAUTH_URL,
+    "outils": EXPECTED_OUTILS_URL,
 }
 EXPECTED_TOOLS_BY_SERVER: dict[str, tuple[str, ...]] = {
     "lois": (
@@ -975,7 +976,7 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
 
     if agy_mcp is not None:
         agy_servers = agy_mcp.get("mcpServers")
-        expected_agy_keys = set(EXPECTED_GOOGLE_OAUTH_URLS) | {"outils"}
+        expected_agy_keys = set(EXPECTED_GOOGLE_OAUTH_URLS)
         if not isinstance(agy_servers, dict) or set(agy_servers.keys()) != expected_agy_keys:
             erreurs.append(
                 "mcp_config.json : 'mcpServers' doit déclarer exactement "
@@ -1012,25 +1013,6 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
                     erreurs.append(
                         f"mcp_config.json : mcpServers.{srv_name} ne doit contenir que la clé 'url'"
                     )
-            outils_srv = agy_servers["outils"]
-            if not isinstance(outils_srv, dict):
-                erreurs.append(
-                    "mcp_config.json : mcpServers.outils doit être un objet JSON"
-                )
-            else:
-                if "eager" in outils_srv:
-                    erreurs.append(
-                        "mcp_config.json : mcpServers.outils ne doit pas contenir 'eager'"
-                    )
-                if outils_srv.get("url") != EXPECTED_OUTILS_URL:
-                    erreurs.append(
-                        "mcp_config.json : mcpServers.outils.url doit valoir "
-                        f"'{EXPECTED_OUTILS_URL}'"
-                    )
-                if set(outils_srv.keys()) != {"url"}:
-                    erreurs.append(
-                        "mcp_config.json : mcpServers.outils ne doit contenir que la clé 'url'"
-                    )
 
     if gemini_ext is not None:
         if gemini_ext.get("name") != EXPECTED_PLUGIN_NAME:
@@ -1045,18 +1027,14 @@ def verifier(racine: Path, release_mode: bool = False) -> tuple[list[str], dict[
         if gemini_ext.get("contextFileName") != []:
             erreurs.append("gemini-extension.json : 'contextFileName' doit valoir []")
         g_servers = gemini_ext.get("mcpServers")
-        expected_gemini_keys = set(EXPECTED_GOOGLE_OAUTH_URLS) | {"outils"}
+        expected_gemini_keys = set(EXPECTED_GOOGLE_OAUTH_URLS)
         if not isinstance(g_servers, dict) or set(g_servers.keys()) != expected_gemini_keys:
             erreurs.append(
                 "gemini-extension.json : 'mcpServers' doit déclarer exactement "
                 "'lois', 'juris' et 'outils'"
             )
         else:
-            expected_gemini_urls = {
-                **EXPECTED_GOOGLE_OAUTH_URLS,
-                "outils": EXPECTED_OUTILS_URL,
-            }
-            for srv_name, exp_url in expected_gemini_urls.items():
+            for srv_name, exp_url in EXPECTED_GOOGLE_OAUTH_URLS.items():
                 gsrv = g_servers[srv_name]
                 if not isinstance(gsrv, dict):
                     erreurs.append(

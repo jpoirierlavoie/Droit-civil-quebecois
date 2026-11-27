@@ -45,7 +45,7 @@ URL_SERVEURS = {
 URL_MANIFESTES_ATTENDUES = {
     "lois": "https://legislation.poirierlavoie.ca/mcp/oauth",
     "juris": "https://jurisprudence.poirierlavoie.ca/mcp/oauth",
-    "outils": "https://outils.poirierlavoie.ca/mcp",
+    "outils": "https://outils.poirierlavoie.ca/mcp/oauth",
 }
 
 SLUGS_CARTE_SERVEUR = {
@@ -312,6 +312,12 @@ class MockMcpServer:
             self.secret_token = os.environ.get("MCP_LEGISLATION_SECRET", "mock-secret-token")
         elif server_name == "juris":
             self.secret_token = os.environ.get("MCP_JURISPRUDENCE_SECRET", "mock-secret-token")
+        elif server_name == "outils":
+            self.secret_token = (
+                os.environ.get("MCP_OUTILS_SECRET")
+                or os.environ.get("MCP_LEGISLATION_SECRET")
+                or "mock-secret-token"
+            )
         else:
             self.secret_token = "mock-secret-token"
         self.tool_definitions = self._build_tool_definitions()
@@ -1135,19 +1141,21 @@ class MockMcpServer:
                 "Vary": "Origin",
             }, b""
 
-        host_header = headers.get("host") or headers.get("Host") or ""
-        if host_header:
-            hostname = host_header.split(":")[0].strip().lower()
-            allowed_hosts = {
-                "outils.poirierlavoie.ca",
-                "legislation.poirierlavoie.ca",
-                "jurisprudence.poirierlavoie.ca",
-                "localhost",
-                "127.0.0.1",
-                "::1",
+        origin_header = headers.get("origin") or headers.get("Origin") or ""
+        if origin_header:
+            allowed_origins = {
+                "https://claude.ai",
+                "https://claude.com",
+                "https://chatgpt.com",
+                "https://chat.openai.com",
+                "https://platform.openai.com",
+                "https://gemini.google.com",
+                "https://poirierlavoie.ca",
+                "http://localhost",
+                "http://127.0.0.1",
             }
-            if hostname not in allowed_hosts:
-                return 403, {"Content-Type": "application/json"}, b'{"error":"Forbidden: invalid host"}'
+            if origin_header.strip() not in allowed_origins:
+                return 403, {"Content-Type": "application/json", "Cache-Control": "no-store"}, b'{"error":"Forbidden: origin not allowed"}'
 
         if path in ("/health", "/healthz") and method == "GET":
             svc_name = "mcp-outils" if self.server_name == "outils" else self.server_name
@@ -1169,18 +1177,14 @@ class MockMcpServer:
                 "outils": "MCP-Outils",
             }
             card_slug = SLUGS_CARTE_SERVEUR[self.server_name]
-            card_headers = (
-                []
-                if self.server_name == "outils"
-                else [
-                    {
-                        "name": "Authorization",
-                        "description": "Jeton individuel de titulaire (« Bearer <jeton> ») ou connexion OAuth 2.1 sur /mcp/oauth via acces.poirierlavoie.ca.",
-                        "isRequired": True,
-                        "isSecret": True,
-                    }
-                ]
-            )
+            card_headers = [
+                {
+                    "name": "Authorization",
+                    "description": "Jeton individuel de titulaire (« Bearer <jeton> ») ou connexion OAuth 2.1 sur /mcp/oauth via acces.poirierlavoie.ca.",
+                    "isRequired": True,
+                    "isSecret": True,
+                }
+            ]
             return (
                 200,
                 {"Content-Type": "application/mcp-server-card+json; charset=utf-8"},
@@ -1208,8 +1212,6 @@ class MockMcpServer:
         if path == "/.well-known/oauth-protected-resource":
             return 404, {"Content-Type": "text/plain; charset=utf-8"}, b"Not found"
         if path == "/.well-known/oauth-protected-resource/mcp/oauth":
-            if self.server_name == "outils":
-                return 404, {"Content-Type": "text/plain; charset=utf-8"}, b"Not found"
             if method == "OPTIONS":
                 return (
                     204,
@@ -1232,7 +1234,7 @@ class MockMcpServer:
                 "resource": f"https://{srv_slug}.poirierlavoie.ca/mcp/oauth",
                 "authorization_servers": ["https://acces.poirierlavoie.ca"],
                 "bearer_methods_supported": ["header"],
-                "scopes_supported": ["les_deux", srv_slug],
+                "scopes_supported": [srv_slug, "tous"] if self.server_name == "outils" else ["tous", srv_slug],
                 "resource_documentation": f"https://{srv_slug}.poirierlavoie.ca/",
             }
             return (
@@ -1250,12 +1252,12 @@ class MockMcpServer:
             auth_header in (f"Bearer {self.secret_token}", "Bearer mock-secret-token")
         ) and not auth_header.startswith("Bearer invalid")
 
-        if self.server_name in ("lois", "juris") and not is_authenticated:
+        if self.server_name in ("lois", "juris", "outils") and not is_authenticated:
             if est_oauth_mount:
                 srv_slug = SLUGS_CARTE_SERVEUR[self.server_name]
                 www_auth = (
                     f'Bearer resource_metadata="https://{srv_slug}.poirierlavoie.ca/.well-known/oauth-protected-resource/mcp/oauth", '
-                    f'scope="{srv_slug} les_deux"'
+                    f'scope="{srv_slug} tous"'
                 )
                 return (
                     401,
@@ -4047,6 +4049,7 @@ def parse_mcp_response(resp_bytes: bytes, server_key: str = "") -> Dict[str, Any
 def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
     leg_sec = os.environ.get("MCP_LEGISLATION_SECRET")
     jur_sec = os.environ.get("MCP_JURISPRUDENCE_SECRET")
+    out_sec = os.environ.get("MCP_OUTILS_SECRET") or leg_sec
     if not leg_sec or not jur_sec:
         return False, "Variables MCP_LEGISLATION_SECRET ou MCP_JURISPRUDENCE_SECRET absentes de l'environnement."
 
@@ -4069,7 +4072,7 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
             if len(tools) < 15:
                 return False, (
                     f"Serveur MCP-Outils distant en retard de synchronisation : "
-                    f"version {version} exposant {len(tools)} outils (attendu >= 15 outils pour v2.2.3+)."
+                    f"version {version} exposant {len(tools)} outils (attendu >= 15 outils pour v3.0.0+)."
                 )
     except Exception as exc:
         return False, f"MCP-Outils injoignable : {exc}"
@@ -4103,6 +4106,18 @@ def probe_live_readiness(timeout: float = 2.0) -> Tuple[bool, str]:
                 return False, f"Jurisprudence distante a renvoyé HTTP {resp.status}"
     except Exception as exc:
         return False, f"Jurisprudence distante non accessible ou rejet d'authentification : {exc}"
+
+    try:
+        headers_out = dict(headers_base)
+        headers_out["Authorization"] = f"Bearer {out_sec}"
+        req = urllib.request.Request(
+            URL_SERVEURS["outils"], data=init_body, headers=headers_out, method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status != 200:
+                return False, f"Outils distant a renvoyé HTTP {resp.status}"
+    except Exception as exc:
+        return False, f"Outils distant non accessible ou rejet d'authentification : {exc}"
 
     return True, f"Tous les serveurs distants sont opérationnels, authentifiés et synchronisés (v{VERSION_ATTENDUE} / 37 outils)."
 
@@ -4163,6 +4178,13 @@ class UnifiedMcpClient:
                 headers["Authorization"] = f"Bearer {token}"
             elif server_key == "juris":
                 token = os.environ.get("MCP_JURISPRUDENCE_SECRET", "mock-secret-token")
+                headers["Authorization"] = f"Bearer {token}"
+            elif server_key == "outils":
+                token = (
+                    os.environ.get("MCP_OUTILS_SECRET")
+                    or os.environ.get("MCP_LEGISLATION_SECRET")
+                    or "mock-secret-token"
+                )
                 headers["Authorization"] = f"Bearer {token}"
 
         if self.effective_mode == "mock":
@@ -4385,16 +4407,12 @@ def run_tier_1_tests(
             rem0 = remotes[0] if remotes and isinstance(remotes[0], dict) else {}
             rem_headers = rem0.get("headers")
             headers_ok = (
-                rem_headers == []
-                if srv_key == "outils"
-                else (
-                    isinstance(rem_headers, list)
-                    and len(rem_headers) >= 1
-                    and isinstance(rem_headers[0], dict)
-                    and rem_headers[0].get("name") == "Authorization"
-                    and rem_headers[0].get("isRequired") is True
-                    and rem_headers[0].get("isSecret") is True
-                )
+                isinstance(rem_headers, list)
+                and len(rem_headers) >= 1
+                and isinstance(rem_headers[0], dict)
+                and rem_headers[0].get("name") == "Authorization"
+                and rem_headers[0].get("isRequired") is True
+                and rem_headers[0].get("isSecret") is True
             )
             repo_obj = data.get("repository") if isinstance(data.get("repository"), dict) else {}
             has_card = (
@@ -4753,30 +4771,39 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     if target_server in ("all", "outils"):
         t0 = time.perf_counter()
         try:
-            status, _, _ = client.send_http(
+            st_anon, hdrs_anon, _ = client.send_http(
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.1.0"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.4.0"}}}',
                 auth_token="OMIT",
             )
-            ok = status == 200
+            st_bad, hdrs_bad, _ = client.send_http(
+                "outils",
+                path="/mcp",
+                method="POST",
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
+                auth_token="invalid_token_abcdef",
+            )
+            has_www_anon = any(k.lower() == "www-authenticate" for k in hdrs_anon)
+            has_www_bad = any(k.lower() == "www-authenticate" for k in hdrs_bad)
+            ok = st_anon == 404 and not has_www_anon and st_bad == 404 and not has_www_bad
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T2.1.5",
-                "Accès public statut libre sur outils",
+                "Garde non-oracle HTTP 404 sur Outils sans jeton et avec jeton erroné",
                 "outils",
                 ok,
                 elapsed,
-                None if ok else f"Statut reçu {status}",
+                None if ok else f"Statuts reçus: anon={st_anon}, bad={st_bad}",
             )
         except ConnectionError:
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.1.5", "Accès public outils", "outils", False, elapsed, str(ex))
+            add_result("T2.1.5", "Garde 404 Outils", "outils", False, elapsed, str(ex))
 
-    for tid_idx, srv_key in ((6, "lois"), (7, "juris")):
+    for tid_idx, srv_key in ((6, "lois"), (7, "juris"), (8, "outils")):
         if target_server not in ("all", srv_key):
             continue
         t0 = time.perf_counter()
@@ -4867,13 +4894,13 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
-                extra_headers={"Host": "evil.example.com"},
+                extra_headers={"Origin": "https://evil.example.com"},
             )
             ok = status == 403
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T2.2.2",
-                "Protection DNS re-binding Host header (HTTP 403)",
+                "Protection DNS re-binding Origin non autorisée (HTTP 403)",
                 "outils",
                 ok,
                 elapsed,
@@ -4883,7 +4910,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T2.2.2", "Host header security", "outils", False, elapsed, str(ex))
+            add_result("T2.2.2", "Origin header security", "outils", False, elapsed, str(ex))
 
     if target_server in ("all", "outils"):
         t0 = time.perf_counter()
@@ -6482,32 +6509,58 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
     if target_server in ("all", "outils"):
         t0 = time.perf_counter()
         try:
+            status, _, _ = client.send_http(
+                "outils",
+                path="/mcp",
+                method="DELETE",
+                body_data=b"",
+                auth_token="OMIT",
+            )
+            ok = status == 404
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result(
+                "T5.1.1c",
+                "S8 Stealth non-oracle : DELETE non authentifié rend 404 sur outils (non 405)",
+                "outils",
+                ok,
+                elapsed,
+                None if ok else f"Statut reçu {status} au lieu de 404",
+            )
+        except ConnectionError:
+            raise
+        except Exception as ex:
+            elapsed = (time.perf_counter() - t0) * 1000
+            add_result("T5.1.1c", "S8 Stealth non-oracle outils", "outils", False, elapsed, str(ex))
+
+    if target_server in ("all", "outils"):
+        t0 = time.perf_counter()
+        try:
             status_bad1, _, _ = client.send_http(
                 "outils",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
-                extra_headers={"Host": "attacker.com"},
+                extra_headers={"Origin": "https://attacker.com"},
             )
             status_bad2, _, _ = client.send_http(
                 "outils",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
-                extra_headers={"Host": "evil-outils.poirierlavoie.ca"},
+                extra_headers={"Origin": "https://evil-outils.poirierlavoie.ca"},
             )
             status_good, _, _ = client.send_http(
                 "outils",
                 path="/mcp",
                 method="POST",
                 body_data=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
-                extra_headers={"Host": "outils.poirierlavoie.ca"},
+                extra_headers={"Origin": "https://claude.ai"},
             )
             ok = status_bad1 == 403 and status_bad2 == 403 and status_good == 200
             elapsed = (time.perf_counter() - t0) * 1000
             add_result(
                 "T5.1.2",
-                "Protection DNS re-binding Host header whitelist stricte (rejet 403)",
+                "Protection anti-DNS-rebinding Origin whitelist stricte (rejet 403)",
                 "outils",
                 ok,
                 elapsed,
@@ -6517,7 +6570,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
             raise
         except Exception as ex:
             elapsed = (time.perf_counter() - t0) * 1000
-            add_result("T5.1.2", "Host header whitelist", "outils", False, elapsed, str(ex))
+            add_result("T5.1.2", "Origin whitelist", "outils", False, elapsed, str(ex))
 
     if target_server in ("all", "outils"):
         t0 = time.perf_counter()
@@ -6579,6 +6632,7 @@ def run_tier_5_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 method="OPTIONS",
                 body_data=b"",
                 extra_headers=cors_headers,
+                auth_token="OMIT",
             )
             hdrs_leg_l = {k.lower(): v for k, v in hdrs_leg.items()}
             hdrs_out_l = {k.lower(): v for k, v in hdrs_out.items()}
