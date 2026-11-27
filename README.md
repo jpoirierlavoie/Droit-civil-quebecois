@@ -1,4 +1,4 @@
-# Droit civil québécois (`v3.3.1`)
+# Droit civil québécois (`v3.3.2`)
 
 <img src="assets/logo.svg" alt="Fleur de lys — Droit civil québécois" width="68" height="68" align="right" />
 
@@ -31,7 +31,7 @@ Le greffon réunit quatre couches complémentaires :
 
 ---
 
-## Fonctionnement et garanties (`v3.3.1`)
+## Fonctionnement et garanties (`v3.3.2`)
 
 1. **Guides de phase et services spécialisés :**
    - **5 orchestrateurs de phase (`phase-*`) :** portent uniquement les listes de contrôle, les étapes, les étapes de contrôle obligatoires (portes), le suivi de l'état du dossier (`etat-dossier/<phase>.md`, ou bloc Markdown directement dans la réponse lorsqu'aucun disque local n'est inscriptible) et les renvois vérifiés vers les services.
@@ -94,7 +94,7 @@ Le greffon réunit quatre couches complémentaires :
 
 > Depuis `v3.1.0`, la configuration du greffon (`.mcp.json`, `mcp_config.json`, `gemini-extension.json`) relie par défaut `lois` et `juris` à `/mcp/oauth` sans variable d'environnement ni secret à copier dans vos fichiers. Les manifestes propres à chaque plateforme (`.antigravity-plugin/plugin.json` pour Antigravity, `plugin.json` portable Agent Plugins 1.0 + `.codex-plugin/plugin.json` pour ChatGPT/Codex, `.claude-plugin/plugin.json` pour Claude) coexistent sans conflit. L'accès direct `/mcp` demeure disponible pour les scripts, l'intégration continue et Gemini API Deep Research. Aucun secret n'est stocké dans le dépôt, et tous les noms d'outils respectent le plafond de 64 caractères.
 
-### Catalogue exact des 37 outils (`v3.3.1`)
+### Catalogue exact des 37 outils (`v3.3.2`)
 
 | Serveur (`lois`, 10 outils) | Serveur (`juris`, 12 outils) | Serveur (`outils`, 15 outils) |
 |---|---|---|
@@ -233,7 +233,7 @@ QUESTION JURIDIQUE ANONYMISÉE :
 
 ## État de maturité et contribution ouverte
 
-L'ensemble du corpus `v3.3.1` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
+L'ensemble du corpus `v3.3.2` (**10 compétences**, **60 feuilles de référence**, **6 personas de contre-épreuve `agents/`**, noyau `SAFETY-KERNEL`, **37 outils MCP** OAuth 2.1/BYOK et **4 scripts Python stdlib**) est rédigé, revu au regard de la pratique civiliste québécoise et conforme au contrôle de publication `python verifier.py --release` (`0` marqueur `[FICHE À RÉDIGER]` ou `[NON VALIDÉ PAR LA PRATIQUE]`, `122` scénarios d'évaluation). Les retours d'expérience de praticiennes et praticiens pour affiner les feuilles existantes ou signaler une évolution législative ou jurisprudentielle demeurent les bienvenus.
 
 - **Contribuer (juristes et développeurs) :** consulter [`CONTRIBUTING.md`](CONTRIBUTING.md) et le [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - **Historique des versions :** consulter [`CHANGELOG.md`](CHANGELOG.md).

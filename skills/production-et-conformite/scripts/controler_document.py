@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Contrôleur de conformité formelle et générateur de bon de travail (.docx, .pdf).
-
-Bibliothèque standard Python uniquement, lecture seule, aucun appel réseau.
-Aucun seuil réglementaire de tribunal n'est codé en dur : transmettre les seuils
-lus via `lois` par `--regles <fichier.json|etiquette>` ou par options explicites.
-
-Usage :
-    python scripts/controler_document.py <fichier>... [--regles regles.json] [--max-pages 5] [--json]
-"""
 
 from __future__ import annotations
 
@@ -101,7 +92,7 @@ def _truncate(text: str, limit: int = 120) -> str:
 
 
 class _ZipLimitExceeded(ValueError):
-    """Levée lorsqu'un membre OOXML dépasse le plafond de décompression sécurisé."""
+    pass
 
 
 def _is_w_flag_enabled(el: ET.Element) -> bool:
@@ -650,7 +641,6 @@ def controler_fichier(
     regles: dict[str, object] | None = None,
     etiquette_regles: str | None = None,
 ) -> dict[str, object]:
-    """Inspecte un document (.docx ou .pdf) et génère les constats + bon de travail."""
     seuils = dict(regles or {})
     if not path.is_file():
         return {"chemin": str(path), "statut": "erreur", "erreur": "Fichier introuvable."}

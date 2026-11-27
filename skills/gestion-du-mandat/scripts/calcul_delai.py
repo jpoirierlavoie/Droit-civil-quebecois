@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Calculateur déterministe de délais en procédure civile québécoise (art. 82, 83, 107 al. 4 et 111 al. 2 C.p.c.).
-
-Bibliothèque standard Python uniquement, aucun appel réseau.
-Usage CLI :
-    python scripts/calcul_delai.py 2026-07-03 --jours 30 --technologique --heure 17:40 --json
-"""
 
 from __future__ import annotations
 
@@ -28,7 +22,6 @@ def _configure_stdio() -> None:
 
 
 def _paques_gregorienne(annee: int) -> date:
-    """Calcule le dimanche de Pâques selon l'algorithme grégorien anonyme."""
     a = annee % 19
     b, c = divmod(annee, 100)
     d, e = divmod(b, 4)
@@ -43,14 +36,12 @@ def _paques_gregorienne(annee: int) -> date:
 
 
 def _nieme_lundi_du_mois(annee: int, mois: int, n: int) -> date:
-    """Retourne le nième lundi d'un mois donné (1er = 1, 2e = 2)."""
     premier = date(annee, mois, 1)
     decalage = (0 - premier.weekday()) % 7
     return premier + timedelta(days=decalage + (n - 1) * 7)
 
 
 def _lundi_precedant_25_mai(annee: int) -> date:
-    """Retourne le lundi précédant le 25 mai (Journée nationale des patriotes)."""
     mai25 = date(annee, 5, 25)
     recul = mai25.weekday() or 7
     return mai25 - timedelta(days=recul)
@@ -80,12 +71,6 @@ def jours_feries_quebec(
     fetes_additionnelles: Iterable[date] = (),
     inclure_feries_cpc: bool = True,
 ) -> dict[date, str]:
-    """Retourne la table des jours fériés légaux au Québec pour une année civile.
-
-    Fondements : art. 61 (23°) de la Loi d'interprétation (RLRQ, c. I-16) et, lorsque
-    `inclure_feries_cpc=True`, art. 82 al. 1 C.p.c. (2 janvier et 26 décembre). Le
-    30 septembre (férié fédéral), le 24 décembre et le 31 décembre n'en font pas partie.
-    """
     paques = _paques_gregorienne(annee)
     juillet_1 = date(annee, 7, 1)
     fete_canada = date(annee, 7, 2) if juillet_1.weekday() == 6 else juillet_1
@@ -124,7 +109,6 @@ def est_jour_ouvrable(
     inclure_feries_cpc: bool = True,
     reporter_samedi: bool = True,
 ) -> tuple[bool, str | None]:
-    """Indique si une date constitue un jour ouvrable / non reporté selon le régime applicable."""
     extras = tuple(fetes_additionnelles)
     feries = jours_feries_quebec(jour.year, extras, inclure_feries_cpc=inclure_feries_cpc)
     if jour in feries:
@@ -190,11 +174,6 @@ def ajuster_ancrage_technologique(
     heure_acte: time | None = None,
     fetes_additionnelles: Iterable[date] = (),
 ) -> tuple[date, list[str]]:
-    """Applique la présomption de l'art. 111 al. 2 C.p.c. à une notification technologique.
-
-    La notification faite par un moyen technologique après 17 h 00, un samedi ou un
-    jour férié est réputée faite à 8 h 00 le jour ouvrable qui suit.
-    """
     extras = tuple(fetes_additionnelles)
     notes: list[str] = []
     ouvrable, motif = est_jour_ouvrable(date_acte, extras)
@@ -235,7 +214,6 @@ def ajuster_ancrage_technologique(
 
 
 def _ajouter_mois(debut: date, mois_delta: int) -> tuple[date, bool]:
-    """Ajoute ou retranche un nombre entier de mois selon l'art. 83 al. 2 C.p.c."""
     total_mois = debut.year * 12 + (debut.month - 1) + mois_delta
     annee, mois_m1 = divmod(total_mois, 12)
     mois = mois_m1 + 1
@@ -246,7 +224,6 @@ def _ajouter_mois(debut: date, mois_delta: int) -> tuple[date, bool]:
 
 
 def _dans_periode_non_siege(d: date) -> str | None:
-    """Signale si la date tombe dans une période où les tribunaux ne sont pas tenus de siéger."""
     if (d.month == 6 and d.day >= 30) or d.month in (7, 8) or (d.month == 9 and d.day == 1):
         return "du 30 juin au 1er septembre"
     if (d.month == 12 and d.day >= 20) or (d.month == 1 and d.day <= 7):
@@ -284,7 +261,6 @@ def calculer_delai(
     regime: str = "cpc",
     reporter_samedi: bool | None = None,
 ) -> dict[str, Any]:
-    """Calcule une échéance selon le régime (`cpc`, `prescription` art. 2879 al. 2 C.c.Q., ou `li` art. 52 L.I.)."""
     if valeur < 0:
         raise ValueError("La valeur du délai doit être positive ou nulle.")
     if unite not in ("jours", "mois", "ans"):

@@ -2,6 +2,20 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.3.2] — 2026-11-27
+
+### Modifié
+- Alignement de version `3.3.2` sur l'ensemble des manifestes, `evals/scenarios.json`, `evals/README.md`, `evals/test_verifier.py`, `README.md`, `SECURITY.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` et `scripts/synchroniser_plugin_gemini.py`.
+- Harmonisation du point de terminaison de santé `MCP-Outils` (`/healthz` → `/health`) et de l'en-tête `USER_AGENT_VERIFICATEUR` (`VERSION_ATTENDUE`) dans `verifier_tout.py`.
+- Compatibilité inter-dépôts dans `scripts/regenerer_cache_mcp.py` (`data/tools-list.reference.json` et lecture `inputSchema` / `inputSchemaJson`).
+- Consolidation des vérifications statiques dupliquées de `verifier_tout.py` (`T1.1.1`–`T1.1.9`, `T1.3.compound_id_64_chars`, `T3.1.1`–`T3.1.3`, `T3.4.1`, `T3.4.3`) sur `verifier.verifier(repo_root)` (avec couverture hexadécimale étendue à `.claude-plugin/{plugin,marketplace}.json`) et exécution en Palier 1 et Palier 3 autonomes.
+- Retrait des docstrings et commentaires narratifs dans les scripts Python et fichiers `.github/` tout en conservant les directives techniques (`# type: ignore`, `# noqa`, shebangs, `# vX.Y.Z` Dependabot).
+
+### Supprimé
+- Retrait du code mort : `LEGACY_PLUGIN_ALLOW_MIGRATION` dans `verifier.py`, `TestResult.details` et `--check-linters` dans `verifier_tout.py`.
+
+---
+
 ## [3.3.1] — 2026-11-26
 
 ### Corrigé

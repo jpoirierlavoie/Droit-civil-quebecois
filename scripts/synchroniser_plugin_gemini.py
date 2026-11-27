@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-synchroniser_plugin_gemini.py
-Synchronise le plugin droit-civil-quebecois vers le répertoire de plugins Gemini installé.
-Usage:
-    python scripts/synchroniser_plugin_gemini.py          # dry-run
-    python scripts/synchroniser_plugin_gemini.py --apply  # copie effective
-"""
 from __future__ import annotations
 
 import filecmp
@@ -113,7 +106,6 @@ def main() -> None:
                 try:
                     d.rmdir()
                 except OSError:
-                    # Répertoire non vide : conservé car il contient des fichiers synchronisés.
                     continue
 
     print(
@@ -134,7 +126,7 @@ def main() -> None:
         if mcp_config_copied:
             time.sleep(2.5)
             print(
-                "[!] mcp_config.json modifié : tous les identifiants d'outils v3.3.1 respectent "
+                "[!] mcp_config.json modifié : tous les identifiants d'outils v3.3.2 respectent "
                 "désormais la limite native <= 64 caractères (cache Antigravity rafraîchi "
                 "automatiquement). Exécuter optionnellement "
                 "'python scripts/regenerer_cache_mcp.py --apply' pour reconstruire le cache "

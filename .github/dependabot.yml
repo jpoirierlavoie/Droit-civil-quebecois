@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Dépôt sans gestionnaire de paquets JS/Python : uniquement la maintenance des actions GitHub.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

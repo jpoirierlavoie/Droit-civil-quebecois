@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "droit-civil-quebecois",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Orchestration complète en litige civil et commercial québécois : 5 phases de dossier (ouverture, introduction/réponse, instruction, mise en état/audience, jugement), 5 services (recherche, analyse/preuve, rédaction, production/conformité, gestion du mandat) et 6 sous-agents de contre-épreuve branchés sur « lois », « juris » et « outils ».",
   "author": {
     "name": "Jason Poirier Lavoie",
