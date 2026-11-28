@@ -2,6 +2,17 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et [Semantic Versioning](https://semver.org/).
 
+## [3.5.0] — 2026-11-27
+
+### Retiré
+- **Retrait complet de la compatibilité OpenAI / ChatGPT / Codex :**
+  - Suppression des manifestes `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` et `plugin.json` (Agent Plugins 1.0) ainsi que du script `scripts/empaqueter_plugin_chatgpt.py` et des tâches d'archive ChatGPT dans `.github/workflows/verify.yml`, `.github/workflows/release.yml` et `.github/PULL_REQUEST_TEMPLATE.md`.
+  - Retrait des mentions OpenAI, ChatGPT, Codex et `spawn_agent` dans `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`, les 10 `skills/*/SKILL.md` (incluant `SAFETY-KERNEL`), les 11 feuilles `references/` affectées, `evals/` et `verifier.py` (`verifier_tout.py`).
+  - Conservation intacte de la branche dédiée `claude-directory` pour l'examen Anthropic Directory en cours.
+
+### Modifié
+- **Alignement semver `3.5.0`** sur les 6 manifestes restants (`.antigravity-plugin/plugin.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`, `mcp_config.json`, `.mcp.json`), `evals/scenarios.json`, `verifier.py`, `verifier_tout.py` (`.claude-plugin/plugin.json`) et la documentation.
+
 ## [3.4.1] — 2026-11-27
 
 ### Corrigé

@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 
 def _lire_version_manifeste() -> str:
-    manifest_path = Path(__file__).resolve().parent / "plugin.json"
+    manifest_path = Path(__file__).resolve().parent / ".claude-plugin" / "plugin.json"
     if not manifest_path.is_file():
         raise RuntimeError(f"Manifeste introuvable pour lire la version : {manifest_path}")
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -1146,9 +1146,6 @@ class MockMcpServer:
             allowed_origins = {
                 "https://claude.ai",
                 "https://claude.com",
-                "https://chatgpt.com",
-                "https://chat.openai.com",
-                "https://platform.openai.com",
                 "https://gemini.google.com",
                 "https://poirierlavoie.ca",
                 "http://localhost",
@@ -4789,7 +4786,7 @@ def run_tier_2_tests(client: UnifiedMcpClient, target_server: str) -> List[TestR
                 "outils",
                 path="/mcp",
                 method="POST",
-                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.4.0"}}}',
+                body_data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"3.5.0"}}}',
                 auth_token="OMIT",
             )
             st_bad, hdrs_bad, _ = client.send_http(

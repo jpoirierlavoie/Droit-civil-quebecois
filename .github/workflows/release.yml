@@ -30,13 +30,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Vérifier l'étiquette, les invariants et construire l'archive ChatGPT
+      - name: Vérifier l'étiquette et les invariants de publication
         env:
           TAG: ${{ github.ref_name }}
           PYTHONUTF8: "1"
         run: |
           set -euo pipefail
-          manifest_version="$(python -c 'import json; print(json.load(open("plugin.json", encoding="utf-8"))["version"])')"
+          manifest_version="$(python -c 'import json; print(json.load(open(".claude-plugin/plugin.json", encoding="utf-8"))["version"])')"
           if [ "$TAG" != "v${manifest_version}" ]; then
             echo "Tag ${TAG} ne correspond pas à la version des manifestes (v${manifest_version})." >&2
             exit 1
@@ -47,8 +47,8 @@ jobs:
             exit 1
           fi
           python evals/executer_evals.py --auto-test
-          python scripts/empaqueter_plugin_chatgpt.py --apply
-          (cd dist && sha256sum droit-civil-quebecois-chatgpt-universal.zip > droit-civil-quebecois-chatgpt-universal.zip.sha256)
+          python verifier_tout.py --mode mock
+          python scripts/empaqueter_plugin_claude.py --apply
 
       - name: Publish GitHub Release
         env:
@@ -61,7 +61,4 @@ jobs:
             echo "Release ${TAG} already exists."
             exit 0
           fi
-          gh release create "$TAG" \
-            "dist/droit-civil-quebecois-chatgpt-universal.zip" \
-            "dist/droit-civil-quebecois-chatgpt-universal.zip.sha256" \
-            --repo "$REPO" --verify-tag --generate-notes
+          gh release create "$TAG" --repo "$REPO" --verify-tag --generate-notes

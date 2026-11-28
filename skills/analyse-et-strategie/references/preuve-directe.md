@@ -16,7 +16,7 @@ Exécuter obligatoirement `python scripts/inspecter_piece.py <fichier> --journal
 * l'empreinte **SHA-256** et la taille exacte en octets ;
 * la date système et les métadonnées internes extraites (EXIF appareil/GPS, `mvhd` vidéo, `ID3`/`INFO` audio, en-têtes `.eml`) ;
 * l'origine déclarée (`--source`).
-*(Dégradation nuage sans Python / disque non inscriptible — `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research : divulguer explicitement que l'extraction scriptée octets/EXIF/conteneur/SHA-256 via `inspecter_piece.py` a été omise, livrer le journal de garde en bloc Markdown en ligne avec `[SHA-256 : À CALCULER LOCALEMENT]`, et inscrire le calcul d'empreinte et l'extraction des métadonnées au bon de travail.)*
+*(Dégradation nuage sans Python / disque non inscriptible — (`claude.ai`, Gemini App `/mcp/oauth`, Deep Research : divulguer explicitement que l'extraction scriptée octets/EXIF/conteneur/SHA-256 via `inspecter_piece.py` a été omise, livrer le journal de garde en bloc Markdown en ligne avec `[SHA-256 : À CALCULER LOCALEMENT]`, et inscrire le calcul d'empreinte et l'extraction des métadonnées au bon de travail.)*
 
 ### 2. Honnêteté perceptuelle stricte (règle absolue sur photos, vidéos et enregistrements)
 * **Ne jamais décrire ni interpréter un contenu visuel ou sonore non effectivement perçu dans la session.**

@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "droit-civil-quebecois",
   "displayName": "Droit civil québécois",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "description": "Litige civil et commercial québécois : 5 phases, 5 services, 6 sous-agents, 4 scripts de contrôle et 37 outils MCP officiels (lois, juris, outils).",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

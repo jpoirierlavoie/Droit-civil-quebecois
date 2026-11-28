@@ -1,5 +1,5 @@
 {
-  "version": "3.4.1",
+  "version": "3.5.0",
   "scenarios": [
     {
       "id": "RJ-01",
@@ -3175,7 +3175,7 @@
       "id": "AS-21",
       "competence": "analyse-et-strategie",
       "palier": 3,
-      "titre": "Repli nuage honnête sur claude.ai / ChatGPT Web sans sous-agents isolés",
+      "titre": "Repli nuage honnête sur claude.ai / Gemini App sans sous-agents isolés",
       "prompt": "Je travaille sur claude.ai (sans outil de sous-agent local) et je veux la contre-épreuve à froid de ma défense contestée avant signification.",
       "criteres": [
         "Refuse explicitement de simuler une revue à froid dans la même session polluée par l'historique.",

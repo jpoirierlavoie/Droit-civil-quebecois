@@ -5,14 +5,13 @@
 - [ ] `python verifier.py --release` (sortie strictement muette, code 0)
 - [ ] `python evals/executer_evals.py --auto-test`
 - [ ] `python verifier_tout.py --mode mock`
-- [ ] `python scripts/empaqueter_plugin_chatgpt.py`
 - [ ] `python scripts/empaqueter_plugin_claude.py`
 - [ ] Fins de ligne LF uniquement et encodage UTF-8 sans BOM sur tous les fichiers modifiés
 
 ## Évaluation d'impact obligatoire (4 axes — `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`)
 
 1. **Compétences (`skills/`), sous-agents (`agents/`), scripts et `evals/` :**
-2. **`README.md`, gouvernance (`CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`), `SECURITY.md`, licence (`LICENSE`, `NOTICE`) et les 9 manifestes :**
+2. **`README.md`, gouvernance (`CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`), `SECURITY.md`, licence (`LICENSE`, `NOTICE`) et les 6 manifestes :**
 3. **Page publique HTML (`GET /`) et `/mcp/server-card` (ce dépôt ou serveurs aval) :**
 4. **Impacts inter-dépôts (`droit-civil-quebecois`, `MCP-Socle`, `MCP-Acces`, `MCP-Legislation`, `MCP-Jurisprudence`, `MCP-Outils`) :**
 

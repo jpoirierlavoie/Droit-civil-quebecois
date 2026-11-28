@@ -20,7 +20,7 @@ Vérifier les règles de forme et de dépôt du tribunal saisi via `lois` (`cpc`
 
 1. `outils.greffe_parse_number` : confirmer la validité du numéro de dossier de cour, le code de greffe, la chambre (`17`, `22`, `09`, etc.) et l'année.
 2. `outils.palais_get` : obtenir la désignation officielle du palais ou point de service (à confirmer auprès du MJQ avant déplacement).
-3. `python scripts/controler_document.py <document.docx|pdf> --json` : confirmer le format US Letter **portrait (`8,5 × 11 po`) et/ou paysage (`11 × 8,5 po` pour l'endos)** et l'absence de verrous techniques avant dépôt. *(Si Python local indisponible — `claude.ai`, ChatGPT sans Python, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que la vérification octets/XML/PDF du format et des verrous a été omise et l'inscrire au bon de travail.)*
+3. `python scripts/controler_document.py <document.docx|pdf> --json` : confirmer le format US Letter **portrait (`8,5 × 11 po`) et/ou paysage (`11 × 8,5 po` pour l'endos)** et l'absence de verrous techniques avant dépôt. *(Si Python local indisponible — `claude.ai`, Gemini App `/mcp/oauth`, Deep Research — divulguer explicitement que la vérification octets/XML/PDF du format et des verrous a été omise et l'inscrire au bon de travail.)*
 
 ## Contrôles humains
 

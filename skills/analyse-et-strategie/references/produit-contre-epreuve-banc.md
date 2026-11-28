@@ -28,9 +28,9 @@ Dans une conversation longue (l'**Éléphant**), le même agent qui a bâti la s
 
 ### Règles de répartition multi-plateformes et repli nuage honnête
 
-1. **Client avec sous-agents sans historique :** `invoke_subagent` (Antigravity), `Agent` (Claude Code) ou `spawn_agent` avec `fork_context: false` / `fork_turns: "none"` (Codex). Toujours fournir le persona exact (`agents/*.md`) et vérifier que chaque sous-agent a réellement répondu.
+1. **Client avec sous-agents sans historique :** `invoke_subagent` (Antigravity) ou `Agent` (Claude Code). Toujours fournir le persona exact (`agents/*.md`) et vérifier que chaque sous-agent a réellement répondu.
 2. **Client sans imbrication de sous-agents (ex. Claude Cowork) :** l'Éléphant lance directement les personas spécialisés en parallèle au lieu de passer par `coordonnateur-revue`, puis compile lui-même le rapport sous `etat-dossier/banc/`.
-3. **Surface nuage sans sous-agents isolés (`claude.ai`, ChatGPT Web, Gemini App, Deep Research) :** **interdiction absolue de simuler une revue à froid dans le même fil pollué par l'historique.** L'Éléphant doit :
+3. **Surface nuage sans sous-agents isolés (`claude.ai`, Gemini App, Deep Research) :** **interdiction absolue de simuler une revue à froid dans le même fil pollué par l'historique.** L'Éléphant doit :
    - **divulguer explicitement** que le banc automatisé à contexte vierge est indisponible sur cette surface ;
    - produire le **Paquet Contre-épreuve (Nouvel onglet vierge)** prêt à copier-coller (voir ci-dessous) ;
    - inscrire le contrôle de banc omis en tête du **bon de travail** manuel.
@@ -97,7 +97,7 @@ Avant tout lancement de sous-agent sur poste local :
 
 ### 5. Gabarit de repli nuage (`Paquet Contre-épreuve — Nouvel onglet vierge`)
 
-Sur toute plateforme sans outil de sous-agent isolé (`claude.ai`, ChatGPT Web, Gemini App) :
+Sur toute plateforme sans outil de sous-agent isolé (`claude.ai`, Gemini App) :
 
 ```markdown
 [DIVULGATION NUAGE] Cette plateforme ne permet pas de lancer un sous-agent à contexte vierge. Pour éviter le biais de confirmation de cette session, aucune contre-épreuve simulée n'a été exécutée ici ; le présent paquet doit être collé dans un **nouvel onglet vierge** et l'omission est inscrite en tête du **bon de travail** manuel.

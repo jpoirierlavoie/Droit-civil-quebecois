@@ -26,7 +26,7 @@ body:
     id: environment
     attributes:
       label: "Environnement / Client MCP"
-      placeholder: "Claude Code / Claude Desktop / claude.ai / ChatGPT Web / ChatGPT Desktop / Codex / Antigravity / Gemini CLI / Python / commit SHA..."
+      placeholder: "Claude Code / Claude Desktop / claude.ai / Antigravity / Gemini CLI / Python / commit SHA..."
     validations:
       required: false
   - type: checkboxes
